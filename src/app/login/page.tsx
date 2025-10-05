@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { LoginForm } from "@/components/login-form";
 import { ModeToggle } from "@/components/mode-toggle";
 import { ThemeProvider } from "@/components/theme-provider";
-import { upsertUserProfile } from "@/lib/api/users";
+import { upsertUser } from "@/lib/api/users";
 import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
@@ -13,7 +13,7 @@ export default function LoginPage() {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
         try {
-          await upsertUserProfile();
+          await upsertUser();
           navigate("/dashboard", { replace: true });
         } catch {
           /* ignore */

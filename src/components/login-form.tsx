@@ -11,7 +11,7 @@ import {
   FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { upsertUserProfile } from "@/lib/api/users";
+import { upsertUser } from "@/lib/api/users";
 import { supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
 
@@ -60,7 +60,7 @@ export function LoginForm({
       });
       if (error) throw error;
       if (data?.user) {
-        await upsertUserProfile();
+        await upsertUser();
         navigate("/dashboard");
       }
     } catch (e: unknown) {
