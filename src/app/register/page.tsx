@@ -1,7 +1,6 @@
 import { ModeToggle } from "@/components/mode-toggle";
 import { SignupForm } from "@/components/signup-form";
 import { ThemeProvider } from "@/components/theme-provider";
-// (no auth-side effects here)
 
 export default function SignupPage() {
   return (

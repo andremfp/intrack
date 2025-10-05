@@ -1,22 +1,27 @@
-import { IconCirclePlusFilled, IconMail, type Icon } from "@tabler/icons-react"
+import { IconCirclePlusFilled, type Icon } from "@tabler/icons-react";
 
-import { Button } from "@/components/ui/button"
 import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
+
+type TabType = "Resumo" | "Consultas";
 
 export function NavMain({
   items,
+  activeTab,
+  onTabChange,
 }: {
   items: {
-    title: string
-    url: string
-    icon?: Icon
-  }[]
+    title: string;
+    url: string;
+    icon?: Icon;
+  }[];
+  activeTab: TabType;
+  onTabChange: (tab: TabType) => void;
 }) {
   return (
     <SidebarGroup>
@@ -30,27 +35,27 @@ export function NavMain({
               <IconCirclePlusFilled />
               <span>Quick Create</span>
             </SidebarMenuButton>
-            <Button
-              size="icon"
-              className="size-8 group-data-[collapsible=icon]:opacity-0"
-              variant="outline"
-            >
-              <IconMail />
-              <span className="sr-only">Inbox</span>
-            </Button>
           </SidebarMenuItem>
         </SidebarMenu>
         <SidebarMenu>
-          {items.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton tooltip={item.title}>
-                {item.icon && <item.icon />}
-                <span>{item.title}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+          {items.map((item) => {
+            const isActive = activeTab === item.title;
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  tooltip={item.title}
+                  isActive={isActive}
+                  onClick={() => onTabChange(item.title as TabType)}
+                  className={isActive ? "bg-accent text-accent-foreground" : ""}
+                >
+                  {item.icon && <item.icon />}
+                  <span>{item.title}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
-  )
+  );
 }

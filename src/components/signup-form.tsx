@@ -11,7 +11,7 @@ import {
   FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { upsertUserProfile } from "@/lib/api/users";
+import { upsertUser } from "@/lib/api/users";
 import { supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
 
@@ -63,8 +63,16 @@ export function SignupForm({
       });
       if (error) throw error;
       if (data?.user) {
-        await upsertUserProfile();
-        navigate("/dashboard");
+        console.log("User created, attempting to upsert user profile...");
+        try {
+          await upsertUser();
+          console.log("User profile upserted successfully");
+          navigate("/dashboard");
+        } catch (upsertError) {
+          console.error("Failed to create user profile:", upsertError);
+          // Still navigate to dashboard - the user can try again
+          navigate("/dashboard");
+        }
       }
     } catch (e: unknown) {
       const message =
