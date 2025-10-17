@@ -1,34 +1,76 @@
 import { supabase } from "@/lib/supabase";
+import type { ApiResponse } from "@/lib/errors";
+import type { Tables } from "@/schema";
+import { success, failure, AppError, ErrorMessages } from "@/lib/errors";
 
-export async function upsertUser() {
-  console.log("upsertUser: Getting current user...");
+export type User = Tables<"users">;
+
+export type UserData = {
+  data: User;
+  avatar?: string;
+};
+
+export async function getCurrentUser(): Promise<ApiResponse<UserData>> {
   const {
     data: { user },
     error: authError,
   } = await supabase.auth.getUser();
-
-  if (authError) {
-    console.error("upsertUser: Auth error:", authError);
-    throw authError;
+  if (authError) return failure(authError, "getCurrentUser");
+  if (!user) {
+    return failure(new AppError(ErrorMessages.AUTH_FAILED), "getCurrentUser");
   }
 
-  if (!user || !user.email) {
-    console.error("upsertUser: No user or email found to upsert user profile");
-    return;
+  const { data, error } = await supabase
+    .from("users")
+    .select("*")
+    .eq("user_id", user.id);
+
+  if (error) return failure(error, "getCurrentUser");
+  if (!data?.[0]) {
+    return failure(
+      new AppError(ErrorMessages.USER_NOT_FOUND),
+      "getCurrentUser"
+    );
   }
 
-  console.log("upsertUser: User found:", { id: user.id, email: user.email });
+  return success({
+    data: data[0],
+    avatar: user.user_metadata.avatar_url,
+  });
+}
+
+export async function checkUserExists(): Promise<ApiResponse<boolean>> {
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError) return failure(authError, "checkUserExists");
+  if (!user) {
+    return failure(new AppError(ErrorMessages.AUTH_FAILED), "checkUserExists");
+  }
+
+  const { data, error } = await supabase
+    .from("users")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .limit(1);
+
+  if (error) return failure(error, "checkUserExists");
+  return success(!!data?.[0]);
+}
+
+export async function upsertUser(): Promise<ApiResponse<void>> {
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError) return failure(authError, "upsertUser");
+  if (!user?.email) {
+    return failure(new AppError(ErrorMessages.AUTH_FAILED), "upsertUser");
+  }
 
   const derivedName =
-    (user.user_metadata?.full_name as string | undefined) ||
-    (user.email ? user.email.split("@")[0] : undefined) ||
-    "Utilizador";
-
-  console.log("upsertUser: Upserting user to database...", {
-    user_id: user.id,
-    display_name: derivedName,
-    email: user.email,
-  });
+    user.user_metadata?.full_name || user.email.split("@")[0] || "Utilizador";
 
   const { error } = await supabase
     .from("users")
@@ -37,29 +79,8 @@ export async function upsertUser() {
       { onConflict: "user_id", ignoreDuplicates: true }
     );
 
-  if (error) {
-    console.error("upsertUser: Database error:", error);
-    throw error;
-  }
-
-  console.log("upsertUser: User upserted successfully");
-}
-
-export async function getUser() {
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError) throw authError;
-  if (!user) return;
-
-  const { data, error } = await supabase
-    .from("users")
-    .select("*")
-    .eq("user_id", user.id);
-  if (error) throw error;
-  return { data: data[0], avatar: user.user_metadata.avatar_url };
+  if (error) return failure(error, "upsertUser");
+  return success();
 }
 
 export async function updateUser({
@@ -70,21 +91,17 @@ export async function updateUser({
   userId: string;
   specialtyId?: string;
   displayName?: string;
-}) {
-  // Build update object with only provided fields
+}): Promise<ApiResponse<void>> {
   const updateData: { specialty_id?: string; display_name?: string } = {};
 
-  if (specialtyId !== undefined) {
-    updateData.specialty_id = specialtyId;
-  }
+  if (specialtyId !== undefined) updateData.specialty_id = specialtyId;
+  if (displayName !== undefined) updateData.display_name = displayName;
 
-  if (displayName !== undefined) {
-    updateData.display_name = displayName;
-  }
-
-  // Only update if there are fields to update
   if (Object.keys(updateData).length === 0) {
-    throw new Error("No fields provided to update");
+    return failure(
+      new AppError(ErrorMessages.NO_FIELDS_TO_UPDATE),
+      "updateUser"
+    );
   }
 
   const { error } = await supabase
@@ -92,5 +109,50 @@ export async function updateUser({
     .update(updateData)
     .eq("user_id", userId);
 
-  if (error) throw error;
+  if (error) return failure(error, "updateUser");
+  return success();
+}
+
+export async function deleteUserAccount(): Promise<ApiResponse<void>> {
+  try {
+    // Get current user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError) return failure(authError, "deleteUserAccount");
+    if (!user) {
+      return failure(
+        new AppError(ErrorMessages.AUTH_FAILED),
+        "deleteUserAccount"
+      );
+    }
+
+    // Step 1: Delete from public.users table
+    const { error: userError } = await supabase
+      .from("users")
+      .delete()
+      .eq("user_id", user.id);
+
+    if (userError) {
+      return failure(userError, "deleteUserAccount");
+    }
+
+    // Step 2: Delete from auth.users using RPC function
+    // This will CASCADE delete consultations automatically
+    const { error: rpcError } = await supabase.rpc("delete_user");
+
+    // Step 3: Clear session locally (user is deleted, API signOut would fail)
+    await supabase.auth.signOut({ scope: "local" });
+
+    // Log RPC error but don't fail (user is deleted and session cleared)
+    if (rpcError) {
+      return failure(rpcError, "deleteUserAccount");
+    }
+
+    return success();
+  } catch (err) {
+    return failure(err, "deleteUserAccount");
+  }
 }

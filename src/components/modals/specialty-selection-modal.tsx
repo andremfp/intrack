@@ -10,12 +10,10 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSpecialties } from "@/lib/api/specialties";
 import { updateUser } from "@/lib/api/users";
+import type { Tables } from "@/schema";
 
-interface Specialty {
-  id: string;
-  name: string;
-  description?: string;
-}
+// Use Supabase-generated type
+type Specialty = Tables<"specialties">;
 
 interface SpecialtySelectionModalProps {
   userId: string;
@@ -31,14 +29,24 @@ export function SpecialtySelectionModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
   useEffect(() => {
     const fetchSpecialties = async () => {
-      try {
-        const data = await getSpecialties();
-        setSpecialties(data || []);
-      } catch (err) {
-        setError("Failed to load specialties");
-        console.error(err);
+      const result = await getSpecialties();
+
+      if (result.success) {
+        setSpecialties(result.data);
+      } else {
+        setError(result.error.userMessage);
       }
     };
     fetchSpecialties();
@@ -50,24 +58,24 @@ export function SpecialtySelectionModal({
     setLoading(true);
     setError(null);
 
-    try {
-      await updateUser({
-        userId,
-        specialtyId: selectedSpecialty,
-      });
+    const result = await updateUser({
+      userId,
+      specialtyId: selectedSpecialty,
+    });
 
-      // Find the selected specialty object to pass back
-      const selectedSpecialtyObj = specialties.find(
-        (s) => s.id === selectedSpecialty
-      );
-      if (selectedSpecialtyObj) {
-        onSpecialtySelected(selectedSpecialtyObj);
-      }
-    } catch (err) {
-      setError("Failed to save specialty selection");
-      console.error(err);
-    } finally {
-      setLoading(false);
+    setLoading(false);
+
+    if (!result.success) {
+      setError(result.error.userMessage);
+      return;
+    }
+
+    // Find the selected specialty object to pass back
+    const selectedSpecialtyObj = specialties.find(
+      (s) => s.id === selectedSpecialty
+    );
+    if (selectedSpecialtyObj) {
+      onSpecialtySelected(selectedSpecialtyObj);
     }
   };
 
