@@ -7,7 +7,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { IconStethoscope, IconNotes } from "@tabler/icons-react";
+import { toast } from "sonner";
 import { getSpecialties } from "@/lib/api/specialties";
 import { updateUser } from "@/lib/api/users";
 import type { Tables } from "@/schema";
@@ -27,7 +29,7 @@ export function SpecialtySelectionModal({
   const [specialties, setSpecialties] = useState<Specialty[]>([]);
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loadingSpecialties, setLoadingSpecialties] = useState(true);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -41,13 +43,17 @@ export function SpecialtySelectionModal({
 
   useEffect(() => {
     const fetchSpecialties = async () => {
+      setLoadingSpecialties(true);
       const result = await getSpecialties();
 
       if (result.success) {
         setSpecialties(result.data);
       } else {
-        setError(result.error.userMessage);
+        toast.error("Erro ao carregar especialidades", {
+          description: result.error.userMessage,
+        });
       }
+      setLoadingSpecialties(false);
     };
     fetchSpecialties();
   }, []);
@@ -56,7 +62,6 @@ export function SpecialtySelectionModal({
     if (!selectedSpecialty) return;
 
     setLoading(true);
-    setError(null);
 
     const result = await updateUser({
       userId,
@@ -66,7 +71,9 @@ export function SpecialtySelectionModal({
     setLoading(false);
 
     if (!result.success) {
-      setError(result.error.userMessage);
+      toast.error("Erro ao selecionar especialidade", {
+        description: result.error.userMessage,
+      });
       return;
     }
 
@@ -75,51 +82,80 @@ export function SpecialtySelectionModal({
       (s) => s.id === selectedSpecialty
     );
     if (selectedSpecialtyObj) {
+      toast.success("Especialidade selecionada com sucesso!");
       onSpecialtySelected(selectedSpecialtyObj);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <Card className="w-full max-w-md mx-4">
-        <CardHeader>
-          <CardTitle>Seleciona a tua especialidade</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="specialty" className="text-sm font-medium">
-              Especialidade
-            </label>
-            <Select
-              value={selectedSpecialty}
-              onValueChange={setSelectedSpecialty}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleciona a tua especialidade..." />
-              </SelectTrigger>
-              <SelectContent>
-                {specialties.map((specialty) => (
-                  <SelectItem key={specialty.id} value={specialty.id}>
-                    {specialty.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+      <Card className="w-full max-w-md border-border shadow-2xl">
+        <CardContent className="p-0">
+          {/* Header */}
+          <div className="relative pt-8 pb-6 px-6">
+            <div className="flex flex-col items-center space-y-4">
+              {/* Icon */}
+              <div className="relative">
+                <div className="h-20 w-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center ring-2 ring-border shadow-lg">
+                  <IconStethoscope className="h-10 w-10 text-primary" />
+                </div>
+                <div className="absolute -top-1 -right-1 h-8 w-8 rounded-full bg-primary flex items-center justify-center shadow-md">
+                  <IconNotes className="h-4 w-4 text-primary-foreground" />
+                </div>
+              </div>
+
+              {/* Title and Description */}
+              <div className="text-center space-y-2">
+                <h2 className="text-2xl font-bold tracking-tight">
+                  Bem-vindo ao InTrack
+                </h2>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  Para começar, seleciona a tua especialidade médica.
+                </p>
+              </div>
+            </div>
           </div>
 
-          {error && (
-            <div className="text-sm text-destructive bg-destructive/10 p-2 rounded">
-              {error}
+          {/* Form */}
+          <div className="px-6 pb-4 space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2"></div>
+              <Select
+                value={selectedSpecialty}
+                onValueChange={setSelectedSpecialty}
+                disabled={loadingSpecialties || loading}
+              >
+                <SelectTrigger className="h-11 w-full">
+                  <SelectValue
+                    placeholder={
+                      loadingSpecialties
+                        ? "A carregar especialidades..."
+                        : "Seleciona a tua especialidade..."
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {specialties.map((specialty) => (
+                    <SelectItem key={specialty.id} value={specialty.id}>
+                      <div className="flex items-center gap-2">
+                        <IconStethoscope className="h-4 w-4 text-muted-foreground" />
+                        {specialty.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          )}
 
-          <Button
-            onClick={handleSubmit}
-            disabled={!selectedSpecialty || loading}
-            className="w-full"
-          >
-            {loading ? "A carregar..." : "Continuar"}
-          </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={!selectedSpecialty || loading || loadingSpecialties}
+              className="w-full h-11 mt-2"
+              size="lg"
+            >
+              {loading ? "A guardar..." : "Continuar"}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
