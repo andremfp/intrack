@@ -3,112 +3,126 @@ import { ChartAreaInteractive } from "@/components/chart-area-interactive";
 import { DataTable } from "@/components/data-table";
 import { SectionCards } from "@/components/section-cards";
 import { SiteHeader } from "@/components/site-header";
-import { SpecialtySelectionModal } from "@/components/specialty-selection-modal";
+import { SpecialtySelectionModal } from "@/components/modals/specialty-selection-modal";
+import { ProfileModal } from "@/components/modals/profile-modal";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 
 import data from "./data.json";
 import { ThemeProvider } from "@/components/theme-provider";
-import { getUser, upsertUser } from "@/lib/api/users";
+import { getCurrentUser, checkUserExists, upsertUser } from "@/lib/api/users";
+import { getSpecialty } from "@/lib/api/specialties";
 import { useEffect, useState } from "react";
+import type { UserData } from "@/lib/api/users";
+import type { Specialty } from "@/lib/api/specialties";
 
 type TabType = "Resumo" | "Consultas";
 
 export default function Page() {
   const [activeTab, setActiveTab] = useState<TabType>("Resumo");
-  const [sidebarUser, setSidebarUser] = useState({
-    name: "Utilizador",
-    email: "",
-    avatar: "https://api.dicebear.com/9.x/initials/svg",
-  });
   const [showSpecialtyModal, setShowSpecialtyModal] = useState(false);
-  const [userProfile, setUserProfile] = useState<{
-    data: {
-      user_id: string;
-      display_name?: string;
-      email?: string;
-      specialty_id?: string | null;
-    };
-    avatar?: string;
-  } | null>(null);
-  const [userSpecialty, setUserSpecialty] = useState<{
-    id: string;
-    name: string;
-    description?: string;
-  } | null>(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserData | null>(null);
+  const [userSpecialty, setUserSpecialty] = useState<Specialty | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
     (async () => {
-      try {
-        const profile = await getUser();
-        if (!profile || !profile.data) {
-          console.error("User not found - attempting to create user profile");
-          try {
-            // Try to create the user profile if it doesn't exist
-            await upsertUser();
-            // Retry getting the user
-            const retryProfile = await getUser();
-            if (!retryProfile || !retryProfile.data) {
-              console.error("Still no user found after upsert attempt");
-              return;
-            }
-            // Use the retry profile
-            const finalProfile = retryProfile;
-            if (!isMounted) return;
+      // First check if user profile exists (clean check, no error logs)
+      const userExistsResult = await checkUserExists();
+      if (!isMounted) return;
 
-            setUserProfile(finalProfile);
-            setSidebarUser({
-              name: finalProfile?.data?.display_name ?? "Utilizador",
-              email: finalProfile?.data?.email ?? "",
-              avatar:
-                finalProfile?.avatar ||
-                "https://api.dicebear.com/9.x/initials/svg",
-            });
+      if (!userExistsResult.success) {
+        setIsLoading(false);
+        toast.error("Erro", {
+          description: userExistsResult.error.userMessage,
+        });
+        return;
+      }
 
-            // Check if user has specialty_id
-            const hasSpecialty = !!finalProfile.data.specialty_id;
-            setShowSpecialtyModal(!hasSpecialty);
-            return;
-          } catch (upsertError) {
-            console.error("Failed to create user profile:", upsertError);
-            return;
-          }
-        }
-
-        console.log(profile);
+      // If user doesn't exist, create it (OAuth first-time login)
+      if (!userExistsResult.data) {
+        console.log("User profile not found, creating new user profile...");
+        const upsertResult = await upsertUser();
         if (!isMounted) return;
 
-        setUserProfile(profile);
-        setSidebarUser({
-          name: profile?.data?.display_name ?? "Utilizador",
-          email: profile?.data?.email ?? "",
-          avatar:
-            profile?.avatar || "https://api.dicebear.com/9.x/initials/svg",
-        });
-
-        // Check if user has specialty_id
-        const hasSpecialty = !!profile.data.specialty_id;
-        setShowSpecialtyModal(!hasSpecialty);
-      } catch (err) {
-        console.error(err);
+        if (!upsertResult.success) {
+          setIsLoading(false);
+          toast.error("Erro", {
+            description: upsertResult.error.userMessage,
+          });
+          return;
+        }
+        console.log("User profile created successfully");
       }
+
+      // Now get the user data (should exist now)
+      const userResult = await getCurrentUser();
+      if (!isMounted) return;
+
+      if (!userResult.success) {
+        setIsLoading(false);
+        toast.error("Erro", {
+          description: userResult.error.userMessage,
+        });
+        return;
+      }
+
+      setUserProfile(userResult.data);
+
+      // Check if user has specialty_id
+      const hasSpecialty = !!userResult.data.data.specialty_id;
+      setShowSpecialtyModal(!hasSpecialty);
+
+      // Load specialty data if user has one
+      if (hasSpecialty && userResult.data.data.specialty_id) {
+        const specialtyResult = await getSpecialty(
+          userResult.data.data.specialty_id
+        );
+
+        if (specialtyResult.success) {
+          setUserSpecialty(specialtyResult.data);
+        } else {
+          toast.error("Erro ao carregar especialidade", {
+            description: specialtyResult.error.userMessage,
+          });
+        }
+      }
+
+      setIsLoading(false);
     })();
     return () => {
       isMounted = false;
     };
   }, []);
 
-  const handleSpecialtySelected = (specialty: {
-    id: string;
-    name: string;
-    description?: string;
-  }) => {
+  const handleSpecialtySelected = (specialty: Specialty) => {
+    // Modal already updated the user in the database
+    // Just store the specialty data and close the modal
     setShowSpecialtyModal(false);
+
     setUserSpecialty(specialty);
   };
 
+  // Show loading state while fetching/creating user profile
+  if (isLoading) {
+    return (
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <div className="flex h-screen items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+            <p className="text-sm text-muted-foreground">A carregar...</p>
+          </div>
+        </div>
+      </ThemeProvider>
+    );
+  }
+
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <Toaster />
       <SidebarProvider
         style={
           {
@@ -119,9 +133,10 @@ export default function Page() {
       >
         <AppSidebar
           variant="inset"
-          user={sidebarUser}
+          user={userProfile}
           activeTab={activeTab}
           onTabChange={setActiveTab}
+          onProfileClick={() => setShowProfileModal(true)}
         />
         <SidebarInset
           className={showSpecialtyModal ? "blur-sm pointer-events-none" : ""}
@@ -154,6 +169,14 @@ export default function Page() {
           <SpecialtySelectionModal
             userId={userProfile.data.user_id}
             onSpecialtySelected={handleSpecialtySelected}
+          />
+        )}
+        {showProfileModal && userSpecialty && (
+          <ProfileModal
+            user={userProfile}
+            specialty={userSpecialty}
+            onClose={() => setShowProfileModal(false)}
+            onUserUpdated={(updatedUser) => setUserProfile(updatedUser)}
           />
         )}
       </SidebarProvider>

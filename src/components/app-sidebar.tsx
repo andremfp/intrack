@@ -18,6 +18,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import type { UserData } from "@/lib/api/users";
 
 const data = {
   navMain: [
@@ -41,24 +42,22 @@ const data = {
   ],
 };
 
-type SidebarUser = {
-  name: string;
-  email: string;
-  avatar: string;
-};
-
 type TabType = "Resumo" | "Consultas";
 
 export function AppSidebar({
   user,
   activeTab,
   onTabChange,
+  onProfileClick,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
-  user: SidebarUser;
+  user: UserData | null;
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
+  onProfileClick: () => void;
 }) {
+  if (!user) return null;
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -85,7 +84,7 @@ export function AppSidebar({
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={user} />
+        <NavUser user={user} onProfileClick={onProfileClick} />
       </SidebarFooter>
     </Sidebar>
   );

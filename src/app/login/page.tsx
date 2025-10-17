@@ -1,9 +1,8 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { LoginForm } from "@/components/login-form";
+import { LoginForm } from "@/components/forms/login-form";
 import { ModeToggle } from "@/components/mode-toggle";
 import { ThemeProvider } from "@/components/theme-provider";
-import { upsertUser } from "@/lib/api/users";
 import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
@@ -12,12 +11,8 @@ export default function LoginPage() {
     (async () => {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
-        try {
-          await upsertUser();
-          navigate("/dashboard", { replace: true });
-        } catch {
-          /* ignore */
-        }
+        // Valid session and user exists, redirect to dashboard
+        navigate("/dashboard", { replace: true });
       }
     })();
   }, [navigate]);

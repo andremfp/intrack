@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { upsertUser } from "@/lib/api/users";
 import { supabase } from "@/lib/supabase";
+import { USER_CONSTANTS } from "@/lib/constants";
 import { useNavigate } from "react-router-dom";
 
 export function SignupForm({
@@ -64,14 +65,14 @@ export function SignupForm({
       if (error) throw error;
       if (data?.user) {
         console.log("User created, attempting to upsert user profile...");
-        try {
-          await upsertUser();
+        const result = await upsertUser();
+
+        if (result.success) {
           console.log("User profile upserted successfully");
           navigate("/dashboard");
-        } catch (upsertError) {
-          console.error("Failed to create user profile:", upsertError);
-          // Still navigate to dashboard - the user can try again
-          navigate("/dashboard");
+        } else {
+          console.error("Failed to create user profile:", result.error);
+          setError(result.error.userMessage);
         }
       }
     } catch (e: unknown) {
@@ -128,7 +129,13 @@ export function SignupForm({
           <FieldSeparator>Ou continuar com</FieldSeparator>
           <Field>
             <FieldLabel htmlFor="name">Nome</FieldLabel>
-            <Input id="name" name="name" type="text" required />
+            <Input
+              id="name"
+              name="name"
+              type="text"
+              required
+              maxLength={USER_CONSTANTS.MAX_DISPLAY_NAME_LENGTH}
+            />
           </Field>
           <Field>
             <FieldLabel htmlFor="email">Email</FieldLabel>

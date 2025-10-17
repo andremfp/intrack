@@ -1,5 +1,5 @@
 import { ModeToggle } from "@/components/mode-toggle";
-import { SignupForm } from "@/components/signup-form";
+import { SignupForm } from "@/components/forms/signup-form";
 import { ThemeProvider } from "@/components/theme-provider";
 
 export default function SignupPage() {
