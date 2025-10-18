@@ -186,6 +186,8 @@ export function ConsultationModal({
       date: typeof formValues.date === "string" ? formValues.date : "",
       sex: typeof formValues.sex === "string" ? formValues.sex : "",
       age: ageNum,
+      age_unit:
+        typeof formValues.age_unit === "string" ? formValues.age_unit : "years",
       health_number: healthNumberNum,
       details,
     };

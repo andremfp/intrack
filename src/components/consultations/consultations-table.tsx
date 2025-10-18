@@ -61,6 +61,20 @@ export function ConsultationsTable({
     }
   };
 
+  const getAgeUnitLabel = (unit: string | null) => {
+    if (!unit) return "";
+    switch (unit) {
+      case "days":
+        return "D";
+      case "months":
+        return "M";
+      case "years":
+        return "Y";
+      default:
+        return unit;
+    }
+  };
+
   const renderCommonField = (consultation: ConsultationMGF, key: string) => {
     switch (key) {
       case "date":
@@ -72,7 +86,12 @@ export function ConsultationsTable({
           </Badge>
         );
       case "age":
-        return consultation.age ?? "-";
+        return consultation.age !== null
+          ? `${consultation.age} ${getAgeUnitLabel(consultation.age_unit)}`
+          : "-";
+      case "age_unit":
+        // Don't display age_unit separately since it's included in age
+        return null;
       case "health_number":
         return consultation.health_number ?? "-";
       default:
@@ -251,7 +270,9 @@ export function ConsultationsTable({
           <TableHeader>
             <TableRow>
               {/* Common fields */}
-              {COMMON_CONSULTATION_FIELDS.map((field) => (
+              {COMMON_CONSULTATION_FIELDS.filter(
+                (field) => field.key !== "age_unit"
+              ).map((field) => (
                 <TableHead key={field.key}>{field.label}</TableHead>
               ))}
 
@@ -265,7 +286,9 @@ export function ConsultationsTable({
             {consultations.map((consultation) => (
               <TableRow key={consultation.id}>
                 {/* Common fields */}
-                {COMMON_CONSULTATION_FIELDS.map((field) => (
+                {COMMON_CONSULTATION_FIELDS.filter(
+                  (field) => field.key !== "age_unit"
+                ).map((field) => (
                   <TableCell
                     key={field.key}
                     className={field.key === "date" ? "font-medium" : ""}

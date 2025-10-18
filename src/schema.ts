@@ -17,6 +17,7 @@ export type Database = {
       consultations: {
         Row: {
           age: number
+          age_unit: string
           created_at: string
           date: string
           details: Json
@@ -29,6 +30,7 @@ export type Database = {
         }
         Insert: {
           age: number
+          age_unit: string
           created_at?: string
           date: string
           details: Json
@@ -41,6 +43,7 @@ export type Database = {
         }
         Update: {
           age?: number
+          age_unit?: string
           created_at?: string
           date?: string
           details?: Json
@@ -64,18 +67,24 @@ export type Database = {
       specialties: {
         Row: {
           code: string
+          created_at: string
           id: string
           name: string
+          updated_at: string | null
         }
         Insert: {
           code: string
+          created_at?: string
           id?: string
           name: string
+          updated_at?: string | null
         }
         Update: {
           code?: string
+          created_at?: string
           id?: string
           name?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -119,10 +128,12 @@ export type Database = {
       consultations_mgf: {
         Row: {
           age: number | null
+          age_unit: string | null
           alert: string | null
           alert_motive: string | null
           chronic_diseases: Json | null
           contraceptive: string | null
+          created_at: string | null
           date: string | null
           details: Json | null
           diagnosis: string | null
@@ -137,6 +148,7 @@ export type Database = {
           sex: string | null
           smoker: boolean | null
           type: string | null
+          updated_at: string | null
           user_id: string | null
         }
         Relationships: []
