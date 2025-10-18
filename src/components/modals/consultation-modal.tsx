@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -228,16 +229,15 @@ export function ConsultationModal({
       case "text":
         if (field.key === "date") {
           return (
-            <div key={fieldId} className="space-y-2">
-              {labelElement}
-              <Input
-                id={fieldId}
-                type="date"
-                value={typeof value === "string" ? value : ""}
-                onChange={(e) => updateValue(e.target.value)}
-                required={field.required}
-              />
-            </div>
+            <DatePicker
+              key={fieldId}
+              id={fieldId}
+              label={field.label}
+              value={typeof value === "string" ? value : ""}
+              onChange={(date: string) => updateValue(date)}
+              placeholder="dd/mm/aaaa"
+              required={field.required}
+            />
           );
         }
         return (
@@ -267,6 +267,7 @@ export function ConsultationModal({
               required={field.required}
               min={field.key === "age" ? "0" : undefined}
               max={field.key === "age" ? "150" : undefined}
+              className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
           </div>
         );
