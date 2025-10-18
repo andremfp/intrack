@@ -12,8 +12,8 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { upsertUser } from "@/lib/api/users";
-import { supabase } from "@/lib/supabase";
-import { USER_CONSTANTS } from "@/lib/constants";
+import { supabase } from "@/supabase";
+import { USER_CONSTANTS } from "@/constants";
 import { useNavigate } from "react-router-dom";
 
 export function SignupForm({

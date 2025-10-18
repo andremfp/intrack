@@ -20,7 +20,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/supabase";
 import { useNavigate } from "react-router-dom";
 import type { UserData } from "@/lib/api/users";
 

@@ -18,7 +18,7 @@ import { useEffect, useState } from "react";
 import type { UserData } from "@/lib/api/users";
 import type { Specialty } from "@/lib/api/specialties";
 import type { ConsultationMGF } from "@/lib/api/consultations";
-import type { TabType } from "@/lib/constants";
+import type { TabType } from "@/constants";
 
 function DashboardContent() {
   const { setOpenMobile, isMobile } = useSidebar();

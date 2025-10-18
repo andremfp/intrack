@@ -7,7 +7,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import type { TabType } from "@/lib/constants";
+import type { TabType } from "@/constants";
 
 export function NavMain({
   items,

@@ -31,7 +31,7 @@ import {
   getICPC2Codes,
   type SpecialtyDetails,
   type SpecialtyField,
-} from "@/lib/constants";
+} from "@/constants";
 
 interface ConsultationModalProps {
   userId: string;

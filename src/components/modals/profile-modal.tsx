@@ -17,7 +17,7 @@ import {
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { updateUser, deleteUserAccount } from "@/lib/api/users";
-import { USER_CONSTANTS } from "@/lib/constants";
+import { USER_CONSTANTS } from "@/constants";
 import type { UserData } from "@/lib/api/users";
 import type { Specialty } from "@/lib/api/specialties";
 

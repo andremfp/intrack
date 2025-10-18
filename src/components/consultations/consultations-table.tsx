@@ -20,7 +20,7 @@ import {
   getSpecialtyFields,
   SPECIALTY_CODES,
   COMMON_CONSULTATION_FIELDS,
-} from "@/lib/constants";
+} from "@/constants";
 
 interface ConsultationsTableProps {
   consultations: ConsultationMGF[];
@@ -80,16 +80,50 @@ export function ConsultationsTable({
     }
   };
 
-  const renderCellValue = (value: unknown, type: string) => {
+  const renderCellValue = (
+    value: unknown,
+    field: { type: string; options?: { value: string; label: string }[] }
+  ) => {
     if (value === null || value === undefined) return "-";
 
-    switch (type) {
+    switch (field.type) {
       case "boolean":
         return (
           <Badge variant={value ? "default" : "secondary"} className="text-xs">
             {value ? "Sim" : "Não"}
           </Badge>
         );
+      case "select": {
+        // Display select value with tooltip showing full label
+        const stringValue = String(value);
+        const option = field.options?.find((opt) => opt.value === stringValue);
+
+        if (!option) {
+          return (
+            <Badge variant="outline" className="text-xs">
+              {stringValue}
+            </Badge>
+          );
+        }
+
+        return (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge
+                  variant="outline"
+                  className="text-xs cursor-help font-semibold"
+                >
+                  {stringValue}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <p className="text-sm">{option.label}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
+      }
       case "text-list": {
         // Display semicolon-separated values as a list
         const items = String(value)
@@ -204,7 +238,7 @@ export function ConsultationsTable({
           Ainda não tem consultas registadas.
         </p>
         <p className="text-muted-foreground text-sm text-center mt-2">
-          Clique em "Quick Create" para adicionar a sua primeira consulta.
+          Clique em "Nova Consulta" para adicionar a sua primeira consulta.
         </p>
       </div>
     );
@@ -252,7 +286,7 @@ export function ConsultationsTable({
                   >
                     {renderCellValue(
                       (consultation as Record<string, unknown>)[field.key],
-                      field.type
+                      field
                     )}
                   </TableCell>
                 ))}

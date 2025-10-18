@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { LoginForm } from "@/components/forms/login-form";
 import { ModeToggle } from "@/components/theme/mode-toggle";
 import { ThemeProvider } from "@/components/theme/theme-provider";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/supabase";
 
 export default function LoginPage() {
   const navigate = useNavigate();

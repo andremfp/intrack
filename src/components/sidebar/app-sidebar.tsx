@@ -19,7 +19,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import type { UserData } from "@/lib/api/users";
-import type { TabType } from "@/lib/constants";
+import type { TabType } from "@/constants";
 
 const data = {
   navMain: [
