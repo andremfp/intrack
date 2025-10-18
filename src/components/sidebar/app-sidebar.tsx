@@ -6,9 +6,9 @@ import {
   IconSearch,
 } from "@tabler/icons-react";
 
-import { NavMain } from "@/components/nav-main";
-import { NavSecondary } from "@/components/nav-secondary";
-import { NavUser } from "@/components/nav-user";
+import { NavMain } from "@/components/sidebar/nav-main";
+import { NavSecondary } from "@/components/sidebar/nav-secondary";
+import { NavUser } from "@/components/sidebar/nav-user";
 import {
   Sidebar,
   SidebarContent,
@@ -19,6 +19,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import type { UserData } from "@/lib/api/users";
+import type { TabType } from "@/lib/constants";
 
 const data = {
   navMain: [
@@ -41,8 +42,6 @@ const data = {
     },
   ],
 };
-
-type TabType = "Resumo" | "Consultas";
 
 export function AppSidebar({
   user,

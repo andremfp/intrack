@@ -12,6 +12,9 @@ export const SPECIALTY_CODES = {
 export type { ICPC2Code } from "./icpc2-codes";
 import { MGF_ICPC2_CODES } from "./icpc2-codes";
 
+// Common types
+export type TabType = "Resumo" | "Consultas";
+
 // Get ICPC-2 codes for a specialty
 export function getICPC2Codes(specialtyCode: string) {
   switch (specialtyCode) {

@@ -1,19 +1,16 @@
-import { AppSidebar } from "@/components/app-sidebar";
+import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { ChartAreaInteractive } from "@/components/chart-area-interactive";
-import { DataTable } from "@/components/data-table";
 import { SectionCards } from "@/components/section-cards";
 import { SiteHeader } from "@/components/site-header";
 import { SpecialtySelectionModal } from "@/components/modals/specialty-selection-modal";
 import { ProfileModal } from "@/components/modals/profile-modal";
 import { ConsultationModal } from "@/components/modals/consultation-modal";
-import { ConsultationsTable } from "@/components/consultations-table";
+import { ConsultationsTable } from "@/components/consultations/consultations-table";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { useSidebar } from "@/components/ui/sidebar-context";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
-
-import data from "./data.json";
-import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeProvider } from "@/components/theme/theme-provider";
 import { getCurrentUser, checkUserExists, upsertUser } from "@/lib/api/users";
 import { getSpecialty } from "@/lib/api/specialties";
 import { getMGFConsultations } from "@/lib/api/consultations";
@@ -21,8 +18,7 @@ import { useEffect, useState } from "react";
 import type { UserData } from "@/lib/api/users";
 import type { Specialty } from "@/lib/api/specialties";
 import type { ConsultationMGF } from "@/lib/api/consultations";
-
-type TabType = "Resumo" | "Consultas";
+import type { TabType } from "@/lib/constants";
 
 function DashboardContent() {
   const { setOpenMobile, isMobile } = useSidebar();
@@ -202,7 +198,6 @@ function DashboardContent() {
                   <div className="px-4 lg:px-6">
                     <ChartAreaInteractive />
                   </div>
-                  <DataTable data={data} />
                 </>
               )}
               {activeTab === "Consultas" && (

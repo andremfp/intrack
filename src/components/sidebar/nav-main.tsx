@@ -7,8 +7,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-
-type TabType = "Resumo" | "Consultas";
+import type { TabType } from "@/lib/constants";
 
 export function NavMain({
   items,

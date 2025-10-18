@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { LoginForm } from "@/components/forms/login-form";
-import { ModeToggle } from "@/components/mode-toggle";
-import { ThemeProvider } from "@/components/theme-provider";
+import { ModeToggle } from "@/components/theme/mode-toggle";
+import { ThemeProvider } from "@/components/theme/theme-provider";
 import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
