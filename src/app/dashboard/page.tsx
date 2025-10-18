@@ -137,8 +137,8 @@ function DashboardContent() {
   if (isLoading) {
     return (
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        <div className="flex h-screen items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
+        <div className="flex h-screen w-full items-center justify-center px-4">
+          <div className="flex flex-col items-center gap-4 text-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
             <p className="text-sm text-muted-foreground">A carregar...</p>
           </div>
