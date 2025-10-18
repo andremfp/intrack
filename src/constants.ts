@@ -71,6 +71,18 @@ export const COMMON_CONSULTATION_FIELDS: SpecialtyField[] = [
     required: true,
   },
   {
+    key: "age_unit",
+    label: "Unidade de Idade",
+    type: "select",
+    required: true,
+    defaultValue: "years",
+    options: [
+      { value: "days", label: "D" },
+      { value: "months", label: "M" },
+      { value: "years", label: "Y" },
+    ],
+  },
+  {
     key: "health_number",
     label: "Número de Saúde",
     type: "number",
@@ -227,5 +239,19 @@ export function getSpecialtyFields(specialtyCode: string): SpecialtyField[] {
       return MGF_FIELDS;
     default:
       return [];
+  }
+}
+
+// Convert age to years based on unit
+export function ageToYears(age: number, unit: string): number {
+  switch (unit) {
+    case "days":
+      return age / 365.25;
+    case "months":
+      return age / 12;
+    case "years":
+      return age;
+    default:
+      return age;
   }
 }
