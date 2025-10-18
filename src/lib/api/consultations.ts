@@ -1,11 +1,8 @@
-import { supabase } from "@/lib/supabase";
-import type { ApiResponse } from "@/lib/errors";
+import { supabase } from "@/supabase";
+import type { ApiResponse } from "@/errors";
 import type { Tables, TablesInsert, TablesUpdate } from "@/schema";
-import { success, failure, AppError } from "@/lib/errors";
-import {
-  getDefaultSpecialtyDetails,
-  type SpecialtyDetails,
-} from "@/lib/constants";
+import { success, failure, AppError } from "@/errors";
+import { getDefaultSpecialtyDetails, type SpecialtyDetails } from "@/constants";
 
 export type Consultation = Tables<"consultations">;
 export type ConsultationInsert = TablesInsert<"consultations">;

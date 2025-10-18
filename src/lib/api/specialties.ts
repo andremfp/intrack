@@ -1,7 +1,7 @@
-import { supabase } from "@/lib/supabase";
-import type { ApiResponse } from "@/lib/errors";
+import { supabase } from "@/supabase";
+import type { ApiResponse } from "@/errors";
 import type { Tables } from "@/schema";
-import { success, failure, AppError, ErrorMessages } from "@/lib/errors";
+import { success, failure, AppError, ErrorMessages } from "@/errors";
 
 export type Specialty = Tables<"specialties">;
 
