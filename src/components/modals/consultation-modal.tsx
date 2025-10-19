@@ -75,6 +75,9 @@ export function ConsultationModal({
       }
     });
 
+    // Initialize specialty_year field (default to year 1)
+    initialValues["specialty_year"] = "1";
+
     // Initialize specialty fields
     specialtyFields.forEach((field) => {
       if (field.type === "text-list") {
@@ -148,6 +151,18 @@ export function ConsultationModal({
       return;
     }
 
+    const specialtyYearValue =
+      typeof formValues.specialty_year === "string"
+        ? formValues.specialty_year
+        : "";
+    const specialtyYearNum = parseInt(specialtyYearValue);
+    if (isNaN(specialtyYearNum) || specialtyYearNum < 1) {
+      toast.error("Ano de especialidade inválido", {
+        description: "Por favor selecione o ano da especialidade.",
+      });
+      return;
+    }
+
     setIsSaving(true);
 
     // Build specialty details dynamically
@@ -184,6 +199,7 @@ export function ConsultationModal({
     const consultation: ConsultationInsert = {
       user_id: userId,
       specialty_id: specialty.id,
+      specialty_year: specialtyYearNum,
       date: typeof formValues.date === "string" ? formValues.date : "",
       sex: typeof formValues.sex === "string" ? formValues.sex : "",
       age: ageNum,
@@ -574,6 +590,44 @@ export function ConsultationModal({
                   }
                   return fieldElement;
                 })}
+
+                {/* Specialty Year Selector */}
+                {specialty && specialty.years > 1 && (
+                  <div className="space-y-2">
+                    <Label htmlFor="specialty_year">
+                      Ano da Especialidade
+                      <span className="text-destructive"> *</span>
+                    </Label>
+                    <Select
+                      value={
+                        typeof formValues.specialty_year === "string"
+                          ? formValues.specialty_year
+                          : "1"
+                      }
+                      onValueChange={(val) =>
+                        setFormValues((prev) => ({
+                          ...prev,
+                          specialty_year: val,
+                        }))
+                      }
+                      required
+                    >
+                      <SelectTrigger id="specialty_year">
+                        <SelectValue placeholder="Selecionar ano" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from(
+                          { length: specialty.years },
+                          (_, i) => i + 1
+                        ).map((year) => (
+                          <SelectItem key={year} value={String(year)}>
+                            {specialty.code.toUpperCase()}.{year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
             </div>
 

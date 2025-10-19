@@ -1,4 +1,13 @@
-import { IconCirclePlusFilled, type Icon } from "@tabler/icons-react";
+import {
+  IconCirclePlusFilled,
+  IconChevronRight,
+  type Icon,
+} from "@tabler/icons-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 import {
   SidebarGroup,
@@ -6,6 +15,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import type { TabType } from "@/constants";
 
@@ -19,6 +31,10 @@ export function NavMain({
     title: string;
     url: string;
     icon?: Icon;
+    items?: {
+      title: string;
+      url: string;
+    }[];
   }[];
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
@@ -41,14 +57,69 @@ export function NavMain({
         </SidebarMenu>
         <SidebarMenu>
           {items.map((item) => {
-            const isActive = activeTab === item.title;
+            // Check if any sub-item is active
+            const isSubItemActive =
+              item.items &&
+              item.items.some((subItem) => {
+                const yearMatch = subItem.title.match(/\.(\d+)$/);
+                const yearNumber = yearMatch ? yearMatch[1] : subItem.title;
+                return activeTab === `${item.title}.${yearNumber}`;
+              });
+            const isActive = activeTab === item.title || isSubItemActive;
+
+            if (item.items && item.items.length > 0) {
+              return (
+                <Collapsible
+                  key={item.title}
+                  asChild
+                  defaultOpen={isActive}
+                  className="group/collapsible"
+                >
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton
+                        tooltip={item.title}
+                        isActive={isActive}
+                      >
+                        {item.icon && <item.icon />}
+                        <span>{item.title}</span>
+                        <IconChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {item.items.map((subItem) => {
+                          // Extract year number from title like "MGF.1" -> "1"
+                          const yearMatch = subItem.title.match(/\.(\d+)$/);
+                          const yearNumber = yearMatch
+                            ? yearMatch[1]
+                            : subItem.title;
+                          const subItemTab = `${item.title}.${yearNumber}`;
+                          const isSubActive = activeTab === subItemTab;
+                          return (
+                            <SidebarMenuSubItem key={subItem.title}>
+                              <SidebarMenuSubButton
+                                isActive={isSubActive}
+                                onClick={() => onTabChange(subItemTab)}
+                              >
+                                <span>{subItem.title}</span>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          );
+                        })}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+              );
+            }
+
             return (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
                   tooltip={item.title}
                   isActive={isActive}
                   onClick={() => onTabChange(item.title as TabType)}
-                  className={isActive ? "bg-accent text-accent-foreground" : ""}
                 >
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>

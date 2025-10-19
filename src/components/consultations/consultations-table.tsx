@@ -25,6 +25,7 @@ import {
 interface ConsultationsTableProps {
   consultations: ConsultationMGF[];
   specialtyCode?: string;
+  specialtyYear?: number;
   onEdit?: (consultation: ConsultationMGF) => void;
   onDelete?: (id: string) => void;
 }
@@ -32,6 +33,7 @@ interface ConsultationsTableProps {
 export function ConsultationsTable({
   consultations,
   specialtyCode = SPECIALTY_CODES.MGF,
+  specialtyYear,
   onEdit,
   onDelete,
 }: ConsultationsTableProps) {
@@ -251,10 +253,13 @@ export function ConsultationsTable({
   };
 
   if (consultations.length === 0) {
+    const yearText = specialtyYear
+      ? ` em ${specialtyCode.toUpperCase()}.${specialtyYear}`
+      : "";
     return (
       <div className="flex flex-col items-center justify-center py-12 px-4">
         <p className="text-muted-foreground text-center">
-          Ainda não tem consultas registadas.
+          Ainda não tem consultas registadas{yearText}.
         </p>
         <p className="text-muted-foreground text-sm text-center mt-2">
           Clique em "Nova Consulta" para adicionar a sua primeira consulta.
