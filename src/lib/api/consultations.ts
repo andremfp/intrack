@@ -108,7 +108,8 @@ export async function deleteConsultation(
 
 // MGF-specific view queries
 export async function getMGFConsultations(
-  userId?: string
+  userId?: string,
+  specialtyYear?: number
 ): Promise<ApiResponse<ConsultationMGF[]>> {
   let query = supabase
     .from("consultations_mgf")
@@ -117,6 +118,10 @@ export async function getMGFConsultations(
 
   if (userId) {
     query = query.eq("user_id", userId);
+  }
+
+  if (specialtyYear !== undefined) {
+    query = query.eq("specialty_year", specialtyYear);
   }
 
   const { data, error } = await query;

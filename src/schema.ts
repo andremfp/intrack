@@ -25,6 +25,7 @@ export type Database = {
           id: string
           sex: string
           specialty_id: string
+          specialty_year: number
           updated_at: string
           user_id: string
         }
@@ -38,6 +39,7 @@ export type Database = {
           id?: string
           sex: string
           specialty_id: string
+          specialty_year: number
           updated_at?: string
           user_id: string
         }
@@ -51,6 +53,7 @@ export type Database = {
           id?: string
           sex?: string
           specialty_id?: string
+          specialty_year?: number
           updated_at?: string
           user_id?: string
         }
@@ -70,21 +73,24 @@ export type Database = {
           created_at: string
           id: string
           name: string
-          updated_at: string | null
+          updated_at: string
+          years: number
         }
         Insert: {
           code: string
           created_at?: string
           id?: string
           name: string
-          updated_at?: string | null
+          updated_at?: string
+          years: number
         }
         Update: {
           code?: string
           created_at?: string
           id?: string
           name?: string
-          updated_at?: string | null
+          updated_at?: string
+          years?: number
         }
         Relationships: []
       }
@@ -147,6 +153,7 @@ export type Database = {
           procedure: string | null
           sex: string | null
           smoker: boolean | null
+          specialty_year: number | null
           type: string | null
           updated_at: string | null
           user_id: string | null

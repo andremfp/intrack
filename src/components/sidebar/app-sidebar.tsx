@@ -19,10 +19,37 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import type { UserData } from "@/lib/api/users";
+import type { Specialty } from "@/lib/api/specialties";
 import type { TabType } from "@/constants";
 
-const data = {
-  navMain: [
+const navSecondary = [
+  {
+    title: "Procurar",
+    url: "#",
+    icon: IconSearch,
+  },
+];
+
+export function AppSidebar({
+  user,
+  specialty,
+  activeTab,
+  onTabChange,
+  onProfileClick,
+  onNewConsultation,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & {
+  user: UserData | null;
+  specialty: Specialty | null;
+  activeTab: TabType;
+  onTabChange: (tab: TabType) => void;
+  onProfileClick: () => void;
+  onNewConsultation?: () => void;
+}) {
+  if (!user) return null;
+
+  // Build nav items dynamically based on specialty
+  const navMain = [
     {
       title: "Resumo",
       url: "#",
@@ -32,32 +59,15 @@ const data = {
       title: "Consultas",
       url: "#",
       icon: IconTable,
+      items:
+        specialty && specialty.years > 1
+          ? Array.from({ length: specialty.years }, (_, i) => ({
+              title: `${specialty.code.toUpperCase()}.${i + 1}`,
+              url: "#",
+            }))
+          : undefined,
     },
-  ],
-  navSecondary: [
-    {
-      title: "Procurar",
-      url: "#",
-      icon: IconSearch,
-    },
-  ],
-};
-
-export function AppSidebar({
-  user,
-  activeTab,
-  onTabChange,
-  onProfileClick,
-  onNewConsultation,
-  ...props
-}: React.ComponentProps<typeof Sidebar> & {
-  user: UserData | null;
-  activeTab: TabType;
-  onTabChange: (tab: TabType) => void;
-  onProfileClick: () => void;
-  onNewConsultation?: () => void;
-}) {
-  if (!user) return null;
+  ];
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -78,12 +88,12 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <NavMain
-          items={data.navMain}
+          items={navMain}
           activeTab={activeTab}
           onTabChange={onTabChange}
           onNewConsultation={onNewConsultation}
         />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavSecondary items={navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} onProfileClick={onProfileClick} />

@@ -32,6 +32,12 @@ function DashboardContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingConsultations, setIsLoadingConsultations] = useState(false);
 
+  // Parse activeTab to get main tab and specialty year
+  const mainTab = activeTab.startsWith("Consultas.") ? "Consultas" : activeTab;
+  const activeSpecialtyYear = activeTab.startsWith("Consultas.")
+    ? parseInt(activeTab.split(".")[1])
+    : 1;
+
   useEffect(() => {
     let isMounted = true;
     (async () => {
@@ -107,13 +113,17 @@ function DashboardContent() {
     // Modal already updated the user in the database
     // Just store the specialty data and close the modal
     setShowSpecialtyModal(false);
-
     setUserSpecialty(specialty);
+
+    // Set default active tab to first year if specialty has multiple years
+    if (specialty.years > 1) {
+      setActiveTab("Consultas.1");
+    }
   };
 
-  const loadConsultations = async (userId: string) => {
+  const loadConsultations = async (userId: string, specialtyYear?: number) => {
     setIsLoadingConsultations(true);
-    const result = await getMGFConsultations(userId);
+    const result = await getMGFConsultations(userId, specialtyYear);
 
     if (result.success) {
       setConsultations(result.data);
@@ -126,12 +136,12 @@ function DashboardContent() {
     setIsLoadingConsultations(false);
   };
 
-  // Load consultations when user profile is available
+  // Load consultations when user profile or specialty year changes
   useEffect(() => {
-    if (userProfile?.data.user_id) {
-      loadConsultations(userProfile.data.user_id);
+    if (userProfile?.data.user_id && mainTab === "Consultas") {
+      loadConsultations(userProfile.data.user_id, activeSpecialtyYear);
     }
-  }, [userProfile?.data.user_id]);
+  }, [userProfile?.data.user_id, activeSpecialtyYear, mainTab]);
 
   // Show loading state while fetching/creating user profile
   if (isLoading) {
@@ -153,6 +163,7 @@ function DashboardContent() {
       <AppSidebar
         variant="inset"
         user={userProfile}
+        specialty={userSpecialty}
         activeTab={activeTab}
         onTabChange={(tab) => {
           // Close sidebar on mobile when changing tabs
@@ -188,11 +199,11 @@ function DashboardContent() {
             : ""
         }
       >
-        <SiteHeader specialty={userSpecialty} />
+        <SiteHeader specialty={userSpecialty} activeTab={activeTab} />
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              {activeTab === "Resumo" && (
+              {mainTab === "Resumo" && (
                 <>
                   <SectionCards />
                   <div className="px-4 lg:px-6">
@@ -200,7 +211,7 @@ function DashboardContent() {
                   </div>
                 </>
               )}
-              {activeTab === "Consultas" && (
+              {mainTab === "Consultas" && (
                 <div className="px-4 lg:px-6">
                   {isLoadingConsultations ? (
                     <div className="flex items-center justify-center py-12">
@@ -215,6 +226,11 @@ function DashboardContent() {
                     <ConsultationsTable
                       consultations={consultations}
                       specialtyCode={userSpecialty?.code}
+                      specialtyYear={
+                        userSpecialty && userSpecialty.years > 1
+                          ? activeSpecialtyYear
+                          : undefined
+                      }
                     />
                   )}
                 </div>
@@ -245,7 +261,7 @@ function DashboardContent() {
           onConsultationCreated={() => {
             // Refresh consultations list
             if (userProfile?.data.user_id) {
-              loadConsultations(userProfile.data.user_id);
+              loadConsultations(userProfile.data.user_id, activeSpecialtyYear);
             }
           }}
         />
