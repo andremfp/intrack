@@ -13,12 +13,16 @@ import { toast } from "sonner";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { getCurrentUser, checkUserExists, upsertUser } from "@/lib/api/users";
 import { getSpecialty } from "@/lib/api/specialties";
-import { getMGFConsultations } from "@/lib/api/consultations";
-import { useEffect, useState } from "react";
+import {
+  getMGFConsultations,
+  deleteConsultation,
+} from "@/lib/api/consultations";
+import { useEffect, useState, useCallback } from "react";
 import type { UserData } from "@/lib/api/users";
 import type { Specialty } from "@/lib/api/specialties";
 import type { ConsultationMGF } from "@/lib/api/consultations";
 import type { TabType } from "@/constants";
+import { PAGINATION_CONSTANTS } from "@/constants";
 
 function DashboardContent() {
   const { setOpenMobile, isMobile } = useSidebar();
@@ -26,11 +30,17 @@ function DashboardContent() {
   const [showSpecialtyModal, setShowSpecialtyModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showConsultationModal, setShowConsultationModal] = useState(false);
+  const [editingConsultation, setEditingConsultation] =
+    useState<ConsultationMGF | null>(null);
   const [userProfile, setUserProfile] = useState<UserData | null>(null);
   const [userSpecialty, setUserSpecialty] = useState<Specialty | null>(null);
   const [consultations, setConsultations] = useState<ConsultationMGF[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(PAGINATION_CONSTANTS.CONSULTATIONS_PAGE_SIZE); // Fixed page size
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingConsultations, setIsLoadingConsultations] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Parse activeTab to get main tab and specialty year
   const mainTab = activeTab.startsWith("Consultas.") ? "Consultas" : activeTab;
@@ -121,27 +131,141 @@ function DashboardContent() {
     }
   };
 
-  const loadConsultations = async (userId: string, specialtyYear?: number) => {
+  const loadConsultations = useCallback(
+    async (userId: string, specialtyYear?: number, page: number = 1) => {
+      setIsLoadingConsultations(true);
+      const result = await getMGFConsultations(
+        userId,
+        specialtyYear,
+        page,
+        pageSize
+      );
+
+      if (result.success) {
+        setConsultations(result.data.consultations);
+        setTotalCount(result.data.totalCount);
+        setCurrentPage(page);
+      } else {
+        toast.error("Erro ao carregar consultas", {
+          description: result.error.userMessage,
+        });
+      }
+
+      setIsLoadingConsultations(false);
+      setIsInitialLoad(false);
+    },
+    [pageSize]
+  );
+
+  const handleRowClick = (consultation: ConsultationMGF) => {
+    setEditingConsultation(consultation);
+    setShowConsultationModal(true);
+  };
+
+  const handleCloseConsultationModal = () => {
+    setShowConsultationModal(false);
+    setEditingConsultation(null);
+  };
+
+  const handleAddConsultation = () => {
+    setEditingConsultation(null);
+    setShowConsultationModal(true);
+  };
+
+  const handleBulkDelete = async (ids: string[]) => {
+    const deletedIds: string[] = [];
+    const failedIds: string[] = [];
+
+    // Show loading state
     setIsLoadingConsultations(true);
-    const result = await getMGFConsultations(userId, specialtyYear);
 
-    if (result.success) {
-      setConsultations(result.data);
-    } else {
-      toast.error("Erro ao carregar consultas", {
-        description: result.error.userMessage,
+    try {
+      // Delete all consultations in parallel for better performance
+      const deletePromises = ids.map((id) => deleteConsultation(id));
+      const results = await Promise.allSettled(deletePromises);
+
+      // Track successes and failures
+      results.forEach((result, index) => {
+        if (result.status === "fulfilled" && result.value.success) {
+          deletedIds.push(ids[index]);
+        } else {
+          failedIds.push(ids[index]);
+          const errorMsg =
+            result.status === "rejected"
+              ? result.reason
+              : !result.value.success
+              ? result.value.error
+              : "Unknown error";
+          console.error(
+            `Failed to delete consultation ${ids[index]}:`,
+            errorMsg
+          );
+        }
       });
-    }
 
-    setIsLoadingConsultations(false);
+      // Show appropriate feedback
+      if (deletedIds.length > 0 && failedIds.length === 0) {
+        toast.success(
+          `${deletedIds.length} consulta(s) eliminada(s) com sucesso`
+        );
+      } else if (deletedIds.length > 0 && failedIds.length > 0) {
+        toast.warning("Eliminação parcial", {
+          description: `${deletedIds.length} eliminada(s), ${failedIds.length} falharam.`,
+        });
+      } else {
+        toast.error("Erro ao eliminar consultas", {
+          description: "Nenhuma consulta foi eliminada.",
+        });
+      }
+
+      // Always refresh consultations list to reflect changes
+      if (userProfile?.data.user_id) {
+        await loadConsultations(
+          userProfile.data.user_id,
+          activeSpecialtyYear,
+          currentPage
+        );
+      }
+    } catch (error) {
+      console.error("Unexpected error during bulk delete:", error);
+      toast.error("Erro ao eliminar consultas", {
+        description: "Ocorreu um erro inesperado.",
+      });
+
+      // Still refresh to show any partial deletions
+      if (userProfile?.data.user_id) {
+        await loadConsultations(
+          userProfile.data.user_id,
+          activeSpecialtyYear,
+          currentPage
+        );
+      }
+    }
+  };
+
+  const handlePageChange = async (page: number) => {
+    if (userProfile?.data.user_id) {
+      await loadConsultations(
+        userProfile.data.user_id,
+        activeSpecialtyYear,
+        page
+      );
+    }
   };
 
   // Load consultations when user profile or specialty year changes
   useEffect(() => {
     if (userProfile?.data.user_id && mainTab === "Consultas") {
-      loadConsultations(userProfile.data.user_id, activeSpecialtyYear);
+      setIsInitialLoad(true); // Show full spinner when changing filters
+      setCurrentPage(1); // Reset to first page when changing filters
+      loadConsultations(userProfile.data.user_id, activeSpecialtyYear, 1);
     }
-  }, [userProfile?.data.user_id, activeSpecialtyYear, mainTab]);
+  }, [
+    userProfile?.data.user_id,
+    activeSpecialtyYear,
+    mainTab,
+    loadConsultations,
+  ]);
 
   // Show loading state while fetching/creating user profile
   if (isLoading) {
@@ -184,6 +308,7 @@ function DashboardContent() {
           if (isMobile) {
             setOpenMobile(false);
           }
+          setEditingConsultation(null);
           setShowConsultationModal(true);
         }}
         className={
@@ -201,41 +326,54 @@ function DashboardContent() {
       >
         <SiteHeader specialty={userSpecialty} activeTab={activeTab} />
         <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-2">
-            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              {mainTab === "Resumo" && (
-                <>
-                  <SectionCards />
-                  <div className="px-4 lg:px-6">
-                    <ChartAreaInteractive />
-                  </div>
-                </>
-              )}
-              {mainTab === "Consultas" && (
+          <div className="@container/main flex flex-1 flex-col">
+            {mainTab === "Resumo" && (
+              <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+                <SectionCards />
                 <div className="px-4 lg:px-6">
-                  {isLoadingConsultations ? (
-                    <div className="flex items-center justify-center py-12">
-                      <div className="flex flex-col items-center gap-4">
-                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-                        <p className="text-sm text-muted-foreground">
-                          A carregar consultas...
-                        </p>
-                      </div>
+                  <ChartAreaInteractive />
+                </div>
+              </div>
+            )}
+            {mainTab === "Consultas" && (
+              <div className="px-4 lg:px-6 flex-1 flex flex-col">
+                {isLoadingConsultations && isInitialLoad ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                      <p className="text-sm text-muted-foreground">
+                        A carregar consultas...
+                      </p>
                     </div>
-                  ) : (
+                  </div>
+                ) : (
+                  <div className="flex-1 flex flex-col relative">
+                    {/* Subtle loading overlay for subsequent loads */}
+                    {isLoadingConsultations && (
+                      <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
+                        <div className="h-6 w-6 animate-spin rounded-full border-3 border-primary border-t-transparent"></div>
+                      </div>
+                    )}
                     <ConsultationsTable
                       consultations={consultations}
+                      totalCount={totalCount}
+                      currentPage={currentPage}
+                      pageSize={pageSize}
                       specialtyCode={userSpecialty?.code}
                       specialtyYear={
                         userSpecialty && userSpecialty.years > 1
                           ? activeSpecialtyYear
                           : undefined
                       }
+                      onRowClick={handleRowClick}
+                      onAddConsultation={handleAddConsultation}
+                      onBulkDelete={handleBulkDelete}
+                      onPageChange={handlePageChange}
                     />
-                  )}
-                </div>
-              )}
-            </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </SidebarInset>
@@ -257,11 +395,16 @@ function DashboardContent() {
         <ConsultationModal
           userId={userProfile.data.user_id}
           specialty={userSpecialty}
-          onClose={() => setShowConsultationModal(false)}
-          onConsultationCreated={() => {
+          editingConsultation={editingConsultation}
+          onClose={handleCloseConsultationModal}
+          onConsultationSaved={() => {
             // Refresh consultations list
             if (userProfile?.data.user_id) {
-              loadConsultations(userProfile.data.user_id, activeSpecialtyYear);
+              loadConsultations(
+                userProfile.data.user_id,
+                activeSpecialtyYear,
+                currentPage
+              );
             }
           }}
         />

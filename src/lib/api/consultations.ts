@@ -2,7 +2,11 @@ import { supabase } from "@/supabase";
 import type { ApiResponse } from "@/errors";
 import type { Tables, TablesInsert, TablesUpdate } from "@/schema";
 import { success, failure, AppError } from "@/errors";
-import { getDefaultSpecialtyDetails, type SpecialtyDetails } from "@/constants";
+import {
+  getDefaultSpecialtyDetails,
+  type SpecialtyDetails,
+  PAGINATION_CONSTANTS,
+} from "@/constants";
 
 export type Consultation = Tables<"consultations">;
 export type ConsultationInsert = TablesInsert<"consultations">;
@@ -109,12 +113,20 @@ export async function deleteConsultation(
 // MGF-specific view queries
 export async function getMGFConsultations(
   userId?: string,
-  specialtyYear?: number
-): Promise<ApiResponse<ConsultationMGF[]>> {
+  specialtyYear?: number,
+  page: number = 1,
+  pageSize: number = PAGINATION_CONSTANTS.CONSULTATIONS_PAGE_SIZE
+): Promise<
+  ApiResponse<{ consultations: ConsultationMGF[]; totalCount: number }>
+> {
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
   let query = supabase
     .from("consultations_mgf")
-    .select("*")
-    .order("date", { ascending: false });
+    .select("*", { count: "exact" })
+    .order("date", { ascending: false })
+    .range(from, to);
 
   if (userId) {
     query = query.eq("user_id", userId);
@@ -124,10 +136,13 @@ export async function getMGFConsultations(
     query = query.eq("specialty_year", specialtyYear);
   }
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
 
   if (error) return failure(error, "getMGFConsultations");
-  if (!data) return success([]);
+  if (!data) return success({ consultations: [], totalCount: 0 });
 
-  return success(data);
+  return success({
+    consultations: data,
+    totalCount: count || 0,
+  });
 }

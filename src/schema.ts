@@ -145,7 +145,7 @@ export type Database = {
           diagnosis: string | null
           health_number: number | null
           id: string | null
-          new_contraceptive: boolean | null
+          new_contraceptive: string | null
           new_diagnosis: string | null
           notes: string | null
           presential: boolean | null
@@ -154,7 +154,7 @@ export type Database = {
           sex: string | null
           smoker: boolean | null
           specialty_year: number | null
-          type: string | null
+          type: Json | null
           updated_at: string | null
           user_id: string | null
         }
