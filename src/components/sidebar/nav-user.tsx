@@ -23,6 +23,7 @@ import {
 import { supabase } from "@/supabase";
 import { useNavigate } from "react-router-dom";
 import type { UserData } from "@/lib/api/users";
+import { userCache } from "@/lib/user-cache";
 
 export function NavUser({
   user,
@@ -90,6 +91,8 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onSelect={async () => {
+                // Clear all cached user data before logging out
+                userCache.clearAllCache();
                 await supabase.auth.signOut();
                 navigate("/");
               }}

@@ -20,6 +20,7 @@ import { updateUser, deleteUserAccount } from "@/lib/api/users";
 import { USER_CONSTANTS } from "@/constants";
 import type { UserData } from "@/lib/api/users";
 import type { Specialty } from "@/lib/api/specialties";
+import { userCache } from "@/lib/user-cache";
 
 interface ProfileModalProps {
   user: UserData | null;
@@ -126,7 +127,8 @@ export function ProfileModal({
       return;
     }
 
-    // Account deleted, redirect to login and reload to unmount dashboard
+    // Account deleted, clear cache and redirect to login
+    userCache.clearAllCache();
     toast.success("Conta eliminada com sucesso");
     window.location.href = "/";
   };
