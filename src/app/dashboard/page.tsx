@@ -11,6 +11,7 @@ import { useSidebar } from "@/components/ui/sidebar-context";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { ThemeProvider } from "@/components/theme/theme-provider";
+import { cn } from "@/lib/utils";
 import { getCurrentUser, checkUserExists, upsertUser } from "@/lib/api/users";
 import { getSpecialty } from "@/lib/api/specialties";
 import {
@@ -18,27 +19,35 @@ import {
   deleteConsultation,
 } from "@/lib/api/consultations";
 import { useEffect, useState, useCallback } from "react";
-import type { UserData } from "@/lib/api/users";
 import type { Specialty } from "@/lib/api/specialties";
 import type { ConsultationMGF } from "@/lib/api/consultations";
-import type { TabType } from "@/constants";
 import { PAGINATION_CONSTANTS } from "@/constants";
+import {
+  useCachedUserProfile,
+  useCachedUserSpecialty,
+  useCachedActiveTab,
+} from "@/hooks/use-user-cache";
 
 function DashboardContent() {
   const { setOpenMobile, isMobile } = useSidebar();
-  const [activeTab, setActiveTab] = useState<TabType>("Resumo");
+
+  // Use cached user data hooks for automatic localStorage sync
+  const [userProfile, updateUserProfile] = useCachedUserProfile();
+  const [userSpecialty, updateUserSpecialty] = useCachedUserSpecialty();
+  const [activeTab, updateActiveTab] = useCachedActiveTab();
+
   const [showSpecialtyModal, setShowSpecialtyModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showConsultationModal, setShowConsultationModal] = useState(false);
   const [editingConsultation, setEditingConsultation] =
     useState<ConsultationMGF | null>(null);
-  const [userProfile, setUserProfile] = useState<UserData | null>(null);
-  const [userSpecialty, setUserSpecialty] = useState<Specialty | null>(null);
+
   const [consultations, setConsultations] = useState<ConsultationMGF[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(PAGINATION_CONSTANTS.CONSULTATIONS_PAGE_SIZE); // Fixed page size
-  const [isLoading, setIsLoading] = useState(true);
+  // Only show full loading if no cached data exists
+  const [isLoading, setIsLoading] = useState(!userProfile);
   const [isLoadingConsultations, setIsLoadingConsultations] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
@@ -91,7 +100,8 @@ function DashboardContent() {
         return;
       }
 
-      setUserProfile(userResult.data);
+      // Update state and cache user profile
+      updateUserProfile(userResult.data);
 
       // Check if user has specialty_id
       const hasSpecialty = !!userResult.data.data.specialty_id;
@@ -104,7 +114,7 @@ function DashboardContent() {
         );
 
         if (specialtyResult.success) {
-          setUserSpecialty(specialtyResult.data);
+          updateUserSpecialty(specialtyResult.data);
         } else {
           toast.error("Erro ao carregar especialidade", {
             description: specialtyResult.error.userMessage,
@@ -117,17 +127,17 @@ function DashboardContent() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [updateUserProfile, updateUserSpecialty]);
 
   const handleSpecialtySelected = (specialty: Specialty) => {
     // Modal already updated the user in the database
     // Just store the specialty data and close the modal
     setShowSpecialtyModal(false);
-    setUserSpecialty(specialty);
+    updateUserSpecialty(specialty);
 
     // Set default active tab to first year if specialty has multiple years
     if (specialty.years > 1) {
-      setActiveTab("Consultas.1");
+      updateActiveTab("Consultas.1");
     }
   };
 
@@ -267,14 +277,14 @@ function DashboardContent() {
     loadConsultations,
   ]);
 
-  // Show loading state while fetching/creating user profile
+  // Show subtle loading state while fetching/creating user profile
   if (isLoading) {
     return (
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <div className="flex h-screen w-full items-center justify-center px-4">
-          <div className="flex flex-col items-center gap-4 text-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-            <p className="text-sm text-muted-foreground">A carregar...</p>
+          <div className="flex flex-col items-center gap-3 text-center">
+            <div className="h-6 w-6 animate-spin rounded-full border-3 border-primary border-t-transparent"></div>
+            <p className="text-xs text-muted-foreground">A carregar...</p>
           </div>
         </div>
       </ThemeProvider>
@@ -294,7 +304,7 @@ function DashboardContent() {
           if (isMobile) {
             setOpenMobile(false);
           }
-          setActiveTab(tab);
+          updateActiveTab(tab);
         }}
         onProfileClick={() => {
           // Close sidebar on mobile when opening profile modal
@@ -318,15 +328,16 @@ function DashboardContent() {
         }
       />
       <SidebarInset
-        className={
+        className={cn(
+          "h-screen md:h-[calc(100vh-1rem)] overflow-hidden px-4 pb-4",
           showSpecialtyModal || showConsultationModal
             ? "blur-sm pointer-events-none"
             : ""
-        }
+        )}
       >
         <SiteHeader specialty={userSpecialty} activeTab={activeTab} />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col min-h-0">
+          <div className="@container/main flex flex-1 flex-col min-h-0">
             {mainTab === "Resumo" && (
               <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
                 <SectionCards />
@@ -336,7 +347,7 @@ function DashboardContent() {
               </div>
             )}
             {mainTab === "Consultas" && (
-              <div className="px-4 lg:px-6 flex-1 flex flex-col">
+              <div className="flex-1 flex flex-col min-h-0">
                 {isLoadingConsultations && isInitialLoad ? (
                   <div className="flex items-center justify-center py-12">
                     <div className="flex flex-col items-center gap-4">
@@ -347,7 +358,7 @@ function DashboardContent() {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex-1 flex flex-col relative">
+                  <div className="flex-1 flex flex-col relative min-h-0">
                     {/* Subtle loading overlay for subsequent loads */}
                     {isLoadingConsultations && (
                       <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
@@ -388,7 +399,7 @@ function DashboardContent() {
           user={userProfile}
           specialty={userSpecialty}
           onClose={() => setShowProfileModal(false)}
-          onUserUpdated={(updatedUser) => setUserProfile(updatedUser)}
+          onUserUpdated={updateUserProfile}
         />
       )}
       {showConsultationModal && userProfile && (
@@ -419,7 +430,7 @@ export default function Page() {
       style={
         {
           "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
+          "--header-height": "calc(var(--spacing) * 16)",
         } as React.CSSProperties
       }
     >

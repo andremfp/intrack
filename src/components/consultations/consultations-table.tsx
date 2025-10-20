@@ -333,22 +333,55 @@ export function ConsultationsTable({
       ? ` em ${specialtyCode.toUpperCase()}.${specialtyYear}`
       : "";
     return (
-      <div className="flex flex-col items-center justify-center py-12 px-4">
-        <p className="text-muted-foreground text-center">
-          Ainda não tem consultas registadas{yearText}.
-        </p>
-        <p className="text-muted-foreground text-sm text-center mt-2">
-          Clique em "Nova Consulta" para adicionar a sua primeira consulta.
-        </p>
+      <div className="flex flex-col h-full gap-2">
+        {/* Action buttons */}
+        <div className="flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-2 pt-2">
+            {onAddConsultation && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onAddConsultation}
+                className="h-8"
+              >
+                <IconPlus className="h-4 w-4" />
+                Adicionar Consulta
+              </Button>
+            )}
+            {onBulkDelete && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleDeleteMode}
+                className="h-8"
+              >
+                <IconTrash className="h-4 w-4" />
+                {isDeleteMode ? "Cancelar" : "Eliminar"}
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Empty state */}
+        <div className="flex flex-1 items-center justify-center py-12 px-4">
+          <div className="text-center">
+            <p className="text-muted-foreground">
+              Ainda não tem consultas registadas{yearText}.
+            </p>
+            <p className="text-muted-foreground text-sm mt-2">
+              Clique em "Nova Consulta" para adicionar a sua primeira consulta.
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col h-full gap-2">
       {/* Action buttons */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-2 pt-2">
           {onAddConsultation && (
             <Button
               variant="outline"
@@ -393,8 +426,8 @@ export function ConsultationsTable({
         )}
       </div>
 
-      <div className="rounded-lg border overflow-hidden flex flex-col h-[calc(100vh-9rem)] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40">
-        <div className="overflow-auto flex-1 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40">
+      <div className="rounded-lg border overflow-hidden flex flex-col flex-1 min-h-0 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40">
+        <div className="overflow-auto flex-1 min-h-0 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40">
           <Table>
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
