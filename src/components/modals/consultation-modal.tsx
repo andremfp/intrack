@@ -22,9 +22,13 @@ import {
 import { toast } from "sonner";
 import {
   createConsultation,
+  updateConsultation,
   prepareConsultationDetails,
 } from "@/lib/api/consultations";
-import type { ConsultationInsert } from "@/lib/api/consultations";
+import type {
+  ConsultationInsert,
+  ConsultationMGF,
+} from "@/lib/api/consultations";
 import type { Specialty } from "@/lib/api/specialties";
 import {
   COMMON_CONSULTATION_FIELDS,
@@ -37,16 +41,19 @@ import {
 interface ConsultationModalProps {
   userId: string;
   specialty: Specialty | null;
+  editingConsultation?: ConsultationMGF | null;
   onClose: () => void;
-  onConsultationCreated?: () => void;
+  onConsultationSaved?: () => void;
 }
 
 export function ConsultationModal({
   userId,
   specialty,
+  editingConsultation,
   onClose,
-  onConsultationCreated,
+  onConsultationSaved,
 }: ConsultationModalProps) {
+  const isEditing = !!editingConsultation;
   const [isSaving, setIsSaving] = useState(false);
 
   // Get specialty-specific fields and ICPC-2 codes
@@ -64,35 +71,80 @@ export function ConsultationModal({
   >(() => {
     const initialValues: Record<string, string | string[]> = {};
 
-    // Initialize common fields
-    COMMON_CONSULTATION_FIELDS.forEach((field) => {
-      if (field.key === "date") {
-        initialValues[field.key] = new Date().toISOString().split("T")[0];
-      } else if (field.defaultValue !== undefined) {
-        initialValues[field.key] = String(field.defaultValue);
-      } else {
-        initialValues[field.key] = "";
-      }
-    });
+    if (isEditing && editingConsultation) {
+      // Populate with existing consultation data
+      COMMON_CONSULTATION_FIELDS.forEach((field) => {
+        const value = (editingConsultation as Record<string, unknown>)[
+          field.key
+        ];
+        if (field.key === "date" && value) {
+          initialValues[field.key] = new Date(value as string)
+            .toISOString()
+            .split("T")[0];
+        } else if (value !== null && value !== undefined) {
+          initialValues[field.key] = String(value);
+        } else {
+          initialValues[field.key] = "";
+        }
+      });
 
-    // Initialize specialty_year field (default to year 1)
-    initialValues["specialty_year"] = "1";
+      // Set specialty year
+      initialValues["specialty_year"] = String(
+        editingConsultation.specialty_year || 1
+      );
 
-    // Initialize specialty fields
-    specialtyFields.forEach((field) => {
-      if (field.type === "text-list") {
-        initialValues[field.key] = [""];
-      } else if (field.type === "boolean") {
-        initialValues[field.key] =
-          field.defaultValue !== undefined
-            ? String(field.defaultValue)
-            : "false";
-      } else if (field.defaultValue !== undefined) {
-        initialValues[field.key] = String(field.defaultValue);
-      } else {
-        initialValues[field.key] = "";
-      }
-    });
+      // Populate specialty fields from details
+      const details =
+        (editingConsultation.details as Record<string, unknown>) || {};
+      specialtyFields.forEach((field) => {
+        const value = details[field.key];
+        if (field.type === "text-list") {
+          if (typeof value === "string" && value) {
+            initialValues[field.key] = value
+              .split(";")
+              .map((item) => item.trim());
+          } else {
+            initialValues[field.key] = [""];
+          }
+        } else if (field.type === "boolean") {
+          initialValues[field.key] = value ? "true" : "false";
+        } else if (value !== null && value !== undefined) {
+          initialValues[field.key] = String(value);
+        } else {
+          initialValues[field.key] = "";
+        }
+      });
+    } else {
+      // Initialize with default values for new consultation
+      COMMON_CONSULTATION_FIELDS.forEach((field) => {
+        if (field.key === "date") {
+          initialValues[field.key] = new Date().toISOString().split("T")[0];
+        } else if (field.defaultValue !== undefined) {
+          initialValues[field.key] = String(field.defaultValue);
+        } else {
+          initialValues[field.key] = "";
+        }
+      });
+
+      // Initialize specialty_year field (default to year 1)
+      initialValues["specialty_year"] = "1";
+
+      // Initialize specialty fields
+      specialtyFields.forEach((field) => {
+        if (field.type === "text-list") {
+          initialValues[field.key] = [""];
+        } else if (field.type === "boolean") {
+          initialValues[field.key] =
+            field.defaultValue !== undefined
+              ? String(field.defaultValue)
+              : "false";
+        } else if (field.defaultValue !== undefined) {
+          initialValues[field.key] = String(field.defaultValue);
+        } else {
+          initialValues[field.key] = "";
+        }
+      });
+    }
 
     return initialValues;
   });
@@ -209,19 +261,26 @@ export function ConsultationModal({
       details,
     };
 
-    const result = await createConsultation(consultation);
+    let result;
+    if (isEditing && editingConsultation) {
+      result = await updateConsultation(editingConsultation.id!, consultation);
+    } else {
+      result = await createConsultation(consultation);
+    }
 
     setIsSaving(false);
 
     if (!result.success) {
-      toast.error("Erro ao criar consulta", {
+      toast.error(`Erro ao ${isEditing ? "atualizar" : "criar"} consulta`, {
         description: result.error.userMessage,
       });
       return;
     }
 
-    toast.success("Consulta criada com sucesso!");
-    onConsultationCreated?.();
+    toast.success(
+      `Consulta ${isEditing ? "atualizada" : "criada"} com sucesso!`
+    );
+    onConsultationSaved?.();
     onClose();
   };
 
@@ -562,7 +621,10 @@ export function ConsultationModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <Card className="w-full pt-0 max-w-3xl max-h-[90vh] overflow-y-auto">
         <CardHeader className="py-2 flex flex-row items-center justify-between sticky top-0 bg-background z-10">
-          <CardTitle>Nova Consulta - {specialty?.name || "MGF"}</CardTitle>
+          <CardTitle>
+            {isEditing ? "Editar Consulta" : "Nova Consulta"} -{" "}
+            {specialty?.name || "MGF"}
+          </CardTitle>
           <Button
             variant="ghost"
             size="icon"
@@ -685,7 +747,7 @@ export function ConsultationModal({
                 ) : (
                   <>
                     <IconCheck className="h-4 w-4 mr-2" />
-                    Criar Consulta
+                    {isEditing ? "Atualizar Consulta" : "Criar Consulta"}
                   </>
                 )}
               </Button>

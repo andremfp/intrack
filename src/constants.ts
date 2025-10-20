@@ -3,6 +3,11 @@ export const USER_CONSTANTS = {
   MAX_DISPLAY_NAME_LENGTH: 30,
 } as const;
 
+// Pagination constants
+export const PAGINATION_CONSTANTS = {
+  CONSULTATIONS_PAGE_SIZE: 50,
+} as const;
+
 // Specialty codes
 export const SPECIALTY_CODES = {
   MGF: "mgf",
@@ -199,13 +204,13 @@ export const MGF_FIELDS: SpecialtyField[] = [
   {
     key: "procedure",
     label: "Procedimento",
-    type: "text",
+    type: "text-list",
     placeholder: "Procedimentos realizados",
   },
   {
     key: "notes",
     label: "Notas",
-    type: "textarea",
+    type: "text-list",
     placeholder: "Observações adicionais",
   },
 ];

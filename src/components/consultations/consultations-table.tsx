@@ -8,37 +8,60 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { IconEdit, IconTrash } from "@tabler/icons-react";
+import {
+  IconTrash,
+  IconPlus,
+  IconChevronLeft,
+  IconChevronRight,
+} from "@tabler/icons-react";
 import type { ConsultationMGF } from "@/lib/api/consultations";
 import {
   getSpecialtyFields,
   SPECIALTY_CODES,
   COMMON_CONSULTATION_FIELDS,
 } from "@/constants";
+import { useState } from "react";
 
 interface ConsultationsTableProps {
   consultations: ConsultationMGF[];
+  totalCount: number;
+  currentPage: number;
+  pageSize: number;
   specialtyCode?: string;
   specialtyYear?: number;
   onEdit?: (consultation: ConsultationMGF) => void;
   onDelete?: (id: string) => void;
+  onRowClick?: (consultation: ConsultationMGF) => void;
+  onAddConsultation?: () => void;
+  onBulkDelete?: (ids: string[]) => void;
+  onPageChange?: (page: number) => void;
 }
 
 export function ConsultationsTable({
   consultations,
+  totalCount,
+  currentPage,
+  pageSize,
   specialtyCode = SPECIALTY_CODES.MGF,
   specialtyYear,
-  onEdit,
-  onDelete,
+  onRowClick,
+  onAddConsultation,
+  onBulkDelete,
+  onPageChange,
 }: ConsultationsTableProps) {
   // Get specialty-specific fields
   const specialtyFields = getSpecialtyFields(specialtyCode);
+
+  // State for delete mode
+  const [isDeleteMode, setIsDeleteMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "-";
@@ -77,6 +100,55 @@ export function ConsultationsTable({
     }
   };
 
+  // Delete mode functions
+  const toggleDeleteMode = () => {
+    setIsDeleteMode(!isDeleteMode);
+    setSelectedIds(new Set());
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === consultations.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(consultations.map((c) => c.id!)));
+    }
+  }; // TODO - fix bulk delete
+
+  const toggleSelectRow = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedIds.size > 0 && onBulkDelete) {
+      onBulkDelete(Array.from(selectedIds));
+      setSelectedIds(new Set());
+      setIsDeleteMode(false);
+    }
+  };
+
+  // Pagination helpers
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const startItem = (currentPage - 1) * pageSize + 1;
+  const endItem = Math.min(currentPage * pageSize, totalCount);
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1 && onPageChange) {
+      onPageChange(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages && onPageChange) {
+      onPageChange(currentPage + 1);
+    }
+  };
+
   const renderCommonField = (consultation: ConsultationMGF, key: string) => {
     switch (key) {
       case "date":
@@ -103,7 +175,11 @@ export function ConsultationsTable({
 
   const renderCellValue = (
     value: unknown,
-    field: { type: string; options?: { value: string; label: string }[] }
+    field: {
+      key: string;
+      type: string;
+      options?: { value: string; label: string }[];
+    }
   ) => {
     if (value === null || value === undefined) return "-";
 
@@ -269,87 +345,204 @@ export function ConsultationsTable({
   }
 
   return (
-    <div className="rounded-lg border overflow-hidden">
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {/* Common fields */}
-              {COMMON_CONSULTATION_FIELDS.filter(
-                (field) => field.key !== "age_unit"
-              ).map((field) => (
-                <TableHead key={field.key}>{field.label}</TableHead>
-              ))}
+    <div className="space-y-4">
+      {/* Action buttons */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {onAddConsultation && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onAddConsultation}
+              className="h-8"
+            >
+              <IconPlus className="h-4 w-4" />
+              Adicionar Consulta
+            </Button>
+          )}
+          {onBulkDelete && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleDeleteMode}
+              className="h-8"
+            >
+              <IconTrash className="h-4 w-4" />
+              {isDeleteMode ? "Cancelar" : "Eliminar"}
+            </Button>
+          )}
+        </div>
 
-              {/* Dynamic specialty-specific fields */}
-              {specialtyFields.map((field) => (
-                <TableHead key={field.key}>{field.label}</TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {consultations.map((consultation) => (
-              <TableRow key={consultation.id}>
+        {/* Delete mode actions */}
+        {isDeleteMode && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              {selectedIds.size} selecionada(s)
+            </span>
+            {selectedIds.size > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleBulkDelete}
+                className="h-8"
+              >
+                Eliminar Selecionadas
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-lg border overflow-hidden flex flex-col h-[calc(100vh-9rem)] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40">
+        <div className="overflow-auto flex-1 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40">
+          <Table>
+            <TableHeader className="sticky top-0 bg-background z-10">
+              <TableRow>
+                {/* Checkbox column for delete mode */}
+                {isDeleteMode && (
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={
+                        selectedIds.size === consultations.length &&
+                        consultations.length > 0
+                      }
+                      onCheckedChange={toggleSelectAll}
+                      aria-label="Selecionar todas"
+                    />
+                  </TableHead>
+                )}
+
                 {/* Common fields */}
                 {COMMON_CONSULTATION_FIELDS.filter(
                   (field) => field.key !== "age_unit"
                 ).map((field) => (
-                  <TableCell
-                    key={field.key}
-                    className={field.key === "date" ? "font-medium" : ""}
-                  >
-                    {renderCommonField(consultation, field.key)}
-                  </TableCell>
+                  <TableHead key={field.key}>{field.label}</TableHead>
                 ))}
 
                 {/* Dynamic specialty-specific fields */}
                 {specialtyFields.map((field) => (
-                  <TableCell
-                    key={field.key}
-                    className={
-                      field.type === "icpc2-codes" || field.type === "text-list"
-                        ? "max-w-[200px] overflow-hidden"
-                        : ""
-                    }
-                  >
-                    {renderCellValue(
-                      (consultation as Record<string, unknown>)[field.key],
-                      field
-                    )}
-                  </TableCell>
+                  <TableHead key={field.key}>{field.label}</TableHead>
                 ))}
-
-                {/* Actions */}
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    {onEdit && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => onEdit(consultation)}
-                      >
-                        <IconEdit className="h-4 w-4" />
-                        <span className="sr-only">Editar</span>
-                      </Button>
-                    )}
-                    {onDelete && consultation.id && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => onDelete(consultation.id!)}
-                      >
-                        <IconTrash className="h-4 w-4" />
-                        <span className="sr-only">Eliminar</span>
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {consultations.map((consultation) => (
+                <TableRow
+                  key={consultation.id}
+                  className={
+                    onRowClick && !isDeleteMode
+                      ? "cursor-pointer hover:bg-accent/50"
+                      : ""
+                  }
+                  onClick={() => !isDeleteMode && onRowClick?.(consultation)}
+                >
+                  {/* Checkbox for delete mode */}
+                  {isDeleteMode && (
+                    <TableCell className="w-12">
+                      <Checkbox
+                        checked={selectedIds.has(consultation.id!)}
+                        onCheckedChange={() =>
+                          toggleSelectRow(consultation.id!)
+                        }
+                        aria-label={`Selecionar consulta ${consultation.id}`}
+                      />
+                    </TableCell>
+                  )}
+
+                  {/* Common fields */}
+                  {COMMON_CONSULTATION_FIELDS.filter(
+                    (field) => field.key !== "age_unit"
+                  ).map((field) => (
+                    <TableCell
+                      key={field.key}
+                      className={field.key === "date" ? "font-medium" : ""}
+                    >
+                      {renderCommonField(consultation, field.key)}
+                    </TableCell>
+                  ))}
+
+                  {/* Dynamic specialty-specific fields */}
+                  {specialtyFields.map((field) => (
+                    <TableCell
+                      key={field.key}
+                      className={
+                        field.type === "icpc2-codes" ||
+                        field.type === "text-list"
+                          ? "max-w-[200px] overflow-hidden"
+                          : ""
+                      }
+                    >
+                      {renderCellValue(
+                        (consultation as Record<string, unknown>)[field.key],
+                        field
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Fixed pagination at bottom */}
+        <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/50 flex-shrink-0">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>
+              Mostrando {startItem} a {endItem} de {totalCount} consultas
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePreviousPage}
+              disabled={currentPage <= 1}
+              className="h-8"
+            >
+              <IconChevronLeft className="h-4 w-4" />
+              Anterior
+            </Button>
+
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => onPageChange?.(pageNum)}
+                    className="h-8 w-8"
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleNextPage}
+              disabled={currentPage >= totalPages}
+              className="h-8"
+            >
+              Seguinte
+              <IconChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
