@@ -159,7 +159,12 @@ export function ProfileModal({
               {/* Avatar */}
               <div className="relative">
                 <Avatar className="h-24 w-24 border-4 border-background shadow-xl ring-2 ring-border">
-                  <AvatarImage src={user.avatar} alt={user.data.display_name} />
+                  <AvatarImage 
+                    src={user.avatar} 
+                    alt={user.data.display_name}
+                    referrerPolicy="no-referrer"
+                    onError={(e) => console.error("Avatar load error (profile modal):", e)}
+                  />
                   <AvatarFallback className="text-3xl font-bold bg-gradient-to-br from-primary/20 to-primary/10">
                     {initials}
                   </AvatarFallback>

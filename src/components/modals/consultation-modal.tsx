@@ -619,7 +619,7 @@ export function ConsultationModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <Card className="w-full pt-0 max-w-3xl max-h-[90vh] overflow-y-auto">
+      <Card className="w-full pt-0 max-w-3xl max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40">
         <CardHeader className="py-2 flex flex-row items-center justify-between sticky top-0 bg-background z-10">
           <CardTitle>
             {isEditing ? "Editar Consulta" : "Nova Consulta"} -{" "}

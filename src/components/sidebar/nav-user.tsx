@@ -35,6 +35,14 @@ export function NavUser({
   const { isMobile } = useSidebar();
   const navigate = useNavigate();
 
+  const initials =
+    user.data.display_name
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "U";
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -45,8 +53,12 @@ export function NavUser({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg grayscale">
-                <AvatarImage src={user.avatar} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                <AvatarImage 
+                  src={user.avatar} 
+                  referrerPolicy="no-referrer"
+                  onError={(e) => console.error("Avatar load error (sidebar):", e)}
+                />
+                <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">
@@ -68,8 +80,13 @@ export function NavUser({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.data.display_name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarImage 
+                    src={user.avatar} 
+                    alt={user.data.display_name}
+                    referrerPolicy="no-referrer"
+                    onError={(e) => console.error("Avatar load error (dropdown):", e)}
+                  />
+                  <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">
