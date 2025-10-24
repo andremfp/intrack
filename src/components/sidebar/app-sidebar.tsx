@@ -37,6 +37,7 @@ export function AppSidebar({
   onTabChange,
   onProfileClick,
   onNewConsultation,
+  onAboutClick,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   user: UserData | null;
@@ -45,6 +46,7 @@ export function AppSidebar({
   onTabChange: (tab: TabType) => void;
   onProfileClick: () => void;
   onNewConsultation?: () => void;
+  onAboutClick: () => void;
 }) {
   if (!user) return null;
 
@@ -96,7 +98,11 @@ export function AppSidebar({
         <NavSecondary items={navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={user} onProfileClick={onProfileClick} />
+        <NavUser
+          user={user}
+          onProfileClick={onProfileClick}
+          onAboutClick={onAboutClick}
+        />
       </SidebarFooter>
     </Sidebar>
   );
