@@ -2,6 +2,7 @@ import {
   IconDotsVertical,
   IconLogout,
   IconUserCircle,
+  IconInfoCircle,
 } from "@tabler/icons-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -28,9 +29,11 @@ import { userCache } from "@/lib/user-cache";
 export function NavUser({
   user,
   onProfileClick,
+  onAboutClick,
 }: {
   user: UserData;
   onProfileClick: () => void;
+  onAboutClick: () => void;
 }) {
   const { isMobile } = useSidebar();
   const navigate = useNavigate();
@@ -53,12 +56,16 @@ export function NavUser({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg grayscale">
-                <AvatarImage 
-                  src={user.avatar} 
+                <AvatarImage
+                  src={user.avatar}
                   referrerPolicy="no-referrer"
-                  onError={(e) => console.error("Avatar load error (sidebar):", e)}
+                  onError={(e) =>
+                    console.error("Avatar load error (sidebar):", e)
+                  }
                 />
-                <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+                <AvatarFallback className="rounded-lg">
+                  {initials}
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">
@@ -80,13 +87,17 @@ export function NavUser({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage 
-                    src={user.avatar} 
+                  <AvatarImage
+                    src={user.avatar}
                     alt={user.data.display_name}
                     referrerPolicy="no-referrer"
-                    onError={(e) => console.error("Avatar load error (dropdown):", e)}
+                    onError={(e) =>
+                      console.error("Avatar load error (dropdown):", e)
+                    }
                   />
-                  <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">
+                    {initials}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">
@@ -103,6 +114,10 @@ export function NavUser({
               <DropdownMenuItem onSelect={onProfileClick}>
                 <IconUserCircle />
                 Perfil
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={onAboutClick}>
+                <IconInfoCircle />
+                Sobre
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

@@ -27,6 +27,7 @@ import {
   useCachedUserSpecialty,
   useCachedActiveTab,
 } from "@/hooks/use-user-cache";
+import { AboutModal } from "@/components/modals/about-modal";
 
 function DashboardContent() {
   const { setOpenMobile, isMobile } = useSidebar();
@@ -41,7 +42,7 @@ function DashboardContent() {
   const [showConsultationModal, setShowConsultationModal] = useState(false);
   const [editingConsultation, setEditingConsultation] =
     useState<ConsultationMGF | null>(null);
-
+  const [showAboutModal, setShowAboutModal] = useState(false);
   const [consultations, setConsultations] = useState<ConsultationMGF[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -321,6 +322,13 @@ function DashboardContent() {
           setEditingConsultation(null);
           setShowConsultationModal(true);
         }}
+        onAboutClick={() => {
+          // Close sidebar on mobile when opening about modal
+          if (isMobile) {
+            setOpenMobile(false);
+          }
+          setShowAboutModal(true);
+        }}
         className={
           showSpecialtyModal || showConsultationModal
             ? "blur-sm pointer-events-none"
@@ -419,6 +427,9 @@ function DashboardContent() {
             }
           }}
         />
+      )}
+      {showAboutModal && (
+        <AboutModal onClose={() => setShowAboutModal(false)} />
       )}
     </ThemeProvider>
   );
