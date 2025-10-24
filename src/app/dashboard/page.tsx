@@ -349,7 +349,7 @@ function DashboardContent() {
             {mainTab === "Consultas" && (
               <div className="flex-1 flex flex-col min-h-0">
                 {isLoadingConsultations && isInitialLoad ? (
-                  <div className="flex items-center justify-center py-12">
+                  <div className="flex flex-1 items-center justify-center">
                     <div className="flex flex-col items-center gap-4">
                       <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
                       <p className="text-sm text-muted-foreground">
