@@ -17,6 +17,8 @@ import { getSpecialty } from "@/lib/api/specialties";
 import {
   getMGFConsultations,
   deleteConsultation,
+  type MGFConsultationsFilters,
+  type MGFConsultationsSorting,
 } from "@/lib/api/consultations";
 import { useEffect, useState, useCallback } from "react";
 import type { Specialty } from "@/lib/api/specialties";
@@ -51,6 +53,13 @@ function DashboardContent() {
   const [isLoading, setIsLoading] = useState(!userProfile);
   const [isLoadingConsultations, setIsLoadingConsultations] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Filter and sort state
+  const [filters, setFilters] = useState<MGFConsultationsFilters>({});
+  const [sorting, setSorting] = useState<MGFConsultationsSorting>({
+    field: "date",
+    order: "desc",
+  });
 
   // Parse activeTab to get main tab and specialty year
   const mainTab = activeTab.startsWith("Consultas.") ? "Consultas" : activeTab;
@@ -143,13 +152,21 @@ function DashboardContent() {
   };
 
   const loadConsultations = useCallback(
-    async (userId: string, specialtyYear?: number, page: number = 1) => {
+    async (
+      userId: string,
+      specialtyYear?: number,
+      page: number = 1,
+      currentFilters?: MGFConsultationsFilters,
+      currentSorting?: MGFConsultationsSorting
+    ) => {
       setIsLoadingConsultations(true);
       const result = await getMGFConsultations(
         userId,
         specialtyYear,
         page,
-        pageSize
+        pageSize,
+        currentFilters,
+        currentSorting
       );
 
       if (result.success) {
@@ -234,7 +251,9 @@ function DashboardContent() {
         await loadConsultations(
           userProfile.data.user_id,
           activeSpecialtyYear,
-          currentPage
+          currentPage,
+          filters,
+          sorting
         );
       }
     } catch (error) {
@@ -248,7 +267,9 @@ function DashboardContent() {
         await loadConsultations(
           userProfile.data.user_id,
           activeSpecialtyYear,
-          currentPage
+          currentPage,
+          filters,
+          sorting
         );
       }
     }
@@ -259,7 +280,53 @@ function DashboardContent() {
       await loadConsultations(
         userProfile.data.user_id,
         activeSpecialtyYear,
-        page
+        page,
+        filters,
+        sorting
+      );
+    }
+  };
+
+  const handleApplyFilters = async () => {
+    if (userProfile?.data.user_id) {
+      setIsInitialLoad(true); // Show full spinner when applying filters
+      setCurrentPage(1); // Reset to first page when applying filters
+      await loadConsultations(
+        userProfile.data.user_id,
+        activeSpecialtyYear,
+        1,
+        filters,
+        sorting
+      );
+    }
+  };
+
+  const handleSortingChange = async (newSorting: MGFConsultationsSorting) => {
+    setSorting(newSorting);
+    if (userProfile?.data.user_id) {
+      setCurrentPage(1); // Reset to first page when changing sort
+      await loadConsultations(
+        userProfile.data.user_id,
+        activeSpecialtyYear,
+        1,
+        filters,
+        newSorting
+      );
+    }
+  };
+
+  const handleClearFilters = async () => {
+    const emptyFilters: MGFConsultationsFilters = {};
+    setFilters(emptyFilters);
+    if (userProfile?.data.user_id) {
+      setIsInitialLoad(true); // Show full spinner when clearing filters
+      setCurrentPage(1); // Reset to first page
+      await loadConsultations(
+        userProfile.data.user_id,
+        activeSpecialtyYear,
+        1,
+        emptyFilters, // Use the empty filters directly
+        sorting
       );
     }
   };
@@ -269,7 +336,19 @@ function DashboardContent() {
     if (userProfile?.data.user_id && mainTab === "Consultas") {
       setIsInitialLoad(true); // Show full spinner when changing filters
       setCurrentPage(1); // Reset to first page when changing filters
-      loadConsultations(userProfile.data.user_id, activeSpecialtyYear, 1);
+      // Reset filters when changing specialty year
+      setFilters({});
+      setSorting({ field: "date", order: "desc" });
+      loadConsultations(
+        userProfile.data.user_id,
+        activeSpecialtyYear,
+        1,
+        {},
+        {
+          field: "date",
+          order: "desc",
+        }
+      );
     }
   }, [
     userProfile?.data.user_id,
@@ -367,12 +446,6 @@ function DashboardContent() {
                   </div>
                 ) : (
                   <div className="flex-1 flex flex-col relative min-h-0">
-                    {/* Subtle loading overlay for subsequent loads */}
-                    {isLoadingConsultations && (
-                      <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
-                        <div className="h-6 w-6 animate-spin rounded-full border-3 border-primary border-t-transparent"></div>
-                      </div>
-                    )}
                     <ConsultationsTable
                       consultations={consultations}
                       totalCount={totalCount}
@@ -384,10 +457,17 @@ function DashboardContent() {
                           ? activeSpecialtyYear
                           : undefined
                       }
+                      filters={filters}
+                      sorting={sorting}
+                      isLoading={isLoadingConsultations}
                       onRowClick={handleRowClick}
                       onAddConsultation={handleAddConsultation}
                       onBulkDelete={handleBulkDelete}
                       onPageChange={handlePageChange}
+                      onFiltersChange={setFilters}
+                      onSortingChange={handleSortingChange}
+                      onApplyFilters={handleApplyFilters}
+                      onClearFilters={handleClearFilters}
                     />
                   </div>
                 )}
@@ -422,7 +502,9 @@ function DashboardContent() {
               loadConsultations(
                 userProfile.data.user_id,
                 activeSpecialtyYear,
-                currentPage
+                currentPage,
+                filters,
+                sorting
               );
             }
           }}

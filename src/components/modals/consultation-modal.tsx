@@ -55,6 +55,15 @@ export function ConsultationModal({
 }: ConsultationModalProps) {
   const isEditing = !!editingConsultation;
   const [isSaving, setIsSaving] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+
+  const handleClose = () => {
+    if (isSaving) return; // Prevent closing while saving
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+    }, 300); // Match the animation duration
+  };
 
   // Get specialty-specific fields and ICPC-2 codes
   const specialtyFields = specialty ? getSpecialtyFields(specialty.code) : [];
@@ -281,7 +290,7 @@ export function ConsultationModal({
       `Consulta ${isEditing ? "atualizada" : "criada"} com sucesso!`
     );
     onConsultationSaved?.();
-    onClose();
+    handleClose();
   };
 
   // Field renderer function
@@ -294,7 +303,7 @@ export function ConsultationModal({
     };
 
     const labelElement = (
-      <Label htmlFor={fieldId}>
+      <Label htmlFor={fieldId} className="text-sm">
         {field.label}
         {field.required && <span className="text-destructive"> *</span>}
       </Label>
@@ -316,7 +325,7 @@ export function ConsultationModal({
           );
         }
         return (
-          <div key={fieldId} className="space-y-2">
+          <div key={fieldId} className="space-y-1.5">
             {labelElement}
             <Input
               id={fieldId}
@@ -331,7 +340,7 @@ export function ConsultationModal({
 
       case "number":
         return (
-          <div key={fieldId} className="space-y-2">
+          <div key={fieldId} className="space-y-1.5">
             {labelElement}
             <Input
               id={fieldId}
@@ -349,7 +358,7 @@ export function ConsultationModal({
 
       case "textarea":
         return (
-          <div key={fieldId} className="space-y-2">
+          <div key={fieldId} className="space-y-1.5">
             {labelElement}
             <Input
               id={fieldId}
@@ -363,7 +372,7 @@ export function ConsultationModal({
 
       case "boolean":
         return (
-          <div key={fieldId} className="space-y-2">
+          <div key={fieldId} className="space-y-1.5">
             {labelElement}
             <Select
               value={typeof value === "string" ? value : "false"}
@@ -382,7 +391,7 @@ export function ConsultationModal({
 
       case "select":
         return (
-          <div key={fieldId} className="space-y-2">
+          <div key={fieldId} className="space-y-1.5">
             {labelElement}
             <Select
               value={typeof value === "string" ? value : ""}
@@ -408,11 +417,11 @@ export function ConsultationModal({
       case "text-list": {
         const listValue = (value || [""]) as string[];
         return (
-          <div key={fieldId} className="space-y-2">
+          <div key={fieldId} className="space-y-1.5">
             {labelElement}
             <div className="space-y-2">
               {listValue.map((item, index) => (
-                <div key={index} className="flex gap-2">
+                <div key={index} className="flex gap-1.5 sm:gap-2">
                   <Input
                     value={item}
                     onChange={(e) => {
@@ -421,6 +430,7 @@ export function ConsultationModal({
                       updateValue(newList);
                     }}
                     placeholder={field.placeholder}
+                    className="min-w-0"
                   />
                   {listValue.length > 1 && (
                     <Button
@@ -431,6 +441,7 @@ export function ConsultationModal({
                         const newList = listValue.filter((_, i) => i !== index);
                         updateValue(newList);
                       }}
+                      className="flex-shrink-0"
                     >
                       <IconTrash className="h-4 w-4" />
                     </Button>
@@ -445,7 +456,10 @@ export function ConsultationModal({
                 className="w-full"
               >
                 <IconPlus className="h-4 w-4 mr-2" />
-                Adicionar {field.label}
+                <span className="hidden xs:inline">
+                  Adicionar {field.label}
+                </span>
+                <span className="inline xs:hidden">Adicionar</span>
               </Button>
             </div>
           </div>
@@ -505,12 +519,12 @@ export function ConsultationModal({
         };
 
         return (
-          <div key={fieldId} className="space-y-2">
+          <div key={fieldId} className="space-y-1.5">
             {labelElement}
 
             {/* Selected codes */}
             {selectedCodeEntries.length > 0 && (
-              <div className="flex flex-wrap gap-1 p-2 border rounded-md bg-muted/50">
+              <div className="flex flex-wrap gap-1.5 p-2 border rounded-md bg-muted/50">
                 {selectedCodeEntries.map((entry, idx) => {
                   const match = entry.match(/^([A-Z]\d{2})\s*-\s*(.+)$/);
                   const code = match ? match[1] : entry;
@@ -522,7 +536,7 @@ export function ConsultationModal({
                       type="button"
                       variant="secondary"
                       size="sm"
-                      className="h-auto py-1 px-2 text-xs"
+                      className="h-auto py-1 px-2 text-xs max-w-full"
                       onClick={() => {
                         const codeData = icpc2Codes.find(
                           (c) => c.code === code
@@ -532,10 +546,14 @@ export function ConsultationModal({
                         }
                       }}
                     >
-                      <div className="flex items-center gap-1">
-                        <span className="font-mono font-semibold">{code}</span>
-                        <span className="text-muted-foreground">-</span>
-                        <span className="max-w-[200px] truncate">
+                      <div className="flex items-center gap-1 min-w-0">
+                        <span className="font-mono font-semibold flex-shrink-0">
+                          {code}
+                        </span>
+                        <span className="text-muted-foreground flex-shrink-0">
+                          -
+                        </span>
+                        <span className="max-w-[120px] sm:max-w-[200px] truncate">
                           {description}
                         </span>
                         <IconX className="h-3 w-3 ml-1 flex-shrink-0" />
@@ -573,22 +591,22 @@ export function ConsultationModal({
                         <button
                           key={icpc2Code.code}
                           type="button"
-                          className={`w-full text-left px-3 py-2 hover:bg-muted/50 transition-colors ${
+                          className={`w-full text-left px-2 sm:px-3 py-2 hover:bg-muted/50 transition-colors ${
                             isSelected ? "bg-primary/10" : ""
                           }`}
                           onClick={() =>
                             toggleCode(icpc2Code.code, icpc2Code.description)
                           }
                         >
-                          <div className="flex items-start gap-2">
-                            <code className="font-mono text-sm font-semibold text-primary min-w-[3rem]">
+                          <div className="flex items-start gap-1.5 sm:gap-2">
+                            <code className="font-mono text-xs sm:text-sm font-semibold text-primary min-w-[2.5rem] sm:min-w-[3rem] flex-shrink-0">
                               {icpc2Code.code}
                             </code>
-                            <span className="text-sm flex-1">
+                            <span className="text-xs sm:text-sm flex-1 min-w-0 break-words">
                               {icpc2Code.description}
                             </span>
                             {isSelected && (
-                              <IconCheck className="h-4 w-4 text-primary flex-shrink-0" />
+                              <IconCheck className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                             )}
                           </div>
                         </button>
@@ -596,12 +614,12 @@ export function ConsultationModal({
                     })}
                   </div>
                 ) : (
-                  <div className="px-3 py-4 text-sm text-muted-foreground text-center">
+                  <div className="px-2 sm:px-3 py-4 text-xs sm:text-sm text-muted-foreground text-center">
                     Nenhum código encontrado
                   </div>
                 )}
                 {filteredCodes.length > 10 && (
-                  <div className="px-3 py-2 text-xs text-muted-foreground border-t bg-muted/30 text-center">
+                  <div className="px-2 sm:px-3 py-2 text-xs text-muted-foreground border-t bg-muted/30 text-center">
                     Mostrando 10 de {filteredCodes.length} resultados. Refine a
                     pesquisa.
                   </div>
@@ -618,143 +636,182 @@ export function ConsultationModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <Card className="w-full pt-0 max-w-3xl max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40">
-        <CardHeader className="py-2 flex flex-row items-center justify-between sticky top-0 bg-background z-10">
-          <CardTitle>
-            {isEditing ? "Editar Consulta" : "Nova Consulta"} -{" "}
-            {specialty?.name || "MGF"}
-          </CardTitle>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            disabled={isSaving}
-          >
-            <IconX className="h-5 w-5" />
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Basic Information */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Informação Básica</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {COMMON_CONSULTATION_FIELDS.map((field) => {
-                  const fieldElement = renderField(field);
-                  // Handle fields that should span 2 columns
-                  if (field.type === "textarea" || field.type === "text-list") {
-                    return (
-                      <div key={field.key} className="md:col-span-2">
-                        {fieldElement}
-                      </div>
-                    );
-                  }
-                  return fieldElement;
-                })}
+    <>
+      {/* Backdrop */}
+      <div
+        className={`fixed inset-0 z-50 bg-black/50 duration-200 ${
+          isClosing ? "animate-out fade-out" : "animate-in fade-in"
+        }`}
+        onClick={handleClose}
+      />
 
-                {/* Specialty Year Selector */}
-                {specialty && specialty.years > 1 && (
-                  <div className="space-y-2">
-                    <Label htmlFor="specialty_year">
-                      Ano da Especialidade
-                      <span className="text-destructive"> *</span>
-                    </Label>
-                    <Select
-                      value={
-                        typeof formValues.specialty_year === "string"
-                          ? formValues.specialty_year
-                          : "1"
-                      }
-                      onValueChange={(val) =>
-                        setFormValues((prev) => ({
-                          ...prev,
-                          specialty_year: val,
-                        }))
-                      }
-                      required
-                    >
-                      <SelectTrigger id="specialty_year">
-                        <SelectValue placeholder="Selecionar ano" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from(
-                          { length: specialty.years },
-                          (_, i) => i + 1
-                        ).map((year) => (
-                          <SelectItem key={year} value={String(year)}>
-                            {specialty.code.toUpperCase()}.{year}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
-            </div>
+      {/* Modal Container - slides from bottom on mobile, centered on desktop */}
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center pointer-events-none sm:mx-4">
+        <Card
+          className={`w-full h-[95vh] sm:h-auto py-0 sm:max-w-3xl sm:max-h-[90vh] overflow-hidden flex flex-col gap-0 sm:rounded-lg rounded-b-none rounded-t-xl pointer-events-auto duration-300 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40 ${
+            isClosing
+              ? "animate-out slide-out-to-bottom sm:slide-out-to-bottom-0 sm:zoom-out-95"
+              : "animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95"
+          }`}
+        >
+          <CardHeader className="pt-2.5 !pb-2 sm:pt-2 sm:!pb-2 px-3 sm:px-6 flex flex-row items-center justify-between flex-shrink-0 bg-background z-10 border-b">
+            <CardTitle className="text-base sm:text-lg">
+              {isEditing ? "Editar Consulta" : "Nova Consulta"}
+              <span className="hidden sm:inline">
+                {" "}
+                - {specialty?.name || "MGF"}
+              </span>
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleClose}
+              disabled={isSaving}
+              className="flex-shrink-0"
+            >
+              <IconX className="h-5 w-5" />
+            </Button>
+          </CardHeader>
+          <CardContent className="px-3 sm:px-6 pt-3 sm:pt-4 pb-2 overflow-y-auto flex-1">
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-3 sm:space-y-4 h-full"
+            >
+              {/* Basic Information */}
+              <div>
+                <h3 className="text-base sm:text-lg font-semibold mb-3">
+                  Informação Básica
+                </h3>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+                  {COMMON_CONSULTATION_FIELDS.map((field) => {
+                    const fieldElement = renderField(field);
+                    // Handle fields that should span 2 columns
+                    if (
+                      field.type === "textarea" ||
+                      field.type === "text-list"
+                    ) {
+                      return (
+                        <div key={field.key} className="sm:col-span-2">
+                          {fieldElement}
+                        </div>
+                      );
+                    }
+                    return fieldElement;
+                  })}
 
-            {specialtyFields.length > 0 && (
-              <>
-                <Separator />
-
-                {/* Specialty-specific fields */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-4">
-                    Detalhes da Consulta
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {specialtyFields.map((field) => {
-                      const fieldElement = renderField(field);
-                      // Handle fields that should span 2 columns
-                      if (
-                        field.type === "textarea" ||
-                        field.type === "text-list" ||
-                        [
-                          "diagnosis",
-                          "problems",
-                          "new_diagnosis",
-                          "notes",
-                        ].includes(field.key)
-                      ) {
-                        return (
-                          <div key={field.key} className="md:col-span-2">
-                            {fieldElement}
-                          </div>
-                        );
-                      }
-                      return fieldElement;
-                    })}
-                  </div>
+                  {/* Specialty Year Selector */}
+                  {specialty && specialty.years > 1 && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="specialty_year" className="text-sm">
+                        Ano da Especialidade
+                        <span className="text-destructive"> *</span>
+                      </Label>
+                      <Select
+                        value={
+                          typeof formValues.specialty_year === "string"
+                            ? formValues.specialty_year
+                            : "1"
+                        }
+                        onValueChange={(val) =>
+                          setFormValues((prev) => ({
+                            ...prev,
+                            specialty_year: val,
+                          }))
+                        }
+                        required
+                      >
+                        <SelectTrigger id="specialty_year">
+                          <SelectValue placeholder="Selecionar ano" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from(
+                            { length: specialty.years },
+                            (_, i) => i + 1
+                          ).map((year) => (
+                            <SelectItem key={year} value={String(year)}>
+                              {specialty.code.toUpperCase()}.{year}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
-              </>
-            )}
+              </div>
 
-            <Separator />
+              {specialtyFields.length > 0 && (
+                <>
+                  <Separator />
 
-            {/* Actions */}
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={isSaving}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isSaving}>
-                {isSaving ? (
-                  "A guardar..."
-                ) : (
-                  <>
-                    <IconCheck className="h-4 w-4 mr-2" />
-                    {isEditing ? "Atualizar Consulta" : "Criar Consulta"}
-                  </>
-                )}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+                  {/* Specialty-specific fields */}
+                  <div>
+                    <h3 className="text-base sm:text-lg font-semibold mb-3">
+                      Detalhes da Consulta
+                    </h3>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+                      {specialtyFields.map((field) => {
+                        const fieldElement = renderField(field);
+                        // Handle fields that should span 2 columns
+                        if (
+                          field.type === "textarea" ||
+                          field.type === "text-list" ||
+                          [
+                            "diagnosis",
+                            "problems",
+                            "new_diagnosis",
+                            "notes",
+                          ].includes(field.key)
+                        ) {
+                          return (
+                            <div key={field.key} className="sm:col-span-2">
+                              {fieldElement}
+                            </div>
+                          );
+                        }
+                        return fieldElement;
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <Separator />
+
+              {/* Actions */}
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pb-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleClose}
+                  disabled={isSaving}
+                  className="w-full sm:w-auto"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSaving}
+                  className="w-full sm:w-auto"
+                >
+                  {isSaving ? (
+                    "A guardar..."
+                  ) : (
+                    <>
+                      <IconCheck className="h-4 w-4 mr-2" />
+                      <span className="hidden sm:inline">
+                        {isEditing ? "Atualizar Consulta" : "Criar Consulta"}
+                      </span>
+                      <span className="inline sm:hidden">
+                        {isEditing ? "Atualizar" : "Criar"}
+                      </span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </>
   );
 }

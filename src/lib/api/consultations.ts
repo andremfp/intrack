@@ -110,12 +110,30 @@ export async function deleteConsultation(
   return success();
 }
 
+// Filtering and sorting options for MGF consultations
+export interface MGFConsultationsFilters {
+  sex?: string;
+  healthNumber?: string;
+  ageMin?: number;
+  ageMax?: number;
+  type?: string;
+  presential?: boolean;
+  smoker?: boolean;
+}
+
+export interface MGFConsultationsSorting {
+  field: "date" | "age" | "health_number";
+  order: "asc" | "desc";
+}
+
 // MGF-specific view queries
 export async function getMGFConsultations(
   userId?: string,
   specialtyYear?: number,
   page: number = 1,
-  pageSize: number = PAGINATION_CONSTANTS.CONSULTATIONS_PAGE_SIZE
+  pageSize: number = PAGINATION_CONSTANTS.CONSULTATIONS_PAGE_SIZE,
+  filters?: MGFConsultationsFilters,
+  sorting?: MGFConsultationsSorting
 ): Promise<
   ApiResponse<{ consultations: ConsultationMGF[]; totalCount: number }>
 > {
@@ -124,17 +142,83 @@ export async function getMGFConsultations(
 
   let query = supabase
     .from("consultations_mgf")
-    .select("*", { count: "exact" })
-    .order("date", { ascending: false })
-    .range(from, to);
+    .select("*", { count: "exact" });
 
+  // Apply user filter
   if (userId) {
     query = query.eq("user_id", userId);
   }
 
+  // Apply specialty year filter
   if (specialtyYear !== undefined) {
     query = query.eq("specialty_year", specialtyYear);
   }
+
+  // Apply additional filters
+  if (filters) {
+    if (filters.sex) {
+      query = query.eq("sex", filters.sex);
+    }
+    if (filters.healthNumber) {
+      query = query.eq("health_number", parseInt(filters.healthNumber));
+    }
+    // Age filtering with unit conversion to years
+    // For age filtering, we need to consider age_unit and convert to a common unit (years)
+    if (filters.ageMin !== undefined || filters.ageMax !== undefined) {
+      // Build filter conditions for each unit type
+      const conditions: string[] = [];
+
+      // For years
+      let yearsCondition = "age_unit.eq.years";
+      if (filters.ageMin !== undefined) {
+        yearsCondition += `,age.gte.${filters.ageMin}`;
+      }
+      if (filters.ageMax !== undefined) {
+        yearsCondition += `,age.lte.${filters.ageMax}`;
+      }
+      conditions.push(`and(${yearsCondition})`);
+
+      // For months (convert years to months)
+      let monthsCondition = "age_unit.eq.months";
+      if (filters.ageMin !== undefined) {
+        monthsCondition += `,age.gte.${filters.ageMin * 12}`;
+      }
+      if (filters.ageMax !== undefined) {
+        monthsCondition += `,age.lte.${filters.ageMax * 12}`;
+      }
+      conditions.push(`and(${monthsCondition})`);
+
+      // For days (convert years to days)
+      let daysCondition = "age_unit.eq.days";
+      if (filters.ageMin !== undefined) {
+        daysCondition += `,age.gte.${Math.floor(filters.ageMin * 365)}`;
+      }
+      if (filters.ageMax !== undefined) {
+        daysCondition += `,age.lte.${Math.floor(filters.ageMax * 365)}`;
+      }
+      conditions.push(`and(${daysCondition})`);
+
+      // Combine all conditions with OR
+      query = query.or(conditions.join(","));
+    }
+    if (filters.type) {
+      query = query.eq("type", filters.type);
+    }
+    if (filters.presential !== undefined) {
+      query = query.eq("presential", filters.presential);
+    }
+    if (filters.smoker !== undefined) {
+      query = query.eq("smoker", filters.smoker);
+    }
+  }
+
+  // Apply sorting (default to date descending)
+  const sortField = sorting?.field || "date";
+  const sortOrder = sorting?.order || "desc";
+  query = query.order(sortField, { ascending: sortOrder === "asc" });
+
+  // Apply pagination
+  query = query.range(from, to);
 
   const { data, error, count } = await query;
 

@@ -1,11 +1,4 @@
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { TableCell, TableHead } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -21,13 +14,18 @@ import {
   IconChevronLeft,
   IconChevronRight,
 } from "@tabler/icons-react";
-import type { ConsultationMGF } from "@/lib/api/consultations";
+import type {
+  ConsultationMGF,
+  MGFConsultationsFilters,
+  MGFConsultationsSorting,
+} from "@/lib/api/consultations";
 import {
   getSpecialtyFields,
   SPECIALTY_CODES,
   COMMON_CONSULTATION_FIELDS,
 } from "@/constants";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { ConsultationsFilters } from "./consultations-filters";
 
 interface ConsultationsTableProps {
   consultations: ConsultationMGF[];
@@ -36,12 +34,19 @@ interface ConsultationsTableProps {
   pageSize: number;
   specialtyCode?: string;
   specialtyYear?: number;
+  filters: MGFConsultationsFilters;
+  sorting: MGFConsultationsSorting;
+  isLoading?: boolean;
   onEdit?: (consultation: ConsultationMGF) => void;
   onDelete?: (id: string) => void;
   onRowClick?: (consultation: ConsultationMGF) => void;
   onAddConsultation?: () => void;
   onBulkDelete?: (ids: string[]) => void;
   onPageChange?: (page: number) => void;
+  onFiltersChange?: (filters: MGFConsultationsFilters) => void;
+  onSortingChange?: (sorting: MGFConsultationsSorting) => void;
+  onApplyFilters?: () => void;
+  onClearFilters?: () => void;
 }
 
 export function ConsultationsTable({
@@ -51,10 +56,17 @@ export function ConsultationsTable({
   pageSize,
   specialtyCode = SPECIALTY_CODES.MGF,
   specialtyYear,
+  filters,
+  sorting,
+  isLoading = false,
   onRowClick,
   onAddConsultation,
   onBulkDelete,
   onPageChange,
+  onFiltersChange,
+  onSortingChange,
+  onApplyFilters,
+  onClearFilters,
 }: ConsultationsTableProps) {
   // Get specialty-specific fields
   const specialtyFields = getSpecialtyFields(specialtyCode);
@@ -62,6 +74,59 @@ export function ConsultationsTable({
   // State for delete mode
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [pageInput, setPageInput] = useState(currentPage.toString());
+
+  // Update page input when current page changes
+  useEffect(() => {
+    setPageInput(currentPage.toString());
+  }, [currentPage]);
+
+  const handlePageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+
+    // Allow empty string for clearing
+    if (value === "") {
+      setPageInput(value);
+      return;
+    }
+
+    // Only allow numbers
+    if (/^\d+$/.test(value)) {
+      const pageNum = parseInt(value);
+      // Prevent 0 and numbers greater than totalPages
+      if (pageNum >= 1 && pageNum <= totalPages) {
+        setPageInput(value);
+      }
+      // If they try to type a number > totalPages, set it to totalPages
+      else if (pageNum > totalPages) {
+        setPageInput(totalPages.toString());
+      }
+      // Don't allow 0 or leading zeros
+    }
+  };
+
+  const handlePageInputSubmit = () => {
+    if (pageInput === "") {
+      // If empty, reset to current page
+      setPageInput(currentPage.toString());
+      return;
+    }
+
+    const pageNum = parseInt(pageInput);
+    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+      onPageChange?.(pageNum);
+    } else {
+      // Reset to current page if invalid
+      setPageInput(currentPage.toString());
+    }
+  };
+
+  const handlePageInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handlePageInputSubmit();
+      e.currentTarget.blur();
+    }
+  };
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "-";
@@ -334,18 +399,20 @@ export function ConsultationsTable({
       : "";
     return (
       <div className="flex flex-col h-full gap-2">
-        {/* Action buttons */}
-        <div className="flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-2 pt-2">
+        {/* Action buttons and filters */}
+        <div className="flex items-center justify-between flex-shrink-0 gap-2 pt-2">
+          {/* Left side: Primary actions */}
+          <div className="flex items-center gap-2 flex-1 min-w-0">
             {onAddConsultation && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={onAddConsultation}
-                className="h-8"
+                disabled={isLoading}
+                className="h-8 flex-shrink-0"
               >
                 <IconPlus className="h-4 w-4" />
-                Adicionar Consulta
+                <span className="hidden sm:inline">Adicionar Consulta</span>
               </Button>
             )}
             {onBulkDelete && (
@@ -353,13 +420,34 @@ export function ConsultationsTable({
                 variant="outline"
                 size="sm"
                 onClick={toggleDeleteMode}
-                className="h-8"
+                disabled={isLoading}
+                className="h-8 flex-shrink-0"
               >
                 <IconTrash className="h-4 w-4" />
-                {isDeleteMode ? "Cancelar" : "Eliminar"}
+                <span className="hidden sm:inline">
+                  {isDeleteMode ? "Cancelar" : "Eliminar"}
+                </span>
               </Button>
             )}
           </div>
+
+          {/* Right side: Sort and Filter controls */}
+          {onFiltersChange &&
+            onSortingChange &&
+            onApplyFilters &&
+            onClearFilters && (
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <ConsultationsFilters
+                  filters={filters}
+                  sorting={sorting}
+                  isLoading={isLoading}
+                  onFiltersChange={onFiltersChange}
+                  onSortingChange={onSortingChange}
+                  onApplyFilters={onApplyFilters}
+                  onClearFilters={onClearFilters}
+                />
+              </div>
+            )}
         </div>
 
         {/* Empty state */}
@@ -379,18 +467,19 @@ export function ConsultationsTable({
 
   return (
     <div className="flex flex-col h-full gap-2">
-      {/* Action buttons */}
-      <div className="flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-2 pt-2">
+      {/* Action buttons and filters */}
+      <div className="flex items-center justify-between flex-shrink-0 gap-2 pt-2">
+        {/* Left side: Primary actions */}
+        <div className="flex items-center gap-2 flex-1 min-w-0">
           {onAddConsultation && (
             <Button
               variant="outline"
               size="sm"
               onClick={onAddConsultation}
-              className="h-8"
+              className="h-8 flex-shrink-0"
             >
               <IconPlus className="h-4 w-4" />
-              Adicionar Consulta
+              <span className="hidden sm:inline">Adicionar Consulta</span>
             </Button>
           )}
           {onBulkDelete && (
@@ -398,42 +487,65 @@ export function ConsultationsTable({
               variant="outline"
               size="sm"
               onClick={toggleDeleteMode}
-              className="h-8"
+              className="h-8 flex-shrink-0"
             >
               <IconTrash className="h-4 w-4" />
-              {isDeleteMode ? "Cancelar" : "Eliminar"}
+              <span className="hidden sm:inline">
+                {isDeleteMode ? "Cancelar" : "Eliminar"}
+              </span>
             </Button>
+          )}
+
+          {/* Delete mode actions */}
+          {isDeleteMode && (
+            <>
+              <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+                {selectedIds.size} selecionada(s)
+              </span>
+              {selectedIds.size > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBulkDelete}
+                  className="h-8 flex-shrink-0"
+                >
+                  <IconTrash className="h-4 w-4" />
+                  <span className="hidden sm:inline">
+                    Eliminar Selecionadas
+                  </span>
+                </Button>
+              )}
+            </>
           )}
         </div>
 
-        {/* Delete mode actions */}
-        {isDeleteMode && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              {selectedIds.size} selecionada(s)
-            </span>
-            {selectedIds.size > 0 && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleBulkDelete}
-                className="h-8"
-              >
-                Eliminar Selecionadas
-              </Button>
-            )}
-          </div>
-        )}
+        {/* Right side: Sort and Filter controls */}
+        {!isDeleteMode &&
+          onFiltersChange &&
+          onSortingChange &&
+          onApplyFilters &&
+          onClearFilters && (
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <ConsultationsFilters
+                filters={filters}
+                sorting={sorting}
+                onFiltersChange={onFiltersChange}
+                onSortingChange={onSortingChange}
+                onApplyFilters={onApplyFilters}
+                onClearFilters={onClearFilters}
+              />
+            </div>
+          )}
       </div>
 
-      <div className="rounded-lg border overflow-hidden flex flex-col flex-1 min-h-0 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40">
-        <div className="overflow-auto flex-1 min-h-0 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40">
-          <Table>
-            <TableHeader className="sticky top-0 bg-background z-10">
-              <TableRow>
+      <div className="rounded-lg border overflow-hidden flex flex-col flex-1 min-h-0">
+        <div className="overflow-auto flex-1 min-h-0 relative [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-corner]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40">
+          <table className="w-full caption-bottom text-sm">
+            <thead className="sticky top-0 bg-background z-10 border-b">
+              <tr className="border-b hover:bg-transparent">
                 {/* Checkbox column for delete mode */}
                 {isDeleteMode && (
-                  <TableHead className="w-12">
+                  <TableHead className="w-12 bg-background">
                     <Checkbox
                       checked={
                         selectedIds.size === consultations.length &&
@@ -449,24 +561,28 @@ export function ConsultationsTable({
                 {COMMON_CONSULTATION_FIELDS.filter(
                   (field) => field.key !== "age_unit"
                 ).map((field) => (
-                  <TableHead key={field.key}>{field.label}</TableHead>
+                  <TableHead key={field.key} className="bg-background">
+                    {field.label}
+                  </TableHead>
                 ))}
 
                 {/* Dynamic specialty-specific fields */}
                 {specialtyFields.map((field) => (
-                  <TableHead key={field.key}>{field.label}</TableHead>
+                  <TableHead key={field.key} className="bg-background">
+                    {field.label}
+                  </TableHead>
                 ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+              </tr>
+            </thead>
+            <tbody className="[&_tr:last-child]:border-0">
               {consultations.map((consultation) => (
-                <TableRow
+                <tr
                   key={consultation.id}
-                  className={
+                  className={`border-b transition-colors ${
                     onRowClick && !isDeleteMode
                       ? "cursor-pointer hover:bg-accent/50"
-                      : ""
-                  }
+                      : "hover:bg-muted/50"
+                  }`}
                   onClick={() => !isDeleteMode && onRowClick?.(consultation)}
                 >
                   {/* Checkbox for delete mode */}
@@ -511,69 +627,57 @@ export function ConsultationsTable({
                       )}
                     </TableCell>
                   ))}
-                </TableRow>
+                </tr>
               ))}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
         </div>
 
         {/* Fixed pagination at bottom */}
-        <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/50 flex-shrink-0">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>
+        <div className="flex items-center justify-between gap-2 px-3 py-2 border-t flex-shrink-0">
+          <div className="text-xs text-muted-foreground">
+            <span className="hidden sm:inline">
               Mostrando {startItem} a {endItem} de {totalCount} consultas
+            </span>
+            <span className="inline sm:hidden">
+              {startItem}-{endItem} de {totalCount}
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
+          <div className="flex items-center gap-1.5 text-sm">
+            <button
               onClick={handlePreviousPage}
-              disabled={currentPage <= 1}
-              className="h-8"
+              disabled={currentPage <= 1 || isLoading}
+              className="p-1 hover:bg-muted rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <IconChevronLeft className="h-4 w-4" />
-              Anterior
-            </Button>
+            </button>
 
-            <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNum;
-                if (totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (currentPage <= 3) {
-                  pageNum = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
-                } else {
-                  pageNum = currentPage - 2 + i;
-                }
-
-                return (
-                  <Button
-                    key={pageNum}
-                    variant={currentPage === pageNum ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => onPageChange?.(pageNum)}
-                    className="h-8 w-8"
-                  >
-                    {pageNum}
-                  </Button>
-                );
-              })}
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground hidden sm:inline">
+                Página
+              </span>
+              <input
+                type="text"
+                value={pageInput}
+                onChange={handlePageInputChange}
+                onBlur={handlePageInputSubmit}
+                onKeyDown={handlePageInputKeyDown}
+                disabled={isLoading}
+                className="w-10 h-7 px-2 text-center text-sm border rounded bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+              <span className="text-xs text-muted-foreground">
+                de {totalPages}
+              </span>
             </div>
 
-            <Button
-              variant="outline"
-              size="sm"
+            <button
               onClick={handleNextPage}
-              disabled={currentPage >= totalPages}
-              className="h-8"
+              disabled={currentPage >= totalPages || isLoading}
+              className="p-1 hover:bg-muted rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
-              Seguinte
               <IconChevronRight className="h-4 w-4" />
-            </Button>
+            </button>
           </div>
         </div>
       </div>

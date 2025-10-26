@@ -3,11 +3,9 @@ import {
   IconTable,
   IconDashboard,
   IconInnerShadowTop,
-  IconSearch,
 } from "@tabler/icons-react";
 
 import { NavMain } from "@/components/sidebar/nav-main";
-import { NavSecondary } from "@/components/sidebar/nav-secondary";
 import { NavUser } from "@/components/sidebar/nav-user";
 import {
   Sidebar,
@@ -21,14 +19,6 @@ import {
 import type { UserData } from "@/lib/api/users";
 import type { Specialty } from "@/lib/api/specialties";
 import type { TabType } from "@/constants";
-
-const navSecondary = [
-  {
-    title: "Procurar",
-    url: "#",
-    icon: IconSearch,
-  },
-];
 
 export function AppSidebar({
   user,
@@ -95,7 +85,6 @@ export function AppSidebar({
           onTabChange={onTabChange}
           onNewConsultation={onNewConsultation}
         />
-        <NavSecondary items={navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser
