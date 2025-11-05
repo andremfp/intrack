@@ -61,9 +61,14 @@ export function NavMain({
             const isSubItemActive =
               item.items &&
               item.items.some((subItem) => {
+                // For specialty year sub-items (like "MGF.1"), match the pattern
                 const yearMatch = subItem.title.match(/\.(\d+)$/);
-                const yearNumber = yearMatch ? yearMatch[1] : subItem.title;
-                return activeTab === `${item.title}.${yearNumber}`;
+                if (yearMatch) {
+                  const yearNumber = yearMatch[1];
+                  return activeTab === `${item.title}.${yearNumber}`;
+                }
+                // For other sub-items (like Métricas sub-items), match directly
+                return activeTab === `${item.title}.${subItem.title}`;
               });
             const isActive = activeTab === item.title || isSubItemActive;
 
@@ -91,10 +96,10 @@ export function NavMain({
                         {item.items.map((subItem) => {
                           // Extract year number from title like "MGF.1" -> "1"
                           const yearMatch = subItem.title.match(/\.(\d+)$/);
-                          const yearNumber = yearMatch
-                            ? yearMatch[1]
-                            : subItem.title;
-                          const subItemTab = `${item.title}.${yearNumber}`;
+                          // Determine the sub-item tab format
+                          const subItemTab = yearMatch
+                            ? `${item.title}.${yearMatch[1]}`
+                            : `${item.title}.${subItem.title}`;
                           const isSubActive = activeTab === subItemTab;
                           return (
                             <SidebarMenuSubItem key={subItem.title}>
