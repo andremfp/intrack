@@ -43,9 +43,23 @@ export function AppSidebar({
   // Build nav items dynamically based on specialty
   const navMain = [
     {
-      title: "Resumo",
+      title: "Métricas",
       url: "#",
       icon: IconDashboard,
+      items: [
+        {
+          title: "Geral",
+          url: "#",
+        },
+        {
+          title: "Consultas",
+          url: "#",
+        },
+        {
+          title: "ICPC-2",
+          url: "#",
+        },
+      ],
     },
     {
       title: "Consultas",

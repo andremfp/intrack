@@ -6,6 +6,7 @@ import {
   getDefaultSpecialtyDetails,
   type SpecialtyDetails,
   PAGINATION_CONSTANTS,
+  MGF_FIELDS,
 } from "@/constants";
 
 export type Consultation = Tables<"consultations">;
@@ -229,4 +230,294 @@ export async function getMGFConsultations(
     consultations: data,
     totalCount: count || 0,
   });
+}
+
+// Metrics types
+export interface ConsultationMetrics {
+  totalConsultations: number;
+  averageAge: number;
+  byMonth: Array<{ month: string; count: number }>;
+  bySex: Array<{ sex: string; count: number }>;
+  byAgeRange: Array<{ range: string; count: number }>;
+  byType: Array<{ type: string; label: string; count: number }>;
+  byPresential: Array<{ presential: string; count: number }>;
+  bySmoker: Array<{ smoker: string; count: number }>;
+  byContraceptive: Array<{ contraceptive: string; count: number }>;
+  byNewContraceptive: Array<{ newContraceptive: string; count: number }>;
+  byDiagnosis: Array<{ code: string; count: number }>;
+  byProblems: Array<{ code: string; count: number }>;
+  byNewDiagnosis: Array<{ code: string; count: number }>;
+}
+
+// Fetch aggregated metrics for consultations
+export async function getConsultationMetrics(
+  userId: string,
+  specialtyYear?: number
+): Promise<ApiResponse<ConsultationMetrics>> {
+  try {
+    // Fetch all consultations for the user and specialty year
+    let query = supabase
+      .from("consultations_mgf")
+      .select("*")
+      .eq("user_id", userId);
+
+    if (specialtyYear !== undefined) {
+      query = query.eq("specialty_year", specialtyYear);
+    }
+
+    const { data, error } = await query;
+
+    if (error) return failure(error, "getConsultationMetrics");
+    if (!data) return success(getEmptyMetrics());
+
+    // Calculate metrics
+    const metrics = calculateMetrics(data);
+    return success(metrics);
+  } catch (error) {
+    return failure(error as Error, "getConsultationMetrics");
+  }
+}
+
+function getEmptyMetrics(): ConsultationMetrics {
+  return {
+    totalConsultations: 0,
+    averageAge: 0,
+    byMonth: [],
+    bySex: [],
+    byAgeRange: [],
+    byType: [],
+    byPresential: [],
+    bySmoker: [],
+    byContraceptive: [],
+    byNewContraceptive: [],
+    byDiagnosis: [],
+    byProblems: [],
+    byNewDiagnosis: [],
+  };
+}
+
+function calculateMetrics(
+  consultations: ConsultationMGF[]
+): ConsultationMetrics {
+  const typeValueToLabel = new Map(
+    (MGF_FIELDS.find((field) => field.key === "type")?.options ?? []).map(
+      (option) => [option.value, option.label]
+    )
+  );
+  // Total consultations
+  const totalConsultations = consultations.length;
+
+  // Average age (convert all ages to years)
+  const totalAgeInYears = consultations.reduce((sum, c) => {
+    if (!c.age || !c.age_unit) return sum;
+    let ageInYears = c.age;
+    if (c.age_unit === "months") {
+      ageInYears = c.age / 12;
+    } else if (c.age_unit === "days") {
+      ageInYears = c.age / 365;
+    }
+    return sum + ageInYears;
+  }, 0);
+  const averageAge =
+    totalConsultations > 0 ? totalAgeInYears / totalConsultations : 0;
+
+  // By age ranges (years): 0-17, 18-44, 45-64, 65+
+  const ageRangeBuckets: {
+    label: string;
+    min: number;
+    max?: number;
+    count: number;
+  }[] = [
+    { label: "0-17", min: 0, max: 17, count: 0 },
+    { label: "18-44", min: 18, max: 44, count: 0 },
+    { label: "45-64", min: 45, max: 64, count: 0 },
+    { label: "65+", min: 65, count: 0 },
+  ];
+  consultations.forEach((c) => {
+    if (c.age !== null && c.age !== undefined && c.age_unit) {
+      let ageYears = c.age;
+      if (c.age_unit === "months") ageYears = c.age / 12;
+      else if (c.age_unit === "days") ageYears = c.age / 365;
+      const age = Math.floor(ageYears);
+      const bucket = ageRangeBuckets.find((b) =>
+        b.max !== undefined ? age >= b.min && age <= b.max : age >= b.min
+      );
+      if (bucket) bucket.count += 1;
+    }
+  });
+  const byAgeRange = ageRangeBuckets
+    .filter((b) => b.count > 0)
+    .map((b) => ({ range: b.label, count: b.count }));
+
+  // By month (group by year-month)
+  const monthCounts = new Map<string, number>();
+  consultations.forEach((c) => {
+    if (c.date) {
+      const date = new Date(c.date);
+      const monthKey = `${date.getFullYear()}-${String(
+        date.getMonth() + 1
+      ).padStart(2, "0")}`;
+      monthCounts.set(monthKey, (monthCounts.get(monthKey) || 0) + 1);
+    }
+  });
+  const byMonth = Array.from(monthCounts.entries())
+    .map(([month, count]) => ({ month, count }))
+    .sort((a, b) => a.month.localeCompare(b.month));
+
+  // By sex
+  const sexCounts = new Map<string, number>();
+  consultations.forEach((c) => {
+    if (c.sex) {
+      sexCounts.set(c.sex, (sexCounts.get(c.sex) || 0) + 1);
+    }
+  });
+  const bySex = Array.from(sexCounts.entries()).map(([sex, count]) => ({
+    sex,
+    count,
+  }));
+
+  // By type - parse the type from JSON if needed
+  const typeCounts = new Map<string, number>();
+  consultations.forEach((c) => {
+    if (c.type) {
+      let typeValue: string;
+      if (typeof c.type === "string") {
+        typeValue = c.type;
+      } else if (typeof c.type === "object" && c.type !== null) {
+        // If it's stored as JSON object, try to extract the value
+        typeValue = JSON.stringify(c.type);
+      } else {
+        return;
+      }
+      typeCounts.set(typeValue, (typeCounts.get(typeValue) || 0) + 1);
+    }
+  });
+  const byType = Array.from(typeCounts.entries())
+    .map(([type, count]) => ({
+      type,
+      label: typeValueToLabel.get(type) ?? type,
+      count,
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  // By presential
+  const presentialCounts = new Map<string, number>();
+  consultations.forEach((c) => {
+    if (c.presential !== null && c.presential !== undefined) {
+      const key = c.presential ? "true" : "false";
+      presentialCounts.set(key, (presentialCounts.get(key) || 0) + 1);
+    }
+  });
+  const byPresential = Array.from(presentialCounts.entries()).map(
+    ([presential, count]) => ({
+      presential,
+      count,
+    })
+  );
+
+  // By smoker
+  const smokerCounts = new Map<string, number>();
+  consultations.forEach((c) => {
+    if (c.smoker !== null && c.smoker !== undefined) {
+      const key = c.smoker ? "true" : "false";
+      smokerCounts.set(key, (smokerCounts.get(key) || 0) + 1);
+    }
+  });
+  const bySmoker = Array.from(smokerCounts.entries()).map(
+    ([smoker, count]) => ({ smoker, count })
+  );
+
+  // By contraceptive
+  const contraceptiveCounts = new Map<string, number>();
+  consultations.forEach((c) => {
+    if (c.contraceptive) {
+      contraceptiveCounts.set(
+        c.contraceptive,
+        (contraceptiveCounts.get(c.contraceptive) || 0) + 1
+      );
+    }
+  });
+  const byContraceptive = Array.from(contraceptiveCounts.entries())
+    .map(([contraceptive, count]) => ({ contraceptive, count }))
+    .sort((a, b) => b.count - a.count);
+
+  // By new contraceptive
+  const newContraceptiveCounts = new Map<string, number>();
+  consultations.forEach((c) => {
+    if (c.new_contraceptive) {
+      const key =
+        typeof c.new_contraceptive === "string" ? c.new_contraceptive : "Sim";
+      newContraceptiveCounts.set(
+        key,
+        (newContraceptiveCounts.get(key) || 0) + 1
+      );
+    }
+  });
+  const byNewContraceptive = Array.from(newContraceptiveCounts.entries()).map(
+    ([newContraceptive, count]) => ({ newContraceptive, count })
+  );
+
+  // By diagnosis codes (split by semicolon and count each code)
+  const diagnosisCounts = new Map<string, number>();
+  consultations.forEach((c) => {
+    if (c.diagnosis) {
+      const codes = c.diagnosis.split(";").map((code) => code.trim());
+      codes.forEach((code) => {
+        if (code) {
+          diagnosisCounts.set(code, (diagnosisCounts.get(code) || 0) + 1);
+        }
+      });
+    }
+  });
+  const byDiagnosis = Array.from(diagnosisCounts.entries())
+    .map(([code, count]) => ({ code, count }))
+    .sort((a, b) => b.count - a.count);
+
+  // By problems codes (split by semicolon and count each code)
+  const problemsCounts = new Map<string, number>();
+  consultations.forEach((c) => {
+    if (c.problems) {
+      const codes = c.problems.split(";").map((code) => code.trim());
+      codes.forEach((code) => {
+        if (code) {
+          problemsCounts.set(code, (problemsCounts.get(code) || 0) + 1);
+        }
+      });
+    }
+  });
+  const byProblems = Array.from(problemsCounts.entries())
+    .map(([code, count]) => ({ code, count }))
+    .sort((a, b) => b.count - a.count);
+
+  // By new diagnosis codes (split by semicolon and count each code)
+  const newDiagnosisCounts = new Map<string, number>();
+  consultations.forEach((c) => {
+    if (c.new_diagnosis) {
+      const codes = c.new_diagnosis.split(";").map((code) => code.trim());
+      codes.forEach((code) => {
+        if (code) {
+          newDiagnosisCounts.set(code, (newDiagnosisCounts.get(code) || 0) + 1);
+        }
+      });
+    }
+  });
+  const byNewDiagnosis = Array.from(newDiagnosisCounts.entries())
+    .map(([code, count]) => ({ code, count }))
+    .sort((a, b) => b.count - a.count);
+
+  return {
+    totalConsultations,
+    averageAge,
+    byAgeRange,
+    byMonth,
+    bySex,
+    byType,
+    byPresential,
+    bySmoker,
+    byContraceptive,
+    byNewContraceptive,
+    byDiagnosis,
+    byProblems,
+    byNewDiagnosis,
+  };
 }

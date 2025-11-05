@@ -18,7 +18,7 @@ export type { ICPC2Code } from "./icpc2-codes";
 import { MGF_ICPC2_CODES } from "./icpc2-codes";
 
 // Common types
-export type TabType = "Resumo" | "Consultas" | string; // string allows "Consultas.1", "Consultas.2", etc.
+export type TabType = "Métricas" | "Consultas" | string; // string allows "Métricas.Geral", "Métricas.Consultas", "Métricas.ICPC-2", "Consultas.1", "Consultas.2", etc.
 
 // Get ICPC-2 codes for a specialty
 export function getICPC2Codes(specialtyCode: string) {

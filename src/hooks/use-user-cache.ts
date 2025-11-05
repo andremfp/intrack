@@ -48,9 +48,16 @@ export function useCachedUserSpecialty() {
  * Returns [cachedValue, setter] similar to useState
  */
 export function useCachedActiveTab() {
-  const [activeTab, setActiveTabState] = useState<TabType>(
-    () => userCache.getActiveTab() || "Resumo"
-  );
+  const [activeTab, setActiveTabState] = useState<TabType>(() => {
+    const cached = userCache.getActiveTab();
+    // Migrate old "Resumo" to "Métricas.Geral"
+    if (cached === "Resumo") {
+      const migrated = "Métricas.Geral";
+      userCache.setActiveTab(migrated);
+      return migrated;
+    }
+    return cached || "Métricas.Geral";
+  });
 
   const updateActiveTab = useCallback((tab: TabType) => {
     setActiveTabState(tab);

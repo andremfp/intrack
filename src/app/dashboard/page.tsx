@@ -1,6 +1,5 @@
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
-import { ChartAreaInteractive } from "@/components/chart-area-interactive";
-import { SectionCards } from "@/components/section-cards";
+import { MetricsDashboard } from "@/components/metrics/metrics-dashboard";
 import { SiteHeader } from "@/components/site-header";
 import { SpecialtySelectionModal } from "@/components/modals/specialty-selection-modal";
 import { ProfileModal } from "@/components/modals/profile-modal";
@@ -30,6 +29,9 @@ import {
   useCachedActiveTab,
 } from "@/hooks/use-user-cache";
 import { AboutModal } from "@/components/modals/about-modal";
+
+const SCROLLBAR_CLASSES =
+  "[&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-corner]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40";
 
 function DashboardContent() {
   const { setOpenMobile, isMobile } = useSidebar();
@@ -62,10 +64,22 @@ function DashboardContent() {
   });
 
   // Parse activeTab to get main tab and specialty year
-  const mainTab = activeTab.startsWith("Consultas.") ? "Consultas" : activeTab;
+  const mainTab = activeTab.startsWith("Consultas.")
+    ? "Consultas"
+    : activeTab.startsWith("Métricas.")
+    ? "Métricas"
+    : activeTab;
   const activeSpecialtyYear = activeTab.startsWith("Consultas.")
     ? parseInt(activeTab.split(".")[1])
     : 1;
+
+  // Parse Métricas sub-tab
+  const metricsSubTab: "Geral" | "Consultas" | "ICPC-2" | null =
+    activeTab.startsWith("Métricas.")
+      ? (activeTab.split(".")[1] as "Geral" | "Consultas" | "ICPC-2")
+      : activeTab === "Métricas"
+      ? "Geral" // Default to Geral if just "Métricas"
+      : null;
 
   useEffect(() => {
     let isMounted = true;
@@ -416,7 +430,8 @@ function DashboardContent() {
       />
       <SidebarInset
         className={cn(
-          "h-screen md:h-[calc(100vh-1rem)] overflow-hidden px-4 pb-4",
+          "h-screen md:h-[calc(100vh-1rem)] overflow-x-hidden overflow-y-auto px-4 pb-4",
+          SCROLLBAR_CLASSES,
           showSpecialtyModal || showConsultationModal
             ? "blur-sm pointer-events-none"
             : ""
@@ -425,12 +440,21 @@ function DashboardContent() {
         <SiteHeader specialty={userSpecialty} activeTab={activeTab} />
         <div className="flex flex-1 flex-col min-h-0">
           <div className="@container/main flex flex-1 flex-col min-h-0">
-            {mainTab === "Resumo" && (
-              <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-                <SectionCards />
-                <div className="px-4 lg:px-6">
-                  <ChartAreaInteractive />
-                </div>
+            {mainTab === "Métricas" && userProfile && metricsSubTab && (
+              <div
+                className={cn(
+                  "flex-1",
+                  metricsSubTab === "Geral"
+                    ? "flex flex-col min-h-0 overflow-hidden"
+                    : "overflow-y-auto",
+                  SCROLLBAR_CLASSES
+                )}
+              >
+                <MetricsDashboard
+                  userId={userProfile.data.user_id}
+                  specialty={userSpecialty}
+                  activeSubTab={metricsSubTab}
+                />
               </div>
             )}
             {mainTab === "Consultas" && (
