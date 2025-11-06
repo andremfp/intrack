@@ -97,6 +97,9 @@ export function DonutCenterChart<T extends { count: number }>({
   const COMPACT_EXIT = 304; // switch back to donut
 
   useEffect(() => {
+    if (containerWidth === 0) {
+      return;
+    }
     setStackLegend((prev) => {
       if (prev) {
         return containerWidth < STACK_EXIT;
@@ -127,11 +130,11 @@ export function DonutCenterChart<T extends { count: number }>({
   // Build chart data with fill colors bound to config tokens
   // Use primary-based colors for default donut charts
   const chartColors = [
-    "var(--donut-1)",
-    "var(--donut-2)",
-    "var(--donut-3)",
-    "var(--donut-4)",
-    "var(--donut-5)",
+    "var(--chart-1)",
+    "var(--chart-2)",
+    "var(--chart-3)",
+    "var(--chart-4)",
+    "var(--chart-5)",
   ];
 
   // Sex-specific color mapping
