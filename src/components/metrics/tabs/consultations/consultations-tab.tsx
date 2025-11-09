@@ -14,7 +14,6 @@ import { Collapsible } from "@radix-ui/react-collapsible";
 import { CollapsibleTrigger } from "@radix-ui/react-collapsible";
 import { CollapsibleContent } from "@radix-ui/react-collapsible";
 import { MetricCard } from "../../cards/metric-card";
-import { StackedBarCard } from "../../cards/stacked-bar-card";
 import { BreakdownTable } from "../../charts/breakdown-table";
 import { getFieldLabel } from "../../metrics-utils";
 
@@ -92,8 +91,8 @@ export function ConsultationsTab({
               <ChevronDown className="h-4 w-4 transition-transform data-[state=open]:rotate-180" />
             </Button>
           </CollapsibleTrigger>
-          <CollapsibleContent className="mt-2 grid gap-3 grid-cols-1 lg:grid-cols-2">
-            <StackedBarCard
+          <CollapsibleContent className="mt-2 grid gap-3">
+            <MetricCard
               title="Fumadores"
               data={metrics.bySmoker}
               getKey={(item) => item.smoker}

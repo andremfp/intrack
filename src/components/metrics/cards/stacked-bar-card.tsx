@@ -1,12 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import type { HTMLAttributes, KeyboardEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface StackedBarCardProps<T extends { count: number }> {
   title: string;
@@ -40,6 +46,72 @@ export function StackedBarCard<T extends { count: number }>({
 }: StackedBarCardProps<T>) {
   const validData = data.filter((item) => item.count > 0);
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const [isCoarsePointer, setIsCoarsePointer] = useState(false);
+  const barContainerRef = useRef<HTMLDivElement | null>(null);
+  const legendRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    ) {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(pointer: coarse)");
+
+    const handleChange = (event: MediaQueryListEvent) => {
+      setIsCoarsePointer(event.matches);
+    };
+
+    setIsCoarsePointer(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
+    }
+
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (isCoarsePointer) {
+      setHoveredKey(null);
+    } else {
+      setActiveKey(null);
+    }
+  }, [isCoarsePointer]);
+
+  useEffect(() => {
+    if (!isCoarsePointer || activeKey === null) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+
+      if (!target) {
+        return;
+      }
+
+      if (
+        (barContainerRef.current && barContainerRef.current.contains(target)) ||
+        (legendRef.current && legendRef.current.contains(target))
+      ) {
+        return;
+      }
+
+      setActiveKey(null);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown, true);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+    };
+  }, [isCoarsePointer, activeKey]);
 
   if (validData.length === 0) {
     return (
@@ -74,6 +146,23 @@ export function StackedBarCard<T extends { count: number }>({
   });
 
   const total = normalized.reduce((sum, item) => sum + item.count, 0);
+  const highlightedKey = isCoarsePointer ? activeKey : hoveredKey;
+
+  const handleMobileToggle = (key: string) => {
+    if (!isCoarsePointer) {
+      return;
+    }
+
+    setActiveKey((prev) => (prev === key ? null : key));
+  };
+
+  const handleBarOpenChange = (key: string, open: boolean) => {
+    if (!isCoarsePointer) {
+      return;
+    }
+
+    setActiveKey(open ? key : null);
+  };
 
   return (
     <Card>
@@ -84,33 +173,113 @@ export function StackedBarCard<T extends { count: number }>({
       </CardHeader>
       <CardContent>
         <div className="flex flex-col items-center gap-2 min-w-0">
-          <div className="h-2.5 w-full max-w-[240px] rounded-full overflow-hidden bg-muted">
+          <div
+            ref={barContainerRef}
+            className="h-2.5 sm:w-3/4 w-full rounded-full overflow-hidden bg-muted"
+          >
             <div className="flex h-full w-full">
               {normalized.map((item) => {
                 const percentage = total > 0 ? (item.count / total) * 100 : 0;
                 const percentageLabel =
                   total > 0 ? ((item.count / total) * 100).toFixed(1) : "0";
-                const isDimmed = hoveredKey !== null && hoveredKey !== item.key;
-                const isHovered = hoveredKey === item.key;
+                const isDimmed =
+                  highlightedKey !== null && highlightedKey !== item.key;
+                const isHighlighted = highlightedKey === item.key;
                 const tooltipText = `${
                   item.label
                 }: ${item.count.toLocaleString()} (${percentageLabel}%)`;
 
+                const baseProps: HTMLAttributes<HTMLDivElement> = {
+                  className: "h-full cursor-pointer transition-all",
+                  style: {
+                    width: `${percentage}%`,
+                    backgroundColor: item.color,
+                    opacity: isDimmed ? 0.35 : 1,
+                    filter: isHighlighted ? "brightness(1.06)" : "none",
+                  },
+                  onMouseEnter: () => {
+                    if (!isCoarsePointer) {
+                      setHoveredKey(item.key);
+                    }
+                  },
+                  onMouseLeave: () => {
+                    if (!isCoarsePointer) {
+                      setHoveredKey(null);
+                    }
+                  },
+                  onFocus: () => {
+                    if (!isCoarsePointer) {
+                      setHoveredKey(item.key);
+                    }
+                  },
+                  onBlur: () => {
+                    if (!isCoarsePointer) {
+                      setHoveredKey(null);
+                    }
+                  },
+                  tabIndex: 0,
+                  "aria-label": tooltipText,
+                } satisfies HTMLAttributes<HTMLDivElement>;
+
+                if (isCoarsePointer) {
+                  baseProps.onClick = undefined;
+                  baseProps.onKeyDown = undefined;
+                } else {
+                  baseProps.onClick = () => handleMobileToggle(item.key);
+                  baseProps.onKeyDown = (
+                    event: KeyboardEvent<HTMLDivElement>
+                  ) => {
+                    if (
+                      isCoarsePointer &&
+                      (event.key === "Enter" || event.key === " ")
+                    ) {
+                      event.preventDefault();
+                      handleMobileToggle(item.key);
+                    }
+                  };
+                }
+
+                const tooltipOpen = isCoarsePointer
+                  ? activeKey === item.key
+                  : hoveredKey === item.key;
+
+                if (isCoarsePointer) {
+                  return (
+                    <Popover
+                      key={item.key}
+                      open={activeKey === item.key}
+                      onOpenChange={(open) =>
+                        handleBarOpenChange(item.key, open)
+                      }
+                    >
+                      <PopoverTrigger asChild>
+                        <div
+                          {...baseProps}
+                          role="button"
+                          aria-pressed={isHighlighted}
+                        />
+                      </PopoverTrigger>
+                      <PopoverContent
+                        side="top"
+                        align="center"
+                        className="bg-background text-foreground border shadow-lg px-3 py-2 text-xs w-auto min-w-[10rem]"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                            style={{ backgroundColor: item.color }}
+                          />
+                          <p>{tooltipText}</p>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  );
+                }
+
                 return (
-                  <Tooltip key={item.key}>
+                  <Tooltip key={item.key} open={tooltipOpen} delayDuration={0}>
                     <TooltipTrigger asChild>
-                      <div
-                        className="h-full cursor-pointer transition-all"
-                        style={{
-                          width: `${percentage}%`,
-                          backgroundColor: item.color,
-                          opacity: isDimmed ? 0.35 : 1,
-                          filter: isHovered ? "brightness(1.06)" : "none",
-                        }}
-                        onMouseEnter={() => setHoveredKey(item.key)}
-                        onMouseLeave={() => setHoveredKey(null)}
-                        aria-label={tooltipText}
-                      />
+                      <div {...baseProps} />
                     </TooltipTrigger>
                     <TooltipContent className="bg-background text-foreground border shadow-lg">
                       <div className="flex items-center gap-2">
@@ -127,50 +296,100 @@ export function StackedBarCard<T extends { count: number }>({
             </div>
           </div>
           <div
+            ref={legendRef}
             className="mt-1 flex flex-wrap items-center justify-center gap-2 text-[10px] sm:text-xs"
-            onMouseLeave={() => setHoveredKey(null)}
+            onMouseLeave={() => {
+              if (!isCoarsePointer) {
+                setHoveredKey(null);
+              }
+            }}
           >
             {normalized.map((item) => {
               const legendLabel = formatLegendLabel?.(item.key) ?? item.label;
               const percentageLabel =
                 total > 0 ? ((item.count / total) * 100).toFixed(1) : "0";
-              const isDimmed = hoveredKey !== null && hoveredKey !== item.key;
-              const isHovered = hoveredKey === item.key;
+              const isDimmed =
+                highlightedKey !== null && highlightedKey !== item.key;
+              const isHighlighted = highlightedKey === item.key;
               const tooltipText = `${
                 item.label
               }: ${item.count.toLocaleString()} (${percentageLabel}%)`;
+              const legendText = `${legendLabel}: ${item.count.toLocaleString()} (${percentageLabel}%)`;
+
+              const baseProps = {
+                className: "flex items-center gap-1 cursor-pointer",
+                onMouseEnter: () => {
+                  if (!isCoarsePointer) {
+                    setHoveredKey(item.key);
+                  }
+                },
+                onMouseLeave: () => {
+                  if (!isCoarsePointer) {
+                    setHoveredKey(null);
+                  }
+                },
+                onFocus: () => {
+                  if (!isCoarsePointer) {
+                    setHoveredKey(item.key);
+                  }
+                },
+                onBlur: () => {
+                  if (!isCoarsePointer) {
+                    setHoveredKey(null);
+                  }
+                },
+                onClick: () => handleMobileToggle(item.key),
+                onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => {
+                  if (
+                    isCoarsePointer &&
+                    (event.key === "Enter" || event.key === " ")
+                  ) {
+                    event.preventDefault();
+                    handleMobileToggle(item.key);
+                  }
+                },
+                style: {
+                  opacity: isDimmed ? 0.4 : 1,
+                },
+                tabIndex: 0,
+                "aria-label": tooltipText,
+              };
+
+              if (isCoarsePointer) {
+                return (
+                  <div
+                    key={item.key}
+                    {...baseProps}
+                    role="button"
+                    aria-pressed={isHighlighted}
+                  >
+                    <div
+                      className="h-2 w-2 shrink-0 rounded-[2px]"
+                      style={{
+                        backgroundColor: item.color,
+                        filter: isHighlighted ? "brightness(1.06)" : "none",
+                      }}
+                    />
+                    <span className="text-muted-foreground truncate">
+                      {legendText}
+                    </span>
+                  </div>
+                );
+              }
 
               return (
-                <Tooltip key={item.key}>
-                  <TooltipTrigger asChild>
-                    <div
-                      className="flex items-center gap-1 cursor-pointer"
-                      onMouseEnter={() => setHoveredKey(item.key)}
-                      onMouseLeave={() => setHoveredKey(null)}
-                      style={{ opacity: isDimmed ? 0.4 : 1 }}
-                    >
-                      <div
-                        className="h-2 w-2 shrink-0 rounded-[2px]"
-                        style={{
-                          backgroundColor: item.color,
-                          filter: isHovered ? "brightness(1.06)" : "none",
-                        }}
-                      />
-                      <span className="text-muted-foreground truncate">
-                        {legendLabel}
-                      </span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent className="bg-background text-foreground border shadow-lg">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <p>{tooltipText}</p>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
+                <div key={item.key} {...baseProps}>
+                  <div
+                    className="h-2 w-2 shrink-0 rounded-[2px]"
+                    style={{
+                      backgroundColor: item.color,
+                      filter: isHighlighted ? "brightness(1.06)" : "none",
+                    }}
+                  />
+                  <span className="text-muted-foreground truncate">
+                    {legendText}
+                  </span>
+                </div>
               );
             })}
           </div>
