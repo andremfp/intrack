@@ -21,6 +21,8 @@ interface DatePickerProps {
   required?: boolean;
   id?: string;
   label?: string;
+  isInvalid?: boolean;
+  describedBy?: string;
 }
 
 function formatDate(date: Date | undefined) {
@@ -50,6 +52,8 @@ export function DatePicker({
   required = false,
   id,
   label,
+  isInvalid = false,
+  describedBy,
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false);
   const [date, setDate] = React.useState<Date | undefined>(
@@ -132,6 +136,8 @@ export function DatePicker({
           }}
           disabled={disabled}
           required={required}
+          aria-invalid={isInvalid || undefined}
+          aria-describedby={describedBy}
         />
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>

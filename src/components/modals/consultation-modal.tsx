@@ -74,6 +74,11 @@ export function ConsultationModal({
     Record<string, string>
   >({});
 
+  const [fieldError, setFieldError] = useState<{
+    key: string;
+    message: string;
+  } | null>(null);
+
   // Initialize form values dynamically
   const [formValues, setFormValues] = useState<
     Record<string, string | string[]>
@@ -158,6 +163,19 @@ export function ConsultationModal({
     return initialValues;
   });
 
+  const showFieldError = (key: string, message: string) => {
+    setFieldError({ key, message });
+    requestAnimationFrame(() => {
+      const element = document.getElementById(key);
+      if (element instanceof HTMLElement) {
+        element.focus();
+        if ("scrollIntoView" in element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }
+    });
+  };
+
   // Prevent body scroll when modal is open
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
@@ -171,22 +189,31 @@ export function ConsultationModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    setFieldError(null);
+
     // Validation for required common fields
     const requiredCommonFields = COMMON_CONSULTATION_FIELDS.filter(
       (f) => f.required
     );
-    for (const field of requiredCommonFields) {
+    const requiredSpecialtyFields = specialtyFields.filter((f) => f.required);
+    const requiredFields = [
+      ...requiredCommonFields,
+      ...requiredSpecialtyFields,
+    ];
+    for (const field of requiredFields) {
       if (!formValues[field.key]) {
+        const message = `Por favor preenche o campo ${field.label}.`;
         toast.error("Campos obrigatórios em falta", {
-          description: `Por favor preencha o campo ${field.label}.`,
+          description: message,
         });
+        showFieldError(field.key, message);
         return;
       }
     }
 
     if (!specialty?.id) {
       toast.error("Especialidade não encontrada", {
-        description: "Por favor selecione uma especialidade.",
+        description: "Por favor seleciona uma especialidade.",
       });
       return;
     }
@@ -194,9 +221,11 @@ export function ConsultationModal({
     const ageValue = typeof formValues.age === "string" ? formValues.age : "";
     const ageNum = parseInt(ageValue);
     if (isNaN(ageNum) || ageNum < 0 || ageNum > 150) {
+      const message = "A idade deve estar entre 0 e 150.";
       toast.error("Idade inválida", {
-        description: "A idade deve estar entre 0 e 150.",
+        description: message,
       });
+      showFieldError("age", message);
       return;
     }
 
@@ -205,10 +234,12 @@ export function ConsultationModal({
         ? formValues.health_number
         : "";
     const healthNumberNum = parseInt(healthNumberValue);
-    if (isNaN(healthNumberNum)) {
+    if (isNaN(healthNumberNum) || healthNumberValue.length !== 9) {
+      const message = "O número de saúde deve ser um número válido.";
       toast.error("Número de saúde inválido", {
-        description: "O número de saúde deve ser um número válido.",
+        description: message,
       });
+      showFieldError("health_number", message);
       return;
     }
 
@@ -218,9 +249,11 @@ export function ConsultationModal({
         : "";
     const specialtyYearNum = parseInt(specialtyYearValue);
     if (isNaN(specialtyYearNum) || specialtyYearNum < 1) {
+      const message = "Por favor seleciona o ano da especialidade.";
       toast.error("Ano de especialidade inválido", {
-        description: "Por favor selecione o ano da especialidade.",
+        description: message,
       });
+      showFieldError("specialty_year", message);
       return;
     }
 
@@ -298,8 +331,15 @@ export function ConsultationModal({
     const value = formValues[field.key];
     const fieldId = field.key;
 
+    const errorMessage =
+      fieldError?.key === field.key ? fieldError.message : undefined;
+    const isInvalid = Boolean(errorMessage);
+
     const updateValue = (newValue: string | string[]) => {
       setFormValues((prev) => ({ ...prev, [field.key]: newValue }));
+      if (fieldError?.key === field.key) {
+        setFieldError(null);
+      }
     };
 
     const labelElement = (
@@ -313,15 +353,23 @@ export function ConsultationModal({
       case "text":
         if (field.key === "date") {
           return (
-            <DatePicker
-              key={fieldId}
-              id={fieldId}
-              label={field.label}
-              value={typeof value === "string" ? value : ""}
-              onChange={(date: string) => updateValue(date)}
-              placeholder="dd/mm/aaaa"
-              required={field.required}
-            />
+            <div key={fieldId} className="space-y-1.5">
+              <DatePicker
+                id={fieldId}
+                label={field.label}
+                value={typeof value === "string" ? value : ""}
+                onChange={(date: string) => updateValue(date)}
+                placeholder="dd/mm/aaaa"
+                required={field.required}
+                isInvalid={isInvalid}
+                describedBy={isInvalid ? `${fieldId}-error` : undefined}
+              />
+              {isInvalid && (
+                <p id={`${fieldId}-error`} className="text-xs text-destructive">
+                  {errorMessage}
+                </p>
+              )}
+            </div>
           );
         }
         return (
@@ -334,7 +382,14 @@ export function ConsultationModal({
               onChange={(e) => updateValue(e.target.value)}
               placeholder={field.placeholder}
               required={field.required}
+              aria-invalid={isInvalid || undefined}
+              aria-describedby={isInvalid ? `${fieldId}-error` : undefined}
             />
+            {isInvalid && (
+              <p id={`${fieldId}-error`} className="text-xs text-destructive">
+                {errorMessage}
+              </p>
+            )}
           </div>
         );
 
@@ -349,10 +404,17 @@ export function ConsultationModal({
               onChange={(e) => updateValue(e.target.value)}
               placeholder={field.placeholder}
               required={field.required}
-              min={field.key === "age" ? "0" : undefined}
-              max={field.key === "age" ? "150" : undefined}
+              min="0"
+              max={field.key === "age" ? "150" : "999999999"}
               className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              aria-invalid={isInvalid || undefined}
+              aria-describedby={isInvalid ? `${fieldId}-error` : undefined}
             />
+            {isInvalid && (
+              <p id={`${fieldId}-error`} className="text-xs text-destructive">
+                {errorMessage}
+              </p>
+            )}
           </div>
         );
 
@@ -366,7 +428,14 @@ export function ConsultationModal({
               onChange={(e) => updateValue(e.target.value)}
               placeholder={field.placeholder}
               required={field.required}
+              aria-invalid={isInvalid || undefined}
+              aria-describedby={isInvalid ? `${fieldId}-error` : undefined}
             />
+            {isInvalid && (
+              <p id={`${fieldId}-error`} className="text-xs text-destructive">
+                {errorMessage}
+              </p>
+            )}
           </div>
         );
 
@@ -378,7 +447,11 @@ export function ConsultationModal({
               value={typeof value === "string" ? value : "false"}
               onValueChange={(val) => updateValue(val)}
             >
-              <SelectTrigger id={fieldId}>
+              <SelectTrigger
+                id={fieldId}
+                aria-invalid={isInvalid || undefined}
+                aria-describedby={isInvalid ? `${fieldId}-error` : undefined}
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -386,6 +459,11 @@ export function ConsultationModal({
                 <SelectItem value="false">Não</SelectItem>
               </SelectContent>
             </Select>
+            {isInvalid && (
+              <p id={`${fieldId}-error`} className="text-xs text-destructive">
+                {errorMessage}
+              </p>
+            )}
           </div>
         );
 
@@ -398,7 +476,11 @@ export function ConsultationModal({
               onValueChange={(val) => updateValue(val)}
               required={field.required}
             >
-              <SelectTrigger id={fieldId}>
+              <SelectTrigger
+                id={fieldId}
+                aria-invalid={isInvalid || undefined}
+                aria-describedby={isInvalid ? `${fieldId}-error` : undefined}
+              >
                 <SelectValue
                   placeholder={field.placeholder || `Selecionar ${field.label}`}
                 />
@@ -411,6 +493,11 @@ export function ConsultationModal({
                 ))}
               </SelectContent>
             </Select>
+            {isInvalid && (
+              <p id={`${fieldId}-error`} className="text-xs text-destructive">
+                {errorMessage}
+              </p>
+            )}
           </div>
         );
 
@@ -675,6 +762,7 @@ export function ConsultationModal({
           <CardContent className="px-3 sm:px-6 pt-3 sm:pt-4 pb-2 overflow-y-auto flex-1">
             <form
               onSubmit={handleSubmit}
+              noValidate
               className="space-y-3 sm:space-y-4 h-full"
             >
               {/* Basic Information */}
@@ -712,15 +800,28 @@ export function ConsultationModal({
                             ? formValues.specialty_year
                             : "1"
                         }
-                        onValueChange={(val) =>
+                        onValueChange={(val) => {
+                          if (fieldError?.key === "specialty_year") {
+                            setFieldError(null);
+                          }
                           setFormValues((prev) => ({
                             ...prev,
                             specialty_year: val,
-                          }))
-                        }
+                          }));
+                        }}
                         required
                       >
-                        <SelectTrigger id="specialty_year">
+                        <SelectTrigger
+                          id="specialty_year"
+                          aria-invalid={
+                            fieldError?.key === "specialty_year" || undefined
+                          }
+                          aria-describedby={
+                            fieldError?.key === "specialty_year"
+                              ? "specialty_year-error"
+                              : undefined
+                          }
+                        >
                           <SelectValue placeholder="Selecionar ano" />
                         </SelectTrigger>
                         <SelectContent>
@@ -734,6 +835,14 @@ export function ConsultationModal({
                           ))}
                         </SelectContent>
                       </Select>
+                      {fieldError?.key === "specialty_year" && (
+                        <p
+                          id="specialty_year-error"
+                          className="text-xs text-destructive"
+                        >
+                          {fieldError.message}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
