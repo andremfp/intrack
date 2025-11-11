@@ -154,3 +154,11 @@
     overscroll-behavior: none;
   }
 }
+
+@layer components {
+  .toaster [data-sonner-toast][data-type="error"] {
+    background-color: var(--destructive);
+    color: var(--destructive-foreground);
+    border-color: var(--destructive);
+  }
+}
