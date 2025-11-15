@@ -35,6 +35,7 @@ export type FieldType =
   | "text"
   | "boolean"
   | "select"
+  | "combobox"
   | "number"
   | "textarea"
   | "text-list"
@@ -156,21 +157,47 @@ export const MGF_FIELDS: SpecialtyField[] = [
     placeholder: "Pesquisar códigos ICPC-2",
   },
   {
-    key: "alert",
-    label: "Alerta",
-    type: "text",
-    placeholder: "Tipo de alerta",
+    key: "referrence",
+    label: "Referenciação",
+    type: "combobox",
+    placeholder: "Referenciação",
+    options: [
+      { value: "cardiologia", label: "Cardiologia" },
+      { value: "endocrinologia", label: "Endocrinologia" },
+      { value: "gastroenterologia", label: "Gastroenterologia" },
+      { value: "geriatria", label: "Geriatria" },
+      { value: "hematologia", label: "Hematologia" },
+      { value: "neurologia", label: "Neurologia" },
+      { value: "nefrologia", label: "Nefrologia" },
+      { value: "oncologia", label: "Oncologia" },
+      { value: "otorrino", label: "Otorrino" },
+      { value: "pediatria", label: "Pediatria" },
+      { value: "psiquiatria", label: "Psiquiatria" },
+      { value: "reumatologia", label: "Reumatologia" },
+      { value: "urologia", label: "Urologia" },
+      { value: "ginecologia", label: "Ginecologia" },
+      { value: "obstetricia", label: "Obstetricia" },
+      { value: "ortopedia", label: "Ortopedia" },
+      { value: "neurocirurgia", label: "Neurocirurgia" },
+      { value: "pedopsiquiatria", label: "Pedopsiquiatria" },
+      { value: "dermatologia", label: "Dermatologia" },
+      { value: "paliativos", label: "Paliativos" },
+      { value: "pneumologia", label: "Pneumologia" },
+      { value: "cirurgia_vascular", label: "Cirurgia Vascular" },
+      { value: "cirurgia_toracica", label: "Cirurgia Toracica" },
+      { value: "cirurgia_geral", label: "Cirurgia Geral" },
+    ],
   },
   {
-    key: "alert_motive",
-    label: "Motivo do Alerta",
+    key: "referrence_motive",
+    label: "Motivo da referenciação",
     type: "text",
-    placeholder: "Razão do alerta",
+    placeholder: "Motivo da referenciação",
   },
   {
     key: "contraceptive",
     label: "Contraceptivo",
-    type: "select",
+    type: "combobox",
     placeholder: "Tipo de contraceptivo",
     options: [
       { value: "coc", label: "COC" },
@@ -188,7 +215,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
   {
     key: "new_contraceptive",
     label: "Novo Contraceptivo",
-    type: "select",
+    type: "combobox",
     placeholder: "Tipo de contraceptivo",
     options: [
       { value: "coc", label: "COC" },
