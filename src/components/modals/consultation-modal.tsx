@@ -278,7 +278,10 @@ export function ConsultationModal({
                   <div className="space-y-6">
                     {primarySpecialtyFields.length > 0 && (
                       <div className="rounded-lg border bg-card/50 p-4 sm:p-5">
-                        <div className="grid gap-3 grid-cols-2 sm:gap-5">
+                        <div
+                          className="grid grid-cols-2 gap-4 sm:gap-5"
+                          style={{ gridTemplateColumns: "1fr 1fr" }}
+                        >
                           {primarySpecialtyFields.map((field) => (
                             <ConsultationFieldWithLayout
                               key={field.key}
@@ -358,7 +361,7 @@ export function ConsultationModal({
               )}
 
               {/* Actions */}
-              <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-2 border-t">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
                 <Button
                   type="button"
                   variant="outline"

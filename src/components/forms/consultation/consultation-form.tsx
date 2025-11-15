@@ -4,6 +4,7 @@ import { NumberField } from "./fields/number-field";
 import { TextareaField } from "./fields/textarea-field";
 import { BooleanField } from "./fields/boolean-field";
 import { SelectField } from "./fields/select-field";
+import { ComboboxField } from "./fields/combobox-field";
 import { TextListField } from "./fields/text-list-field";
 import { ICPC2CodesField } from "./fields/icpc2-codes-field";
 import type { ICPC2Code } from "@/constants";
@@ -41,6 +42,8 @@ export function ConsultationField({
       return <BooleanField {...commonProps} />;
     case "select":
       return <SelectField {...commonProps} />;
+    case "combobox":
+      return <ComboboxField {...commonProps} />;
     case "text-list":
       return <TextListField {...commonProps} />;
     case "icpc2-codes":
