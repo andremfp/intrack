@@ -8,11 +8,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
 interface StackedBarCardProps<T extends { count: number }> {
   title: string;
@@ -156,12 +151,8 @@ export function StackedBarCard<T extends { count: number }>({
     setActiveKey((prev) => (prev === key ? null : key));
   };
 
-  const handleBarOpenChange = (key: string, open: boolean) => {
-    if (!isCoarsePointer) {
-      return;
-    }
-
-    setActiveKey(open ? key : null);
+  const handleTooltipOpenChange = (key: string, open: boolean) => {
+    setHoveredKey(open ? key : null);
   };
 
   return (
@@ -189,7 +180,7 @@ export function StackedBarCard<T extends { count: number }>({
                   item.label
                 }: ${item.count.toLocaleString()} (${percentageLabel}%)`;
 
-                const baseProps: HTMLAttributes<HTMLDivElement> = {
+                const baseProps = {
                   className: "h-full cursor-pointer transition-all",
                   style: {
                     width: `${percentage}%`,
@@ -217,18 +208,8 @@ export function StackedBarCard<T extends { count: number }>({
                       setHoveredKey(null);
                     }
                   },
-                  tabIndex: 0,
-                  "aria-label": tooltipText,
-                } satisfies HTMLAttributes<HTMLDivElement>;
-
-                if (isCoarsePointer) {
-                  baseProps.onClick = undefined;
-                  baseProps.onKeyDown = undefined;
-                } else {
-                  baseProps.onClick = () => handleMobileToggle(item.key);
-                  baseProps.onKeyDown = (
-                    event: KeyboardEvent<HTMLDivElement>
-                  ) => {
+                  onClick: () => handleMobileToggle(item.key),
+                  onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => {
                     if (
                       isCoarsePointer &&
                       (event.key === "Enter" || event.key === " ")
@@ -236,50 +217,34 @@ export function StackedBarCard<T extends { count: number }>({
                       event.preventDefault();
                       handleMobileToggle(item.key);
                     }
-                  };
-                }
+                  },
+                  tabIndex: 0,
+                  "aria-label": tooltipText,
+                } satisfies HTMLAttributes<HTMLDivElement>;
 
                 const tooltipOpen = isCoarsePointer
                   ? activeKey === item.key
                   : hoveredKey === item.key;
 
-                if (isCoarsePointer) {
-                  return (
-                    <Popover
-                      key={item.key}
-                      open={activeKey === item.key}
-                      onOpenChange={(open) =>
-                        handleBarOpenChange(item.key, open)
-                      }
-                    >
-                      <PopoverTrigger asChild>
-                        <div
-                          {...baseProps}
-                          role="button"
-                          aria-pressed={isHighlighted}
-                        />
-                      </PopoverTrigger>
-                      <PopoverContent
-                        side="top"
-                        align="center"
-                        className="bg-background text-foreground border shadow-lg px-3 py-2 text-xs w-auto min-w-[10rem]"
-                      >
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
-                            style={{ backgroundColor: item.color }}
-                          />
-                          <p>{tooltipText}</p>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  );
-                }
-
                 return (
-                  <Tooltip key={item.key} open={tooltipOpen} delayDuration={0}>
+                  <Tooltip
+                    key={item.key}
+                    open={tooltipOpen}
+                    delayDuration={0}
+                    {...(isCoarsePointer
+                      ? {}
+                      : {
+                          onOpenChange: (open: boolean) =>
+                            handleTooltipOpenChange(item.key, open),
+                        })}
+                  >
                     <TooltipTrigger asChild>
-                      <div {...baseProps} />
+                      <div
+                        {...baseProps}
+                        {...(isCoarsePointer
+                          ? { role: "button", "aria-pressed": isHighlighted }
+                          : {})}
+                      />
                     </TooltipTrigger>
                     <TooltipContent className="bg-background text-foreground border shadow-lg">
                       <div className="flex items-center gap-2">
@@ -353,7 +318,7 @@ export function StackedBarCard<T extends { count: number }>({
                 },
                 tabIndex: 0,
                 "aria-label": tooltipText,
-              };
+              } satisfies HTMLAttributes<HTMLDivElement>;
 
               if (isCoarsePointer) {
                 return (
@@ -378,18 +343,31 @@ export function StackedBarCard<T extends { count: number }>({
               }
 
               return (
-                <div key={item.key} {...baseProps}>
-                  <div
-                    className="h-2 w-2 shrink-0 rounded-[2px]"
-                    style={{
-                      backgroundColor: item.color,
-                      filter: isHighlighted ? "brightness(1.06)" : "none",
-                    }}
-                  />
-                  <span className="text-muted-foreground truncate">
-                    {legendText}
-                  </span>
-                </div>
+                <Tooltip key={item.key}>
+                  <TooltipTrigger asChild>
+                    <div {...baseProps}>
+                      <div
+                        className="h-2 w-2 shrink-0 rounded-[2px]"
+                        style={{
+                          backgroundColor: item.color,
+                          filter: isHighlighted ? "brightness(1.06)" : "none",
+                        }}
+                      />
+                      <span className="text-muted-foreground truncate">
+                        {legendText}
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-background text-foreground border shadow-lg">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <p>{tooltipText}</p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
               );
             })}
           </div>

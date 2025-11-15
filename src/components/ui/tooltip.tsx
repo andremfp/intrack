@@ -1,7 +1,7 @@
-import * as React from "react"
-import * as TooltipPrimitive from "@radix-ui/react-tooltip"
+import * as React from "react";
+import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/utils/utils";
 
 function TooltipProvider({
   delayDuration = 0,
@@ -13,7 +13,7 @@ function TooltipProvider({
       delayDuration={delayDuration}
       {...props}
     />
-  )
+  );
 }
 
 function Tooltip({
@@ -23,13 +23,13 @@ function Tooltip({
     <TooltipProvider>
       <TooltipPrimitive.Root data-slot="tooltip" {...props} />
     </TooltipProvider>
-  )
+  );
 }
 
 function TooltipTrigger({
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
+  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;
 }
 
 function TooltipContent({
@@ -39,8 +39,10 @@ function TooltipContent({
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Content>) {
   // Detect if this is a custom styled tooltip (not the default inverted style)
-  const hasCustomStyle = className?.includes("bg-background") || className?.includes("text-foreground");
-  
+  const hasCustomStyle =
+    className?.includes("bg-background") ||
+    className?.includes("text-foreground");
+
   return (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Content
@@ -53,17 +55,17 @@ function TooltipContent({
         {...props}
       >
         {children}
-        <TooltipPrimitive.Arrow 
+        <TooltipPrimitive.Arrow
           className={cn(
             "z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px]",
-            hasCustomStyle 
-              ? "bg-background fill-background" 
+            hasCustomStyle
+              ? "bg-background fill-background"
               : "bg-foreground fill-foreground"
-          )} 
+          )}
         />
       </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
-  )
+  );
 }
 
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider };

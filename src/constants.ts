@@ -46,8 +46,20 @@ export interface SpecialtyField {
   type: FieldType;
   required?: boolean;
   defaultValue?: string | number | boolean | null;
-  options?: { value: string; label: string }[];
+  options?: SpecialtyFieldOption[];
   placeholder?: string;
+  units?: string;
+}
+
+export interface SpecialtyFieldOption {
+  value: string;
+  label: string;
+}
+
+export interface ConstultationTypeSection {
+  key: string;
+  label: string;
+  fields: SpecialtyField[];
 }
 
 // Common fields present in all consultations
@@ -99,7 +111,7 @@ export const COMMON_CONSULTATION_FIELDS: SpecialtyField[] = [
 export const MGF_FIELDS: SpecialtyField[] = [
   {
     key: "type",
-    label: "Tipologia de Consulta",
+    label: "Tipologia",
     type: "select",
     required: true,
     options: [
@@ -211,23 +223,86 @@ export const MGF_FIELDS: SpecialtyField[] = [
   },
 ];
 
+export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
+  string,
+  ConstultationTypeSection[]
+> = {
+  dm: [{
+    key: "exams",
+    label: "Diabetes - Exames",
+    fields: [
+      {
+        key: "creatinina",
+        label: "Creatinina",
+        type: "number",
+        units: "mg/dL",
+      },
+      {
+        key: "bnp",
+        label: "BNP",
+        type: "number",
+        units: "pg/mL",
+      },
+      {
+        key: "albuminuria",
+        label: "Albuminuria",
+        type: "number",
+        units: "mg/g",
+      },
+      {
+        key: "ldl",
+        label: "LDL",
+        type: "number",
+        units: "mg/dL",
+      },
+      {
+        key: "hba1c",
+        label: "HbA1C",
+        type: "number",
+        units: "%",
+      },
+      {
+        key: "tfg",
+        label: "TFG",
+        type: "number",
+        units: "mL/min",
+      },
+    ],
+  }],
+};
+
 // Type for specialty details JSONB
 export type SpecialtyDetails = Record<
   string,
   string | number | boolean | null | string[]
 >;
 
+const resolveFieldDefault = (field: SpecialtyField): SpecialtyDetails[string] => {
+  if (field.defaultValue !== undefined) {
+    return field.defaultValue as SpecialtyDetails[string];
+  }
+
+  if (field.type === "text-list") {
+    return [] as string[];
+  }
+
+  return null;
+};
+
 // Get default details object for a specialty (with all fields initialized)
 export function getDefaultSpecialtyDetails(
   specialtyCode: string
 ): SpecialtyDetails {
   switch (specialtyCode) {
-    case SPECIALTY_CODES.MGF:
-      return MGF_FIELDS.reduce((acc, field) => {
-        acc[field.key] =
-          field.defaultValue !== undefined ? field.defaultValue : null;
+    case SPECIALTY_CODES.MGF: {
+      const details = MGF_FIELDS.reduce((acc, field) => {
+        acc[field.key] = resolveFieldDefault(field);
         return acc;
       }, {} as SpecialtyDetails);
+
+      
+      return details;
+    }
     default:
       return {};
   }

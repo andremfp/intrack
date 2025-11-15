@@ -135,26 +135,16 @@ export type Database = {
         Row: {
           age: number | null
           age_unit: string | null
-          alert: string | null
-          alert_motive: string | null
-          chronic_diseases: Json | null
-          contraceptive: string | null
           created_at: string | null
           date: string | null
           details: Json | null
-          diagnosis: string | null
           health_number: number | null
           id: string | null
-          new_contraceptive: string | null
-          new_diagnosis: string | null
-          notes: string | null
           presential: boolean | null
-          problems: string | null
-          procedure: string | null
           sex: string | null
           smoker: boolean | null
           specialty_year: number | null
-          type: Json | null
+          type: string | null
           updated_at: string | null
           user_id: string | null
         }
@@ -162,10 +152,7 @@ export type Database = {
       }
     }
     Functions: {
-      delete_user: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      delete_user: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

@@ -10,7 +10,7 @@ import { useSidebar } from "@/components/ui/sidebar-context";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { ThemeProvider } from "@/components/theme/theme-provider";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/utils";
 import { getCurrentUser, checkUserExists, upsertUser } from "@/lib/api/users";
 import { getSpecialty } from "@/lib/api/specialties";
 import {
