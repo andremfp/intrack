@@ -14,23 +14,6 @@ export type ConsultationInsert = TablesInsert<"consultations">;
 export type ConsultationUpdate = TablesUpdate<"consultations">;
 export type ConsultationMGF = Tables<"consultations_mgf">;
 
-// MGF-specific details type
-export type MGFDetails = {
-  type?: string | null;
-  presential?: boolean | null;
-  chronic_diseases?: string[] | null;
-  diagnosis?: string | null;
-  problems?: string | null;
-  new_diagnosis?: string | null;
-  alert?: string | null;
-  alert_motive?: string | null;
-  contraceptive?: string | null;
-  new_contraceptive?: boolean | null;
-  smoker?: boolean | null;
-  procedure?: string | null;
-  notes?: string | null;
-};
-
 /**
  * Prepares complete details object for a consultation
  * Merges provided details with default specialty fields
@@ -299,6 +282,12 @@ function getEmptyMetrics(): ConsultationMetrics {
 function calculateMetrics(
   consultations: ConsultationMGF[]
 ): ConsultationMetrics {
+  // Helper to safely extract values from details JSONB
+  const getDetail = (c: ConsultationMGF, key: string): unknown => {
+    if (!c.details || typeof c.details !== "object") return null;
+    return (c.details as Record<string, unknown>)[key] ?? null;
+  };
+
   const typeValueToLabel = new Map(
     (MGF_FIELDS.find((field) => field.key === "type")?.options ?? []).map(
       (option) => [option.value, option.label]
@@ -430,10 +419,11 @@ function calculateMetrics(
   // By contraceptive
   const contraceptiveCounts = new Map<string, number>();
   consultations.forEach((c) => {
-    if (c.contraceptive) {
+    const contraceptive = getDetail(c, "contraceptive");
+    if (contraceptive && typeof contraceptive === "string") {
       contraceptiveCounts.set(
-        c.contraceptive,
-        (contraceptiveCounts.get(c.contraceptive) || 0) + 1
+        contraceptive,
+        (contraceptiveCounts.get(contraceptive) || 0) + 1
       );
     }
   });
@@ -444,9 +434,10 @@ function calculateMetrics(
   // By new contraceptive
   const newContraceptiveCounts = new Map<string, number>();
   consultations.forEach((c) => {
-    if (c.new_contraceptive) {
+    const newContraceptive = getDetail(c, "new_contraceptive");
+    if (newContraceptive) {
       const key =
-        typeof c.new_contraceptive === "string" ? c.new_contraceptive : "Sim";
+        typeof newContraceptive === "string" ? newContraceptive : "Sim";
       newContraceptiveCounts.set(
         key,
         (newContraceptiveCounts.get(key) || 0) + 1
@@ -460,8 +451,9 @@ function calculateMetrics(
   // By diagnosis codes (split by semicolon and count each code)
   const diagnosisCounts = new Map<string, number>();
   consultations.forEach((c) => {
-    if (c.diagnosis) {
-      const codes = c.diagnosis.split(";").map((code) => code.trim());
+    const diagnosis = getDetail(c, "diagnosis");
+    if (diagnosis && typeof diagnosis === "string") {
+      const codes = diagnosis.split(";").map((code) => code.trim());
       codes.forEach((code) => {
         if (code) {
           diagnosisCounts.set(code, (diagnosisCounts.get(code) || 0) + 1);
@@ -476,8 +468,9 @@ function calculateMetrics(
   // By problems codes (split by semicolon and count each code)
   const problemsCounts = new Map<string, number>();
   consultations.forEach((c) => {
-    if (c.problems) {
-      const codes = c.problems.split(";").map((code) => code.trim());
+    const problems = getDetail(c, "problems");
+    if (problems && typeof problems === "string") {
+      const codes = problems.split(";").map((code) => code.trim());
       codes.forEach((code) => {
         if (code) {
           problemsCounts.set(code, (problemsCounts.get(code) || 0) + 1);
@@ -492,8 +485,9 @@ function calculateMetrics(
   // By new diagnosis codes (split by semicolon and count each code)
   const newDiagnosisCounts = new Map<string, number>();
   consultations.forEach((c) => {
-    if (c.new_diagnosis) {
-      const codes = c.new_diagnosis.split(";").map((code) => code.trim());
+    const newDiagnosis = getDetail(c, "new_diagnosis");
+    if (newDiagnosis && typeof newDiagnosis === "string") {
+      const codes = newDiagnosis.split(";").map((code) => code.trim());
       codes.forEach((code) => {
         if (code) {
           newDiagnosisCounts.set(code, (newDiagnosisCounts.get(code) || 0) + 1);

@@ -20,7 +20,7 @@ import { updateUser, deleteUserAccount } from "@/lib/api/users";
 import { USER_CONSTANTS } from "@/constants";
 import type { UserData } from "@/lib/api/users";
 import type { Specialty } from "@/lib/api/specialties";
-import { userCache } from "@/lib/user-cache";
+import { userCache } from "@/utils/user-cache";
 
 interface ProfileModalProps {
   user: UserData | null;
@@ -159,11 +159,13 @@ export function ProfileModal({
               {/* Avatar */}
               <div className="relative">
                 <Avatar className="h-24 w-24 border-4 border-background shadow-xl ring-2 ring-border">
-                  <AvatarImage 
-                    src={user.avatar} 
+                  <AvatarImage
+                    src={user.avatar}
                     alt={user.data.display_name}
                     referrerPolicy="no-referrer"
-                    onError={(e) => console.error("Avatar load error (profile modal):", e)}
+                    onError={(e) =>
+                      console.error("Avatar load error (profile modal):", e)
+                    }
                   />
                   <AvatarFallback className="text-3xl font-bold bg-gradient-to-br from-primary/20 to-primary/10">
                     {initials}

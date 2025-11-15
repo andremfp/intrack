@@ -24,7 +24,7 @@ import {
 import { supabase } from "@/supabase";
 import { useNavigate } from "react-router-dom";
 import type { UserData } from "@/lib/api/users";
-import { userCache } from "@/lib/user-cache";
+import { userCache } from "@/utils/user-cache";
 
 export function NavUser({
   user,

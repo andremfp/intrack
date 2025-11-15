@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import type { UserData } from "@/lib/api/users";
 import type { Specialty } from "@/lib/api/specialties";
 import type { TabType } from "@/constants";
-import { userCache } from "@/lib/user-cache";
+import { userCache } from "@/utils/user-cache";
 
 /**
  * React hooks for stateful cache management
