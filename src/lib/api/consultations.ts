@@ -209,6 +209,8 @@ export async function getMGFConsultations(
   if (error) return failure(error, "getMGFConsultations");
   if (!data) return success({ consultations: [], totalCount: 0 });
 
+  console.log("Got consultations:", data);
+
   return success({
     consultations: data,
     totalCount: count || 0,
