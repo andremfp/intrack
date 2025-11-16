@@ -98,6 +98,9 @@ export async function deleteConsultation(
 export interface MGFConsultationsFilters {
   sex?: string;
   healthNumber?: string;
+  processNumber?: string;
+  location?: string;
+  autonomy?: string;
   ageMin?: number;
   ageMax?: number;
   type?: string;
@@ -106,7 +109,7 @@ export interface MGFConsultationsFilters {
 }
 
 export interface MGFConsultationsSorting {
-  field: "date" | "age" | "health_number";
+  field: "date" | "age" | "health_number" | "process_number";
   order: "asc" | "desc";
 }
 
@@ -193,6 +196,15 @@ export async function getMGFConsultations(
     }
     if (filters.smoker !== undefined) {
       query = query.eq("smoker", filters.smoker);
+    }
+    if (filters.processNumber) {
+      query = query.eq("process_number", parseInt(filters.processNumber));
+    }
+    if (filters.location) {
+      query = query.eq("location", filters.location);
+    }
+    if (filters.autonomy) {
+      query = query.eq("autonomy", filters.autonomy);
     }
   }
 

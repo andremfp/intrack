@@ -137,32 +137,25 @@ export function ConsultationsTable({
     });
   };
 
-  const getSexLabel = (sex: string | null) => {
-    if (!sex) return "-";
-    switch (sex) {
-      case "m":
-        return "M";
-      case "f":
-        return "F";
-      case "other":
-        return "Outro";
-      default:
-        return sex;
-    }
-  };
+  const getCommonSelectLabels = (
+    key: string,
+    value: string | null | undefined
+  ): { displayLabel: string; fullLabel: string } | null => {
+    if (!value) return null;
 
-  const getAgeUnitLabel = (unit: string | null) => {
-    if (!unit) return "";
-    switch (unit) {
-      case "days":
-        return "D";
-      case "months":
-        return "M";
-      case "years":
-        return "Y";
-      default:
-        return unit;
+    const field = COMMON_CONSULTATION_FIELDS.find((f) => f.key === key);
+    const option = field?.options?.find((opt) => opt.value === value);
+    const fullLabel = option?.label ?? value;
+
+    if (key === "sex") {
+      // Keep existing behaviour: single-letter badge except for "Outro"
+      const displayLabel = fullLabel.charAt(0).toUpperCase();
+
+      return { displayLabel, fullLabel };
     }
+
+    // Default: display and full labels are the same
+    return { displayLabel: fullLabel, fullLabel };
   };
 
   // Delete mode functions
@@ -240,21 +233,51 @@ export function ConsultationsTable({
     switch (key) {
       case "date":
         return formatDate(consultation.date);
-      case "sex":
+      case "sex": {
+        const labels = getCommonSelectLabels("sex", consultation.sex);
+        const displayLabel = labels?.displayLabel ?? "-";
+        const fullLabel = labels?.fullLabel ?? displayLabel;
+
         return (
-          <Badge variant="outline" className="text-xs">
-            {getSexLabel(consultation.sex)}
-          </Badge>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="outline" className="text-xs cursor-help">
+                  {displayLabel}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <p className="text-sm">{fullLabel}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         );
+      }
       case "age":
         return consultation.age !== null
-          ? `${consultation.age} ${getAgeUnitLabel(consultation.age_unit)}`
+          ? `${consultation.age} ${
+              getCommonSelectLabels("age_unit", consultation.age_unit)
+                ?.displayLabel ?? ""
+            }`
           : "-";
       case "age_unit":
         // Don't display age_unit separately since it's included in age
         return null;
       case "health_number":
         return consultation.health_number ?? "-";
+      case "process_number":
+        return consultation.process_number ?? "-";
+      case "location":
+        return (
+          getCommonSelectLabels("location", consultation.location)
+            ?.displayLabel ?? "-"
+        );
+      case "autonomy":
+        return (
+          getCommonSelectLabels("autonomy", consultation.autonomy)
+            ?.displayLabel ?? "-"
+        );
+
       default:
         return "-";
     }

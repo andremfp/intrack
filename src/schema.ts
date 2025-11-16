@@ -18,11 +18,14 @@ export type Database = {
         Row: {
           age: number
           age_unit: string
+          autonomy: string
           created_at: string
           date: string
           details: Json
           health_number: number
           id: string
+          location: string
+          process_number: number
           sex: string
           specialty_id: string
           specialty_year: number
@@ -32,11 +35,14 @@ export type Database = {
         Insert: {
           age: number
           age_unit: string
+          autonomy: string
           created_at?: string
           date: string
           details: Json
           health_number: number
           id?: string
+          location: string
+          process_number: number
           sex: string
           specialty_id: string
           specialty_year: number
@@ -46,11 +52,14 @@ export type Database = {
         Update: {
           age?: number
           age_unit?: string
+          autonomy?: string
           created_at?: string
           date?: string
           details?: Json
           health_number?: number
           id?: string
+          location?: string
+          process_number?: number
           sex?: string
           specialty_id?: string
           specialty_year?: number
@@ -135,12 +144,15 @@ export type Database = {
         Row: {
           age: number | null
           age_unit: string | null
+          autonomy: string | null
           created_at: string | null
           date: string | null
           details: Json | null
           health_number: number | null
           id: string | null
+          location: string | null
           presential: boolean | null
+          process_number: number | null
           sex: string | null
           smoker: boolean | null
           specialty_year: number | null
