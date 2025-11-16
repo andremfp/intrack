@@ -214,6 +214,28 @@ export function ConsultationsTable({
     }
   };
 
+  const getFieldValue = (
+    consultation: ConsultationMGF,
+    fieldKey: string
+  ): unknown => {
+    // Try top-level column first (e.g. type, presential, smoker)
+    const topLevelValue = (consultation as Record<string, unknown>)[fieldKey];
+    if (topLevelValue !== undefined && topLevelValue !== null) {
+      return topLevelValue;
+    }
+
+    // Fallback to details JSONB
+    const details = consultation.details as
+      | Record<string, unknown>
+      | null
+      | undefined;
+    if (details && fieldKey in details) {
+      return details[fieldKey];
+    }
+
+    return null;
+  };
+
   const renderCommonField = (consultation: ConsultationMGF, key: string) => {
     switch (key) {
       case "date":
@@ -248,6 +270,9 @@ export function ConsultationsTable({
   ) => {
     if (value === null || value === undefined) return "-";
 
+    console.log("Rendering cell value:", value);
+    console.log("Field:", field);
+
     switch (field.type) {
       case "boolean":
         return (
@@ -255,7 +280,8 @@ export function ConsultationsTable({
             {value ? "Sim" : "Não"}
           </Badge>
         );
-      case "select": {
+      case "select":
+      case "combobox": {
         // Display select value with tooltip showing full label
         const stringValue = String(value);
         const option = field.options?.find((opt) => opt.value === stringValue);
@@ -381,12 +407,22 @@ export function ConsultationsTable({
           </div>
         );
       }
-      case "textarea":
       case "text":
         return (
-          <span className="max-w-[200px] truncate block">
-            {String(value) || "-"}
-          </span>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="max-w-[200px] truncate block">
+                  {String(value) || "-"}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[260px]">
+                <p className="text-sm whitespace-normal break-words leading-relaxed">
+                  {String(value) || "-"}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         );
       default:
         return String(value);
@@ -622,7 +658,7 @@ export function ConsultationsTable({
                       }
                     >
                       {renderCellValue(
-                        (consultation as Record<string, unknown>)[field.key],
+                        getFieldValue(consultation, field.key),
                         field
                       )}
                     </TableCell>

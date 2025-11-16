@@ -37,7 +37,6 @@ export type FieldType =
   | "select"
   | "combobox"
   | "number"
-  | "textarea"
   | "text-list"
   | "icpc2-codes";
 
