@@ -111,7 +111,6 @@ export function ConsultationModal({
         sex: formValues.sex as string,
         age: parseInt(formValues.age as string, 10),
         age_unit: (formValues.age_unit as string) || "years",
-        health_number: parseInt(formValues.health_number as string, 10),
         process_number: parseInt(formValues.process_number as string, 10),
         location: formValues.location as string,
         autonomy: formValues.autonomy as string,

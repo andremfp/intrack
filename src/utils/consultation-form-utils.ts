@@ -97,23 +97,6 @@ export function validateForm(
     return { key: "age", message: "A idade deve estar entre 0 e 150." };
   }
 
-  // Validate health number and process number (9 digits)
-  const healthNumberValue = getStringValue(formValues, "health_number");
-  const healthNumberNum = parseIntSafe(healthNumberValue);
-  if (
-    healthNumberNum === null ||
-    healthNumberValue.length !== 9 ||
-    healthNumberNum < 0
-  ) {
-    toast.error("Número de saúde inválido", {
-      description: "O número de saúde deve ser um número válido.",
-    });
-    return {
-      key: "health_number",
-      message: "O número de saúde deve ser um número válido.",
-    };
-  }
-
   // Validate process number (9 digits)
   const processNumberValue = getStringValue(formValues, "process_number");
   const processNumberNum = parseIntSafe(processNumberValue);

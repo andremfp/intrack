@@ -97,7 +97,6 @@ export async function deleteConsultation(
 // Filtering and sorting options for MGF consultations
 export interface MGFConsultationsFilters {
   sex?: string;
-  healthNumber?: string;
   processNumber?: string;
   location?: string;
   autonomy?: string;
@@ -109,7 +108,7 @@ export interface MGFConsultationsFilters {
 }
 
 export interface MGFConsultationsSorting {
-  field: "date" | "age" | "health_number" | "process_number";
+  field: "date" | "age" | "process_number";
   order: "asc" | "desc";
 }
 
@@ -146,9 +145,7 @@ export async function getMGFConsultations(
     if (filters.sex) {
       query = query.eq("sex", filters.sex);
     }
-    if (filters.healthNumber) {
-      query = query.eq("health_number", parseInt(filters.healthNumber));
-    }
+    
     // Age filtering with unit conversion to years
     // For age filtering, we need to consider age_unit and convert to a common unit (years)
     if (filters.ageMin !== undefined || filters.ageMax !== undefined) {

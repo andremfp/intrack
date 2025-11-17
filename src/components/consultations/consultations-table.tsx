@@ -376,8 +376,6 @@ export function ConsultationsTable({
       case "age_unit":
         // Don't display age_unit separately since it's included in age
         return null;
-      case "health_number":
-        return consultation.health_number ?? "-";
       case "process_number":
         return consultation.process_number ?? "-";
       case "location":
