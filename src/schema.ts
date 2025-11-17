@@ -22,6 +22,7 @@ export type Database = {
           created_at: string
           date: string
           details: Json
+          favorite: boolean
           health_number: number
           id: string
           location: string
@@ -39,6 +40,7 @@ export type Database = {
           created_at?: string
           date: string
           details: Json
+          favorite?: boolean
           health_number: number
           id?: string
           location: string
@@ -56,6 +58,7 @@ export type Database = {
           created_at?: string
           date?: string
           details?: Json
+          favorite?: boolean
           health_number?: number
           id?: string
           location?: string
@@ -148,6 +151,7 @@ export type Database = {
           created_at: string | null
           date: string | null
           details: Json | null
+          favorite: boolean | null
           health_number: number | null
           id: string | null
           location: string | null
