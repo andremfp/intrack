@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 
 import {
   getConsultationMetrics,
+  getDistinctInternships,
+  getDistinctLocations,
   type ConsultationMetrics,
 } from "@/lib/api/consultations";
 import type { Specialty } from "@/lib/api/specialties";
@@ -27,14 +29,82 @@ export function MetricsDashboard({
   const [selectedYear, setSelectedYear] = useState<number | undefined>(
     specialty && specialty.years > 1 ? 1 : undefined
   );
+  const [selectedLocation, setSelectedLocation] = useState<string | undefined>(
+    undefined
+  );
+  const [selectedInternship, setSelectedInternship] = useState<
+    string | undefined
+  >(undefined);
+  const [locations, setLocations] = useState<string[]>([]);
+  const [internships, setInternships] = useState<string[]>([]);
   const [metrics, setMetrics] = useState<ConsultationMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load metrics when user or selected year changes
+  // Load distinct locations when user or selected year changes
+  useEffect(() => {
+    const loadLocations = async () => {
+      const result = await getDistinctLocations(userId, selectedYear);
+
+      if (result.success) {
+        setLocations(result.data);
+        // Reset location selection if current selection is no longer available
+        if (selectedLocation && !result.data.includes(selectedLocation)) {
+          setSelectedLocation(undefined);
+        }
+      } else {
+        toast.error("Erro ao carregar locais", {
+          description: result.error.userMessage,
+        });
+      }
+    };
+
+    loadLocations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, selectedYear]);
+
+  // Load distinct internships when user, selected year, or selected location changes
+  useEffect(() => {
+    const loadInternships = async () => {
+      // If location is 'health_unit', internships don't apply, so clear them
+      if (selectedLocation === "health_unit") {
+        setInternships([]);
+        setSelectedInternship(undefined);
+        return;
+      }
+
+      const result = await getDistinctInternships(
+        userId,
+        selectedYear,
+        selectedLocation
+      );
+
+      if (result.success) {
+        setInternships(result.data);
+        // Reset internship selection if current selection is no longer available
+        if (selectedInternship && !result.data.includes(selectedInternship)) {
+          setSelectedInternship(undefined);
+        }
+      } else {
+        toast.error("Erro ao carregar estágios", {
+          description: result.error.userMessage,
+        });
+      }
+    };
+
+    loadInternships();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, selectedYear, selectedLocation]);
+
+  // Load metrics when user, selected year, selected location, or selected internship changes
   useEffect(() => {
     const loadMetrics = async () => {
       setIsLoading(true);
-      const result = await getConsultationMetrics(userId, selectedYear);
+      const result = await getConsultationMetrics(
+        userId,
+        selectedYear,
+        selectedInternship,
+        selectedLocation
+      );
 
       if (result.success) {
         setMetrics(result.data);
@@ -48,7 +118,7 @@ export function MetricsDashboard({
     };
 
     loadMetrics();
-  }, [userId, selectedYear]);
+  }, [userId, selectedYear, selectedLocation, selectedInternship]);
 
   if (isLoading) {
     return (
@@ -77,9 +147,15 @@ export function MetricsDashboard({
       <GeneralTab
         specialty={specialty}
         selectedYear={selectedYear}
+        selectedLocation={selectedLocation}
+        selectedInternship={selectedInternship}
+        locations={locations}
+        internships={internships}
         metrics={metrics}
         getSexLabel={getSexLabel}
         onSelectedYearChange={setSelectedYear}
+        onSelectedLocationChange={setSelectedLocation}
+        onSelectedInternshipChange={setSelectedInternship}
       />
     );
   }
@@ -89,8 +165,14 @@ export function MetricsDashboard({
       <ConsultationsTab
         specialty={specialty}
         selectedYear={selectedYear}
+        selectedLocation={selectedLocation}
+        selectedInternship={selectedInternship}
+        locations={locations}
+        internships={internships}
         metrics={metrics}
         onSelectedYearChange={setSelectedYear}
+        onSelectedLocationChange={setSelectedLocation}
+        onSelectedInternshipChange={setSelectedInternship}
       />
     );
   }
@@ -100,8 +182,14 @@ export function MetricsDashboard({
       <ICPC2Tab
         specialty={specialty}
         selectedYear={selectedYear}
+        selectedLocation={selectedLocation}
+        selectedInternship={selectedInternship}
+        locations={locations}
+        internships={internships}
         metrics={metrics}
         onSelectedYearChange={setSelectedYear}
+        onSelectedLocationChange={setSelectedLocation}
+        onSelectedInternshipChange={setSelectedInternship}
       />
     );
   }

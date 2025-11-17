@@ -340,22 +340,30 @@ export function ConsultationModal({
                     {remainingSpecialtyFields.length > 0 && (
                       <div className="rounded-lg border bg-card/50 p-4 sm:p-5">
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
-                          {remainingSpecialtyFields.map((field) => (
-                            <ConsultationFieldWithLayout
-                              key={field.key}
-                              field={field}
-                              value={formValues[field.key] || ""}
-                              errorMessage={
-                                fieldError?.key === field.key
-                                  ? fieldError.message
-                                  : undefined
+                          {remainingSpecialtyFields
+                            .filter((field) => {
+                              // Hide 'internship' field when location is 'health_unit'
+                              if (field.key === "internship") {
+                                return formValues.location !== "health_unit";
                               }
-                              onUpdate={(value) =>
-                                updateField(field.key, value)
-                              }
-                              icpc2Codes={icpc2Codes}
-                            />
-                          ))}
+                              return true;
+                            })
+                            .map((field) => (
+                              <ConsultationFieldWithLayout
+                                key={field.key}
+                                field={field}
+                                value={formValues[field.key] || ""}
+                                errorMessage={
+                                  fieldError?.key === field.key
+                                    ? fieldError.message
+                                    : undefined
+                                }
+                                onUpdate={(value) =>
+                                  updateField(field.key, value)
+                                }
+                                icpc2Codes={icpc2Codes}
+                              />
+                            ))}
                         </div>
                       </div>
                     )}

@@ -244,13 +244,106 @@ export interface ConsultationMetrics {
   byNewDiagnosis: Array<{ code: string; count: number }>;
 }
 
+// Get distinct internships from consultations
+// Group all without internship as ""
+export async function getDistinctInternships(
+  userId: string,
+  specialtyYear?: number,
+  location?: string
+): Promise<ApiResponse<string[]>> {
+  try {
+    let query = supabase
+      .from("consultations_mgf")
+      .select("details, location")
+      .eq("user_id", userId);
+
+    if (specialtyYear !== undefined) {
+      query = query.eq("specialty_year", specialtyYear);
+    }
+
+    if (location) {
+      query = query.eq("location", location);
+    }
+
+    const { data, error } = await query;
+
+    if (error) return failure(error, "getDistinctInternships");
+    if (!data) return success([]);
+
+    // Extract distinct internships from details JSONB
+    // Only include internships for consultations where location is not 'health_unit'
+    const internships = new Set<string>();
+    data.forEach((consultation) => {
+      // Only show internships for locations other than 'health_unit'
+      if (consultation.location === "health_unit") {
+        return;
+      }
+
+      if (
+        consultation.details &&
+        typeof consultation.details === "object"
+      ) {
+        const internship = (consultation.details as Record<string, unknown>)[
+          "internship"
+        ];
+        if (internship && typeof internship === "string") {
+          internships.add(internship);
+        }
+      }
+    });
+
+    // Sort alphabetically
+    const sortedInternships = Array.from(internships).sort();
+    return success(sortedInternships);
+  } catch (error) {
+    return failure(error as Error, "getDistinctInternships");
+  }
+}
+
+export async function getDistinctLocations(
+  userId: string,
+  specialtyYear?: number
+): Promise<ApiResponse<string[]>> {
+  try {
+    let query = supabase
+      .from("consultations_mgf")
+      .select("location")
+      .eq("user_id", userId);
+
+    if (specialtyYear !== undefined) {
+      query = query.eq("specialty_year", specialtyYear);
+    }
+
+    const { data, error } = await query;
+
+    if (error) return failure(error, "getDistinctLocations");
+    if (!data) return success([]);
+
+    // Extract distinct locations
+    const locations = new Set<string>();
+    data.forEach((consultation) => {
+      if (consultation.location && typeof consultation.location === "string") {
+        locations.add(consultation.location);
+      }
+    });
+
+    // Sort alphabetically
+    const sortedLocations = Array.from(locations).sort();
+    return success(sortedLocations);
+  } catch (error) {
+    return failure(error as Error, "getDistinctLocations");
+  }
+}
+
 // Fetch aggregated metrics for consultations
 export async function getConsultationMetrics(
   userId: string,
-  specialtyYear?: number
+  specialtyYear?: number,
+  internship?: string,
+  location?: string
 ): Promise<ApiResponse<ConsultationMetrics>> {
   try {
-    // Fetch all consultations for the user and specialty year
+    // Build query with database-level filtering
     let query = supabase
       .from("consultations_mgf")
       .select("*")
@@ -260,12 +353,22 @@ export async function getConsultationMetrics(
       query = query.eq("specialty_year", specialtyYear);
     }
 
+    if (location) {
+      query = query.eq("location", location);
+    }
+
+    // Filter by internship at database level using JSONB operator (details->>internship)
+    // This is more efficient than fetching all data and filtering in JavaScript
+    if (internship) {
+      query = query.eq("details->>internship", internship);
+    }
+
     const { data, error } = await query;
 
     if (error) return failure(error, "getConsultationMetrics");
     if (!data) return success(getEmptyMetrics());
 
-    // Calculate metrics
+    // Calculate metrics (data is already filtered at database level)
     const metrics = calculateMetrics(data);
     return success(metrics);
   } catch (error) {

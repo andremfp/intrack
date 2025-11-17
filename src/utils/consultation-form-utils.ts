@@ -16,11 +16,19 @@ export function resolveTypeSections(typeValue: string | null | undefined) {
 
 function getAllRequiredFields(
   specialtyFields: SpecialtyField[],
-  consultationType?: string
+  consultationType?: string,
+  formValues?: FormValues
 ): SpecialtyField[] {
   const requiredFields = [
     ...COMMON_CONSULTATION_FIELDS.filter((f) => f.required),
-    ...specialtyFields.filter((f) => f.required),
+    ...specialtyFields.filter((f) => {
+      // Internship is only required when location is not 'health_unit'
+      if (f.key === "internship") {
+        const location = formValues?.location;
+        return location && location !== "health_unit";
+      }
+      return f.required;
+    }),
   ];
 
   resolveTypeSections(consultationType).forEach((section) => {
@@ -57,7 +65,11 @@ export function validateForm(
 ): FieldError | null {
   const consultationType =
     typeof formValues.type === "string" ? formValues.type : undefined;
-  const requiredFields = getAllRequiredFields(specialtyFields, consultationType);
+  const requiredFields = getAllRequiredFields(
+    specialtyFields,
+    consultationType,
+    formValues
+  );
 
   // Check required fields
   for (const field of requiredFields) {
