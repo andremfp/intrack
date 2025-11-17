@@ -366,13 +366,33 @@ export function ConsultationsTable({
           </TooltipProvider>
         );
       }
-      case "age":
-        return consultation.age !== null
-          ? `${consultation.age} ${
-              getCommonSelectLabels("age_unit", consultation.age_unit)
-                ?.displayLabel ?? ""
-            }`
-          : "-";
+      case "age": {
+        if (consultation.age === null) return "-";
+
+        const ageUnitLabels = getCommonSelectLabels(
+          "age_unit",
+          consultation.age_unit
+        );
+        const displayText = `${consultation.age} ${
+          ageUnitLabels?.displayLabel.charAt(0).toUpperCase() ?? ""
+        }`;
+        const fullLabel = ageUnitLabels?.fullLabel
+          ? `${consultation.age} ${ageUnitLabels.fullLabel}`
+          : displayText;
+
+        return (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="cursor-help">{displayText}</span>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <p className="text-sm">{fullLabel}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
+      }
       case "age_unit":
         // Don't display age_unit separately since it's included in age
         return null;

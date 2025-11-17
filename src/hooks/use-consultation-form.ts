@@ -4,6 +4,7 @@ import {
   COMMON_CONSULTATION_FIELDS,
   getSpecialtyFields,
   type SpecialtyField,
+  MGF_SECTION_LABELS,
 } from "@/constants";
 import { resolveTypeSections } from "@/utils/consultation-form-utils";
 
@@ -234,25 +235,46 @@ export function useConsultationForm(
     [selectedConsultationType]
   );
 
-  // Organize specialty fields into groups for UI rendering:
-  
-  // Primary fields: shown at the top (type selector and presential toggle)
-  const primarySpecialtyFields = useMemo(
-    () =>
-      specialtyFields.filter((field) =>
-        ["type", "presential"].includes(field.key)
-      ),
-    [specialtyFields]
-  );
+  // Organize specialty fields into sections for UI rendering
+  const fieldsBySection = useMemo(() => {
+    const sections: Record<string, SpecialtyField[]> = {};
+    
+    specialtyFields.forEach((field) => {
+      const sectionKey = field.section || "other";
+      if (!sections[sectionKey]) {
+        sections[sectionKey] = [];
+      }
+      sections[sectionKey].push(field);
+    });
+    
+    return sections;
+  }, [specialtyFields]);
 
-  // Remaining fields: shown at the bottom (all other specialty fields)
-  const remainingSpecialtyFields = useMemo(
-    () =>
-      specialtyFields.filter(
-        (field) => !["type", "presential"].includes(field.key)
-      ),
-    [specialtyFields]
-  );
+  // Get section order (maintain logical order)
+  const sectionOrder = useMemo(() => {
+    const order = [
+      "consultation_type",
+      "clinical_history",
+      "diagnosis",
+      "referral",
+      "family_planning",
+      "procedures",
+    ];
+    
+    // Get all section keys from fields, maintaining order
+    const allSections = new Set<string>();
+    specialtyFields.forEach((field) => {
+      if (field.section) {
+        allSections.add(field.section);
+      }
+    });
+    
+    // Return ordered sections, then any others
+    const ordered = order.filter((s) => allSections.has(s));
+    const others = Array.from(allSections).filter((s) => !order.includes(s));
+    
+    return [...ordered, ...others];
+  }, [specialtyFields]);
 
   return {
     formValues,
@@ -261,8 +283,8 @@ export function useConsultationForm(
     showFieldError,
     setFieldError,
     sectionsForSelectedType,
-    primarySpecialtyFields,
-    remainingSpecialtyFields,
+    fieldsBySection,
+    sectionOrder,
     specialtyFields,
   };
 }
