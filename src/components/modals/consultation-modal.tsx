@@ -70,9 +70,9 @@ export function ConsultationModal({
     fieldError,
     updateField,
     showFieldError,
-    sectionsForSelectedType,
     fieldsBySection,
     sectionOrder,
+    typeSpecificSectionsBySection,
     specialtyFields,
   } = useConsultationForm(specialty?.code || null, editingConsultation);
 
@@ -395,7 +395,16 @@ export function ConsultationModal({
                     {/* Render fields grouped by section */}
                     {sectionOrder.map((sectionKey) => {
                       const sectionFields = fieldsBySection[sectionKey] || [];
-                      if (sectionFields.length === 0) return null;
+                      const typeSpecificSections =
+                        typeSpecificSectionsBySection[sectionKey] || [];
+
+                      // Skip if no fields and no type-specific sections
+                      if (
+                        sectionFields.length === 0 &&
+                        typeSpecificSections.length === 0
+                      ) {
+                        return null;
+                      }
 
                       // Filter out internship field when location is 'health_unit'
                       const visibleFields = sectionFields.filter((field) => {
@@ -405,74 +414,82 @@ export function ConsultationModal({
                         return true;
                       });
 
-                      if (visibleFields.length === 0) return null;
+                      // Skip if no visible fields and no type-specific sections
+                      if (
+                        visibleFields.length === 0 &&
+                        typeSpecificSections.length === 0
+                      ) {
+                        return null;
+                      }
 
                       const sectionLabel =
                         MGF_SECTION_LABELS[sectionKey] || sectionKey;
 
                       return (
-                        <div
-                          key={sectionKey}
-                          className="rounded-lg border bg-card/50 p-4 sm:p-5 shadow-sm"
-                        >
-                          <h4 className="text-sm sm:text-base font-semibold mb-4 text-foreground pb-2 border-b">
-                            {sectionLabel}
-                          </h4>
-                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            {visibleFields.map((field) => (
-                              <ConsultationFieldWithLayout
-                                key={field.key}
-                                field={field}
-                                value={formValues[field.key] || ""}
-                                errorMessage={
-                                  fieldError?.key === field.key
-                                    ? fieldError.message
-                                    : undefined
-                                }
-                                onUpdate={(value) =>
-                                  updateField(field.key, value)
-                                }
-                                icpc2Codes={icpc2Codes}
-                              />
-                            ))}
-                          </div>
+                        <div key={sectionKey} className="space-y-4">
+                          {/* Regular fields in this section */}
+                          {visibleFields.length > 0 && (
+                            <div className="rounded-lg border bg-card/50 p-4 sm:p-5 shadow-sm">
+                              <h4 className="text-sm sm:text-base font-semibold mb-4 text-foreground pb-2 border-b">
+                                {sectionLabel}
+                              </h4>
+                              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                {visibleFields.map((field) => (
+                                  <ConsultationFieldWithLayout
+                                    key={field.key}
+                                    field={field}
+                                    value={formValues[field.key] || ""}
+                                    errorMessage={
+                                      fieldError?.key === field.key
+                                        ? fieldError.message
+                                        : undefined
+                                    }
+                                    onUpdate={(value) =>
+                                      updateField(field.key, value)
+                                    }
+                                    icpc2Codes={icpc2Codes}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Type-specific sections in this section */}
+                          {typeSpecificSections.length > 0 && (
+                            <div className="space-y-4">
+                              {typeSpecificSections.map((section) => (
+                                <div
+                                  key={section.label}
+                                  className="rounded-lg border bg-card/40 p-4 sm:p-5 shadow-sm"
+                                >
+                                  <h4 className="text-sm sm:text-base font-semibold mb-4 text-foreground pb-2 border-b">
+                                    {section.label}
+                                  </h4>
+                                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                                    {section.fields.map((field) => (
+                                      <ConsultationFieldWithLayout
+                                        key={field.key}
+                                        field={field}
+                                        value={formValues[field.key] || ""}
+                                        errorMessage={
+                                          fieldError?.key === field.key
+                                            ? fieldError.message
+                                            : undefined
+                                        }
+                                        onUpdate={(value) =>
+                                          updateField(field.key, value)
+                                        }
+                                        icpc2Codes={icpc2Codes}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
-
-                    {/* Type-specific sections (e.g., DM exams) */}
-                    {sectionsForSelectedType.length > 0 && (
-                      <div className="space-y-4">
-                        {sectionsForSelectedType.map((section) => (
-                          <div
-                            key={section.label}
-                            className="rounded-lg border bg-card/40 p-4 sm:p-5 shadow-sm"
-                          >
-                            <h4 className="text-sm sm:text-base font-semibold mb-4 text-foreground pb-2 border-b">
-                              {section.label}
-                            </h4>
-                            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-                              {section.fields.map((field) => (
-                                <ConsultationFieldWithLayout
-                                  key={field.key}
-                                  field={field}
-                                  value={formValues[field.key] || ""}
-                                  errorMessage={
-                                    fieldError?.key === field.key
-                                      ? fieldError.message
-                                      : undefined
-                                  }
-                                  onUpdate={(value) =>
-                                    updateField(field.key, value)
-                                  }
-                                  icpc2Codes={icpc2Codes}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </section>
               )}
