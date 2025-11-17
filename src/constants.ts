@@ -49,6 +49,7 @@ export interface SpecialtyField {
   options?: SpecialtyFieldOption[];
   placeholder?: string;
   units?: string;
+  section?: string; // Optional section grouping for UI organization
 }
 
 export interface SpecialtyFieldOption {
@@ -124,20 +125,33 @@ export const COMMON_CONSULTATION_FIELDS: SpecialtyField[] = [
     required: true,
     defaultValue: "years",
     options: [
-      { value: "days", label: "D" },
-      { value: "months", label: "M" },
-      { value: "years", label: "Y" },
+      { value: "days", label: "Dias" },
+      { value: "weeks", label: "Semanas" },
+      { value: "months", label: "Meses" },
+      { value: "years", label: "Anos" },
     ],
   },
 ];
 
+// Section labels for MGF fields
+export const MGF_SECTION_LABELS: Record<string, string> = {
+  consultation_type: "Tipo de Consulta",
+  clinical_history: "História Clínica",
+  diagnosis: "Diagnóstico e Problemas",
+  referral: "Referenciação",
+  family_planning: "Planeamento Familiar",
+  procedures: "Procedimentos e Notas",
+};
+
 // MGF (Medicina Geral e Familiar) specialty fields
 export const MGF_FIELDS: SpecialtyField[] = [
+  // Tipo de Consulta
   {
     key: "type",
     label: "Tipologia",
     type: "select",
     required: true,
+    section: "consultation_type",
     options: [
       { value: "SA", label: "Saúde Adulto" },
       { value: "SIJ", label: "Saúde Infantil e Juvenil" },
@@ -151,10 +165,18 @@ export const MGF_FIELDS: SpecialtyField[] = [
     ],
   },
   {
+    key: "presential",
+    label: "Presencial",
+    type: "boolean",
+    defaultValue: true,
+    section: "consultation_type",
+  },
+  {
     key: "internship",
     label: "Estágio",
     type: "combobox",
     required: true,
+    section: "consultation_type",
     options: [
       { value: "cardiologia", label: "Cardiologia" },
       { value: "endocrinologia", label: "Endocrinologia" },
@@ -184,41 +206,50 @@ export const MGF_FIELDS: SpecialtyField[] = [
       { value: "formacao_curta", label: "Formação Curta" },
     ],
   },
+  // História Clínica
   {
-    key: "presential",
-    label: "Presencial",
+    key: "smoker",
+    label: "Fumador",
     type: "boolean",
-    defaultValue: true,
+    defaultValue: false,
+    section: "clinical_history",
   },
   {
     key: "chronic_diseases",
     label: "Doenças Crónicas",
     type: "text-list",
     placeholder: "Digite uma doença crónica",
+    section: "clinical_history",
   },
+  // Diagnóstico e Problemas
   {
     key: "diagnosis",
     label: "Diagnóstico",
     type: "icpc2-codes",
     placeholder: "Pesquisar códigos ICPC-2",
+    section: "diagnosis",
   },
   {
     key: "problems",
     label: "Problemas",
     type: "icpc2-codes",
     placeholder: "Pesquisar códigos ICPC-2",
+    section: "diagnosis",
   },
   {
     key: "new_diagnosis",
     label: "Novo Diagnóstico",
     type: "icpc2-codes",
     placeholder: "Pesquisar códigos ICPC-2",
+    section: "diagnosis",
   },
+  // Referenciação
   {
     key: "referrence",
     label: "Referenciação",
     type: "combobox",
     placeholder: "Referenciação",
+    section: "referral",
     options: [
       { value: "cardiologia", label: "Cardiologia" },
       { value: "endocrinologia", label: "Endocrinologia" },
@@ -250,14 +281,17 @@ export const MGF_FIELDS: SpecialtyField[] = [
   {
     key: "referrence_motive",
     label: "Motivo da referenciação",
-    type: "text",
+    type: "icpc2-codes",
     placeholder: "Motivo da referenciação",
+    section: "referral",
   },
+  // Planeamento Familiar
   {
     key: "contraceptive",
     label: "Contraceptivo",
     type: "combobox",
     placeholder: "Tipo de contraceptivo",
+    section: "family_planning",
     options: [
       { value: "coc", label: "COC" },
       { value: "cop", label: "COP" },
@@ -276,6 +310,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
     label: "Novo Contraceptivo",
     type: "combobox",
     placeholder: "Tipo de contraceptivo",
+    section: "family_planning",
     options: [
       { value: "coc", label: "COC" },
       { value: "cop", label: "COP" },
@@ -289,23 +324,20 @@ export const MGF_FIELDS: SpecialtyField[] = [
       { value: "menopausa", label: "Menopausa" },
     ],
   },
-  {
-    key: "smoker",
-    label: "Fumador",
-    type: "boolean",
-    defaultValue: false,
-  },
+  // Procedimentos e Notas
   {
     key: "procedure",
     label: "Procedimento",
     type: "text-list",
     placeholder: "Procedimentos realizados",
+    section: "procedures",
   },
   {
     key: "notes",
     label: "Notas",
     type: "text-list",
     placeholder: "Observações adicionais",
+    section: "procedures",
   },
 ];
 
@@ -409,6 +441,8 @@ export function ageToYears(age: number, unit: string): number {
   switch (unit) {
     case "days":
       return age / 365.25;
+    case "weeks":
+      return age / 52.1429;
     case "months":
       return age / 12;
     case "years":

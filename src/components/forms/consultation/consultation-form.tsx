@@ -64,9 +64,18 @@ export function ConsultationFieldWithLayout({
 }: ConsultationFieldWithLayoutProps) {
   const requiresFullSpan =
     field.type === "text-list" ||
-    ["diagnosis", "problems", "new_diagnosis", "notes"].includes(field.key);
+    [
+      "diagnosis",
+      "problems",
+      "referrence_motive",
+      "new_diagnosis",
+      "notes",
+    ].includes(field.key);
 
-  const wrapperClassName = [className, requiresFullSpan && "sm:col-span-2"]
+  const wrapperClassName = [
+    className,
+    requiresFullSpan && "col-span-full sm:col-span-2",
+  ]
     .filter(Boolean)
     .join(" ");
 
