@@ -129,12 +129,6 @@ export const COMMON_CONSULTATION_FIELDS: SpecialtyField[] = [
       { value: "years", label: "Y" },
     ],
   },
-  {
-    key: "health_number",
-    label: "Número de Saúde",
-    type: "number",
-    required: true,
-  },
 ];
 
 // MGF (Medicina Geral e Familiar) specialty fields

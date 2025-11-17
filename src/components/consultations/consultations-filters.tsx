@@ -79,8 +79,6 @@ export function ConsultationsFilters({
     switch (key) {
       case "sex":
         return `Sexo: ${value === "m" ? "M" : value === "f" ? "F" : "Outro"}`;
-      case "healthNumber":
-        return `N° Saúde: ${value}`;
       case "processNumber":
         return `N° Processo: ${value}`;
       case "location":
@@ -109,7 +107,6 @@ export function ConsultationsFilters({
     const fieldLabels = {
       date: "Data",
       age: "Idade",
-      health_number: "N° Saúde",
       process_number: "N° Processo",
     };
     const orderLabel = sorting.order === "asc" ? "↑" : "↓";
@@ -154,7 +151,6 @@ export function ConsultationsFilters({
                 <SelectContent>
                   <SelectItem value="date">Data</SelectItem>
                   <SelectItem value="age">Idade</SelectItem>
-                  <SelectItem value="health_number">N° Saúde</SelectItem>
                   <SelectItem value="process_number">N° Processo</SelectItem>
                 </SelectContent>
               </Select>
@@ -394,31 +390,6 @@ export function ConsultationsFilters({
                   </Select>
                 </div>
 
-                {/* Health number filter */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Número de Saúde
-                  </label>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={999999999}
-                    value={
-                      filters.healthNumber
-                        ? filters.healthNumber.toString()
-                        : ""
-                    }
-                    onChange={(e) =>
-                      onFiltersChange({
-                        ...filters,
-                        healthNumber: e.target.value
-                          ? e.target.value
-                          : undefined,
-                      })
-                    }
-                    className="h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                </div>
                 {/* Age range filter */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">

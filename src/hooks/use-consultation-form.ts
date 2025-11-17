@@ -88,7 +88,7 @@ function initializeFormValues(
   // ============================================================================
   // SOURCE 1: Top-level fields from database view columns
   // These are directly on the ConsultationMGF object (not in details JSONB)
-  // Examples: date, sex, age, age_unit, health_number
+  // Examples: date, sex, age, age_unit, process_number
   // ============================================================================
   COMMON_CONSULTATION_FIELDS.forEach((field) => {
     if (field.key === "date") {
