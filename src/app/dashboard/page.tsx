@@ -345,6 +345,19 @@ function DashboardContent() {
     }
   };
 
+  const handleFavoriteToggle = async () => {
+    // Refresh consultations to reflect favorite changes
+    if (userProfile?.data.user_id) {
+      await loadConsultations(
+        userProfile.data.user_id,
+        activeSpecialtyYear,
+        currentPage,
+        filters,
+        sorting
+      );
+    }
+  };
+
   // Load consultations when user profile or specialty year changes
   useEffect(() => {
     if (userProfile?.data.user_id && mainTab === "Consultas") {
@@ -492,6 +505,7 @@ function DashboardContent() {
                       onSortingChange={handleSortingChange}
                       onApplyFilters={handleApplyFilters}
                       onClearFilters={handleClearFilters}
+                      onFavoriteToggle={handleFavoriteToggle}
                     />
                   </div>
                 )}

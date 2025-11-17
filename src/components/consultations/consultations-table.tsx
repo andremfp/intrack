@@ -14,11 +14,13 @@ import {
   IconChevronLeft,
   IconChevronRight,
 } from "@tabler/icons-react";
+import { IconStar, IconStarFilled } from "@tabler/icons-react";
 import type {
   ConsultationMGF,
   MGFConsultationsFilters,
   MGFConsultationsSorting,
 } from "@/lib/api/consultations";
+import { updateConsultation } from "@/lib/api/consultations";
 import {
   getSpecialtyFields,
   SPECIALTY_CODES,
@@ -47,6 +49,7 @@ interface ConsultationsTableProps {
   onSortingChange?: (sorting: MGFConsultationsSorting) => void;
   onApplyFilters?: () => void;
   onClearFilters?: () => void;
+  onFavoriteToggle?: () => void;
 }
 
 export function ConsultationsTable({
@@ -67,6 +70,7 @@ export function ConsultationsTable({
   onSortingChange,
   onApplyFilters,
   onClearFilters,
+  onFavoriteToggle,
 }: ConsultationsTableProps) {
   // Get specialty-specific fields
   const specialtyFields = getSpecialtyFields(specialtyCode);
@@ -75,11 +79,78 @@ export function ConsultationsTable({
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [pageInput, setPageInput] = useState(currentPage.toString());
+  // Optimistic updates for favorites
+  const [optimisticFavorites, setOptimisticFavorites] = useState<
+    Map<string, boolean>
+  >(new Map());
+
+  // Sort consultations: favorites first (sorted by date), then non-favorites (preserve original order)
+  const sortedConsultations = (() => {
+    // Separate favorites and non-favorites
+    const favorites: ConsultationMGF[] = [];
+    const nonFavorites: ConsultationMGF[] = [];
+
+    consultations.forEach((consultation) => {
+      const isFavorite =
+        optimisticFavorites.get(consultation.id!) ??
+        consultation.favorite ??
+        false;
+      if (isFavorite) {
+        favorites.push(consultation);
+      } else {
+        nonFavorites.push(consultation);
+      }
+    });
+
+    // Sort favorites by date
+    favorites.sort((a, b) => {
+      const dateA = a.date ? new Date(a.date).getTime() : 0;
+      const dateB = b.date ? new Date(b.date).getTime() : 0;
+      // Use the current sorting order for date if it's the date field
+      if (sorting.field === "date") {
+        return sorting.order === "asc" ? dateA - dateB : dateB - dateA;
+      }
+      // Default to descending for favorites
+      return dateB - dateA;
+    });
+
+    // Non-favorites preserve their original order from backend
+    // Return favorites first, then non-favorites
+    return [...favorites, ...nonFavorites];
+  })();
 
   // Update page input when current page changes
   useEffect(() => {
     setPageInput(currentPage.toString());
   }, [currentPage]);
+
+  // Clear optimistic updates only when the database value matches the optimistic value
+  // This prevents flickering when data is refreshed after a favorite toggle
+  useEffect(() => {
+    setOptimisticFavorites((prev) => {
+      const next = new Map(prev);
+      let hasChanges = false;
+
+      // Check each optimistic update
+      prev.forEach((optimisticValue, id) => {
+        const consultation = consultations.find((c) => c.id === id);
+        if (consultation) {
+          const dbValue = consultation.favorite ?? false;
+          // If database value matches optimistic value, clear the optimistic update
+          if (dbValue === optimisticValue) {
+            next.delete(id);
+            hasChanges = true;
+          }
+        } else {
+          // Consultation no longer exists, remove from optimistic updates
+          next.delete(id);
+          hasChanges = true;
+        }
+      });
+
+      return hasChanges ? next : prev;
+    });
+  }, [consultations]);
 
   const handlePageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -164,11 +235,53 @@ export function ConsultationsTable({
     setSelectedIds(new Set());
   };
 
+  const toggleStar = async (consultation: ConsultationMGF) => {
+    const id = consultation.id!;
+    const currentFavorite =
+      optimisticFavorites.get(id) ?? consultation.favorite ?? false;
+    const newFavorite = !currentFavorite;
+
+    // Optimistic update
+    setOptimisticFavorites((prev) => {
+      const next = new Map(prev);
+      next.set(id, newFavorite);
+      return next;
+    });
+
+    // Update in database
+    try {
+      const result = await updateConsultation(id, {
+        favorite: newFavorite,
+      });
+      if (!result.success) {
+        // Revert optimistic update on error
+        setOptimisticFavorites((prev) => {
+          const next = new Map(prev);
+          next.delete(id);
+          return next;
+        });
+        console.error("Failed to update favorite:", result.error);
+      } else {
+        // Keep the optimistic update - it will be cleared when the refreshed data arrives
+        // Notify parent to refresh data
+        onFavoriteToggle?.();
+      }
+    } catch (error) {
+      // Revert optimistic update on error
+      setOptimisticFavorites((prev) => {
+        const next = new Map(prev);
+        next.delete(id);
+        return next;
+      });
+      console.error("Error updating favorite:", error);
+    }
+  };
+
   const toggleSelectAll = () => {
-    if (selectedIds.size === consultations.length) {
+    if (selectedIds.size === sortedConsultations.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(consultations.map((c) => c.id!)));
+      setSelectedIds(new Set(sortedConsultations.map((c) => c.id!)));
     }
   }; // TODO - fix bulk delete
 
@@ -292,9 +405,6 @@ export function ConsultationsTable({
     }
   ) => {
     if (value === null || value === undefined) return "-";
-
-    console.log("Rendering cell value:", value);
-    console.log("Field:", field);
 
     switch (field.type) {
       case "boolean":
@@ -602,6 +712,9 @@ export function ConsultationsTable({
           <table className="w-full caption-bottom text-sm">
             <thead className="sticky top-0 bg-background z-10 border-b">
               <tr className="border-b hover:bg-transparent">
+                {/* Star / bookmark column */}
+                <TableHead className="w-10 bg-background" />
+
                 {/* Checkbox column for delete mode */}
                 {isDeleteMode && (
                   <TableHead className="w-12 bg-background">
@@ -634,7 +747,7 @@ export function ConsultationsTable({
               </tr>
             </thead>
             <tbody className="[&_tr:last-child]:border-0">
-              {consultations.map((consultation) => (
+              {sortedConsultations.map((consultation) => (
                 <tr
                   key={consultation.id}
                   className={`border-b transition-colors ${
@@ -644,6 +757,33 @@ export function ConsultationsTable({
                   }`}
                   onClick={() => !isDeleteMode && onRowClick?.(consultation)}
                 >
+                  {/* Star / bookmark cell */}
+                  <TableCell className="w-10">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleStar(consultation);
+                      }}
+                      className="p-1 rounded hover:bg-muted transition-colors"
+                      aria-label={
+                        optimisticFavorites.get(consultation.id!) ??
+                        consultation.favorite ??
+                        false
+                          ? "Remover destaque"
+                          : "Destacar consulta"
+                      }
+                    >
+                      {optimisticFavorites.get(consultation.id!) ??
+                      consultation.favorite ??
+                      false ? (
+                        <IconStarFilled className="h-4 w-4 text-yellow-500" />
+                      ) : (
+                        <IconStar className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+                  </TableCell>
+
                   {/* Checkbox for delete mode */}
                   {isDeleteMode && (
                     <TableCell className="w-12">
