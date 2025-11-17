@@ -1,7 +1,6 @@
 import type { SpecialtyField } from "@/constants";
 import { TextField } from "./fields/text-field";
 import { NumberField } from "./fields/number-field";
-import { TextareaField } from "./fields/textarea-field";
 import { BooleanField } from "./fields/boolean-field";
 import { SelectField } from "./fields/select-field";
 import { ComboboxField } from "./fields/combobox-field";
@@ -36,8 +35,6 @@ export function ConsultationField({
       return <TextField {...commonProps} />;
     case "number":
       return <NumberField {...commonProps} />;
-    case "textarea":
-      return <TextareaField {...commonProps} />;
     case "boolean":
       return <BooleanField {...commonProps} />;
     case "select":
@@ -66,7 +63,6 @@ export function ConsultationFieldWithLayout({
   className,
 }: ConsultationFieldWithLayoutProps) {
   const requiresFullSpan =
-    field.type === "textarea" ||
     field.type === "text-list" ||
     ["diagnosis", "problems", "new_diagnosis", "notes"].includes(field.key);
 

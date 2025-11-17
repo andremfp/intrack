@@ -160,7 +160,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
     key: "internship",
     label: "Estágio",
     type: "combobox",
-    required: false,
+    required: true,
     options: [
       { value: "cardiologia", label: "Cardiologia" },
       { value: "endocrinologia", label: "Endocrinologia" },
