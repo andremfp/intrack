@@ -156,7 +156,7 @@ export function ConsultationModal({
       {/* Modal Container */}
       <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center pointer-events-none sm:mx-4">
         <Card
-          className={`w-full h-[95vh] sm:h-auto py-0 sm:max-w-4xl sm:max-h-[92vh] overflow-hidden flex flex-col gap-0 sm:rounded-xl rounded-b-none rounded-t-xl pointer-events-auto duration-300 shadow-2xl [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40 ${
+          className={`w-full h-[95vh] sm:h-auto py-0 sm:max-w-4xl sm:max-h-[92vh] overflow-hidden flex flex-col gap-0 sm:rounded-xl rounded-b-none rounded-t-xl pointer-events-auto duration-300 shadow-2xl ${
             isClosing
               ? "animate-out slide-out-to-bottom sm:slide-out-to-bottom-0 sm:zoom-out-95"
               : "animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95"
@@ -179,7 +179,7 @@ export function ConsultationModal({
               <IconX className="h-4 w-4" />
             </Button>
           </CardHeader>
-          <CardContent className="px-4 sm:px-6 pt-5 sm:pt-6 pb-4 overflow-y-auto flex-1">
+          <CardContent className="px-4 sm:px-6 pt-5 sm:pt-6 pb-4 overflow-y-auto flex-1 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40">
             <form
               id="consultation-form"
               onSubmit={handleSubmit}
