@@ -4,7 +4,6 @@ import {
   COMMON_CONSULTATION_FIELDS,
   getSpecialtyFields,
   type SpecialtyField,
-  MGF_SECTION_LABELS,
 } from "@/constants";
 import { resolveTypeSections } from "@/utils/consultation-form-utils";
 
@@ -254,6 +253,7 @@ export function useConsultationForm(
   const sectionOrder = useMemo(() => {
     const order = [
       "consultation_type",
+      "type_specific", // Type-specific sections appear right after consultation_type
       "clinical_history",
       "diagnosis",
       "referral",
@@ -269,12 +269,32 @@ export function useConsultationForm(
       }
     });
     
+    // Add type_specific if there are type-specific sections
+    if (sectionsForSelectedType.length > 0) {
+      allSections.add("type_specific");
+    }
+    
     // Return ordered sections, then any others
     const ordered = order.filter((s) => allSections.has(s));
     const others = Array.from(allSections).filter((s) => !order.includes(s));
     
     return [...ordered, ...others];
-  }, [specialtyFields]);
+  }, [specialtyFields, sectionsForSelectedType]);
+
+  // Organize type-specific sections by their section property
+  const typeSpecificSectionsBySection = useMemo(() => {
+    const sections: Record<string, typeof sectionsForSelectedType> = {};
+    
+    sectionsForSelectedType.forEach((section) => {
+      const sectionKey = section.section || "type_specific";
+      if (!sections[sectionKey]) {
+        sections[sectionKey] = [];
+      }
+      sections[sectionKey].push(section);
+    });
+    
+    return sections;
+  }, [sectionsForSelectedType]);
 
   return {
     formValues,
@@ -285,6 +305,7 @@ export function useConsultationForm(
     sectionsForSelectedType,
     fieldsBySection,
     sectionOrder,
+    typeSpecificSectionsBySection,
     specialtyFields,
   };
 }

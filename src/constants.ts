@@ -61,6 +61,7 @@ export interface ConstultationTypeSection {
   key: string;
   label: string;
   fields: SpecialtyField[];
+  section?: string; // Optional section grouping for UI organization
 }
 
 // Common fields present in all consultations
@@ -136,6 +137,7 @@ export const COMMON_CONSULTATION_FIELDS: SpecialtyField[] = [
 // Section labels for MGF fields
 export const MGF_SECTION_LABELS: Record<string, string> = {
   consultation_type: "Tipo de Consulta",
+  type_specific: "Exames e Avaliações Específicas",
   clinical_history: "História Clínica",
   diagnosis: "Diagnóstico e Problemas",
   referral: "Referenciação",
@@ -348,6 +350,7 @@ export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
   dm: [{
     key: "exams",
     label: "Diabetes - Exames",
+    section: "type_specific",
     fields: [
       {
         key: "creatinina",
@@ -378,6 +381,43 @@ export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
         label: "HbA1C",
         type: "number",
         units: "%",
+      },
+      {
+        key: "tfg",
+        label: "TFG",
+        type: "number",
+        units: "mL/min",
+      },
+    ],
+  }],
+  hta: [{
+    key: "exams",
+    label: "Hipertensão Arterial - Exames",
+    section: "type_specific",
+    fields: [
+      {
+        key: "creatinina",
+        label: "Creatinina",
+        type: "number",
+        units: "mg/dL",
+      },
+      {
+        key: "bnp",
+        label: "BNP",
+        type: "number",
+        units: "pg/mL",
+      },
+      {
+        key: "albuminuria",
+        label: "Albuminuria",
+        type: "number",
+        units: "mg/g",
+      },
+      {
+        key: "ldl",
+        label: "LDL",
+        type: "number",
+        units: "mg/dL",
       },
       {
         key: "tfg",
