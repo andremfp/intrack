@@ -105,6 +105,8 @@ export interface MGFConsultationsFilters {
   type?: string;
   presential?: boolean;
   smoker?: boolean;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export interface MGFConsultationsSorting {
@@ -202,6 +204,12 @@ export async function getMGFConsultations(
     }
     if (filters.autonomy) {
       query = query.eq("autonomy", filters.autonomy);
+    }
+    if (filters.dateFrom) {
+      query = query.gte("date", filters.dateFrom);
+    }
+    if (filters.dateTo) {
+      query = query.lte("date", filters.dateTo);
     }
   }
 
@@ -332,12 +340,23 @@ export async function getDistinctLocations(
   }
 }
 
+// Metrics filters interface
+export interface MetricsFilters {
+  specialtyYear?: number;
+  internship?: string;
+  location?: string;
+  sex?: string;
+  autonomy?: string;
+  ageMin?: number;
+  ageMax?: number;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
 // Fetch aggregated metrics for consultations
 export async function getConsultationMetrics(
   userId: string,
-  specialtyYear?: number,
-  internship?: string,
-  location?: string
+  filters?: MetricsFilters
 ): Promise<ApiResponse<ConsultationMetrics>> {
   try {
     // Build query with database-level filtering
@@ -346,18 +365,72 @@ export async function getConsultationMetrics(
       .select("*")
       .eq("user_id", userId);
 
-    if (specialtyYear !== undefined) {
-      query = query.eq("specialty_year", specialtyYear);
+    if (filters?.specialtyYear !== undefined) {
+      query = query.eq("specialty_year", filters.specialtyYear);
     }
 
-    if (location) {
-      query = query.eq("location", location);
+    if (filters?.location) {
+      query = query.eq("location", filters.location);
     }
 
     // Filter by internship at database level using JSONB operator (details->>internship)
     // This is more efficient than fetching all data and filtering in JavaScript
-    if (internship) {
-      query = query.eq("details->>internship", internship);
+    if (filters?.internship) {
+      query = query.eq("details->>internship", filters.internship);
+    }
+
+    if (filters?.sex) {
+      query = query.eq("sex", filters.sex);
+    }
+
+    if (filters?.autonomy) {
+      query = query.eq("autonomy", filters.autonomy);
+    }
+
+    // Age filtering with unit conversion to years
+    if (filters?.ageMin !== undefined || filters?.ageMax !== undefined) {
+      const conditions: string[] = [];
+
+      // For years
+      let yearsCondition = "age_unit.eq.years";
+      if (filters.ageMin !== undefined) {
+        yearsCondition += `,age.gte.${filters.ageMin}`;
+      }
+      if (filters.ageMax !== undefined) {
+        yearsCondition += `,age.lte.${filters.ageMax}`;
+      }
+      conditions.push(`and(${yearsCondition})`);
+
+      // For months (convert years to months)
+      let monthsCondition = "age_unit.eq.months";
+      if (filters.ageMin !== undefined) {
+        monthsCondition += `,age.gte.${filters.ageMin * 12}`;
+      }
+      if (filters.ageMax !== undefined) {
+        monthsCondition += `,age.lte.${filters.ageMax * 12}`;
+      }
+      conditions.push(`and(${monthsCondition})`);
+
+      // For days (convert years to days)
+      let daysCondition = "age_unit.eq.days";
+      if (filters.ageMin !== undefined) {
+        daysCondition += `,age.gte.${Math.floor(filters.ageMin * 365)}`;
+      }
+      if (filters.ageMax !== undefined) {
+        daysCondition += `,age.lte.${Math.floor(filters.ageMax * 365)}`;
+      }
+      conditions.push(`and(${daysCondition})`);
+
+      // Combine all conditions with OR
+      query = query.or(conditions.join(","));
+    }
+
+    // Date range filtering
+    if (filters?.dateFrom) {
+      query = query.gte("date", filters.dateFrom);
+    }
+    if (filters?.dateTo) {
+      query = query.lte("date", filters.dateTo);
     }
 
     const { data, error } = await query;

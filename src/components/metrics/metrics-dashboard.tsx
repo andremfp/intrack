@@ -7,6 +7,7 @@ import {
   getDistinctInternships,
   getDistinctLocations,
   type ConsultationMetrics,
+  type MetricsFilters,
 } from "@/lib/api/consultations";
 import type { Specialty } from "@/lib/api/specialties";
 import { toast } from "sonner";
@@ -35,6 +36,22 @@ export function MetricsDashboard({
   const [selectedInternship, setSelectedInternship] = useState<
     string | undefined
   >(undefined);
+  const [selectedSex, setSelectedSex] = useState<string | undefined>(undefined);
+  const [selectedAutonomy, setSelectedAutonomy] = useState<string | undefined>(
+    undefined
+  );
+  const [selectedAgeMin, setSelectedAgeMin] = useState<number | undefined>(
+    undefined
+  );
+  const [selectedAgeMax, setSelectedAgeMax] = useState<number | undefined>(
+    undefined
+  );
+  const [selectedDateFrom, setSelectedDateFrom] = useState<string | undefined>(
+    undefined
+  );
+  const [selectedDateTo, setSelectedDateTo] = useState<string | undefined>(
+    undefined
+  );
   const [locations, setLocations] = useState<string[]>([]);
   const [internships, setInternships] = useState<string[]>([]);
   const [metrics, setMetrics] = useState<ConsultationMetrics | null>(null);
@@ -95,16 +112,22 @@ export function MetricsDashboard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, selectedYear, selectedLocation]);
 
-  // Load metrics when user, selected year, selected location, or selected internship changes
+  // Load metrics when any filter changes
   useEffect(() => {
     const loadMetrics = async () => {
       setIsLoading(true);
-      const result = await getConsultationMetrics(
-        userId,
-        selectedYear,
-        selectedInternship,
-        selectedLocation
-      );
+      const filters: MetricsFilters = {
+        specialtyYear: selectedYear,
+        internship: selectedInternship,
+        location: selectedLocation,
+        sex: selectedSex,
+        autonomy: selectedAutonomy,
+        ageMin: selectedAgeMin,
+        ageMax: selectedAgeMax,
+        dateFrom: selectedDateFrom,
+        dateTo: selectedDateTo,
+      };
+      const result = await getConsultationMetrics(userId, filters);
 
       if (result.success) {
         setMetrics(result.data);
@@ -118,7 +141,18 @@ export function MetricsDashboard({
     };
 
     loadMetrics();
-  }, [userId, selectedYear, selectedLocation, selectedInternship]);
+  }, [
+    userId,
+    selectedYear,
+    selectedLocation,
+    selectedInternship,
+    selectedSex,
+    selectedAutonomy,
+    selectedAgeMin,
+    selectedAgeMax,
+    selectedDateFrom,
+    selectedDateTo,
+  ]);
 
   if (isLoading) {
     return (
@@ -149,6 +183,12 @@ export function MetricsDashboard({
         selectedYear={selectedYear}
         selectedLocation={selectedLocation}
         selectedInternship={selectedInternship}
+        selectedSex={selectedSex}
+        selectedAutonomy={selectedAutonomy}
+        selectedAgeMin={selectedAgeMin}
+        selectedAgeMax={selectedAgeMax}
+        selectedDateFrom={selectedDateFrom}
+        selectedDateTo={selectedDateTo}
         locations={locations}
         internships={internships}
         metrics={metrics}
@@ -156,6 +196,12 @@ export function MetricsDashboard({
         onSelectedYearChange={setSelectedYear}
         onSelectedLocationChange={setSelectedLocation}
         onSelectedInternshipChange={setSelectedInternship}
+        onSelectedSexChange={setSelectedSex}
+        onSelectedAutonomyChange={setSelectedAutonomy}
+        onSelectedAgeMinChange={setSelectedAgeMin}
+        onSelectedAgeMaxChange={setSelectedAgeMax}
+        onSelectedDateFromChange={setSelectedDateFrom}
+        onSelectedDateToChange={setSelectedDateTo}
       />
     );
   }
@@ -167,12 +213,24 @@ export function MetricsDashboard({
         selectedYear={selectedYear}
         selectedLocation={selectedLocation}
         selectedInternship={selectedInternship}
+        selectedSex={selectedSex}
+        selectedAutonomy={selectedAutonomy}
+        selectedAgeMin={selectedAgeMin}
+        selectedAgeMax={selectedAgeMax}
+        selectedDateFrom={selectedDateFrom}
+        selectedDateTo={selectedDateTo}
         locations={locations}
         internships={internships}
         metrics={metrics}
         onSelectedYearChange={setSelectedYear}
         onSelectedLocationChange={setSelectedLocation}
         onSelectedInternshipChange={setSelectedInternship}
+        onSelectedSexChange={setSelectedSex}
+        onSelectedAutonomyChange={setSelectedAutonomy}
+        onSelectedAgeMinChange={setSelectedAgeMin}
+        onSelectedAgeMaxChange={setSelectedAgeMax}
+        onSelectedDateFromChange={setSelectedDateFrom}
+        onSelectedDateToChange={setSelectedDateTo}
       />
     );
   }
@@ -184,12 +242,24 @@ export function MetricsDashboard({
         selectedYear={selectedYear}
         selectedLocation={selectedLocation}
         selectedInternship={selectedInternship}
+        selectedSex={selectedSex}
+        selectedAutonomy={selectedAutonomy}
+        selectedAgeMin={selectedAgeMin}
+        selectedAgeMax={selectedAgeMax}
+        selectedDateFrom={selectedDateFrom}
+        selectedDateTo={selectedDateTo}
         locations={locations}
         internships={internships}
         metrics={metrics}
         onSelectedYearChange={setSelectedYear}
         onSelectedLocationChange={setSelectedLocation}
         onSelectedInternshipChange={setSelectedInternship}
+        onSelectedSexChange={setSelectedSex}
+        onSelectedAutonomyChange={setSelectedAutonomy}
+        onSelectedAgeMinChange={setSelectedAgeMin}
+        onSelectedAgeMaxChange={setSelectedAgeMax}
+        onSelectedDateFromChange={setSelectedDateFrom}
+        onSelectedDateToChange={setSelectedDateTo}
       />
     );
   }

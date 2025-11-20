@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -97,9 +98,27 @@ export function ConsultationsFilters({
         return `Presencial: ${value ? "Sim" : "Não"}`;
       case "smoker":
         return `Fumador: ${value ? "Sim" : "Não"}`;
+      case "dateFrom":
+        return filters.dateTo
+          ? `Data: ${formatDate(value as string)} - ${formatDate(
+              filters.dateTo
+            )}`
+          : `Data: ≥${formatDate(value as string)}`;
+      case "dateTo":
+        return filters.dateFrom ? "" : `Data: ≤${formatDate(value as string)}`;
       default:
         return "";
     }
+  };
+
+  // Helper function to format date for display
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("pt-PT", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
   };
 
   // Get sorting label for display
@@ -220,7 +239,7 @@ export function ConsultationsFilters({
                     className="h-6 px-2 text-xs"
                   >
                     <IconX className="h-3 w-3 mr-1" />
-                    Limpar Tudo
+                    Limpar
                   </Button>
                 )}
               </div>
@@ -257,6 +276,15 @@ export function ConsultationsFilters({
                                 const newFilters = { ...filters };
                                 delete newFilters.ageMin;
                                 delete newFilters.ageMax;
+                                onFiltersChange(newFilters);
+                              } else if (
+                                filterKey === "dateFrom" ||
+                                filterKey === "dateTo"
+                              ) {
+                                // Remove both dateFrom and dateTo if either is clicked
+                                const newFilters = { ...filters };
+                                delete newFilters.dateFrom;
+                                delete newFilters.dateTo;
                                 onFiltersChange(newFilters);
                               } else {
                                 removeFilter(filterKey);
@@ -534,6 +562,41 @@ export function ConsultationsFilters({
                       <SelectItem value="no">Não</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Date range filter */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Data
+                  </label>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="flex-1">
+                      <DatePicker
+                        value={filters.dateFrom || ""}
+                        onChange={(value) =>
+                          onFiltersChange({
+                            ...filters,
+                            dateFrom: value || undefined,
+                          })
+                        }
+                        placeholder="dd/mm/aaaa"
+                        id="date-from"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <DatePicker
+                        value={filters.dateTo || ""}
+                        onChange={(value) =>
+                          onFiltersChange({
+                            ...filters,
+                            dateTo: value || undefined,
+                          })
+                        }
+                        placeholder="dd/mm/aaaa"
+                        id="date-to"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

@@ -34,8 +34,6 @@ import {
 } from "@/utils/consultation-form-utils";
 import { ConsultationFieldWithLayout } from "@/components/forms/consultation/consultation-form";
 
-// TODO: understand this. Check section values validations
-
 interface ConsultationModalProps {
   userId: string;
   specialty: Specialty | null;

@@ -283,7 +283,7 @@ export function ConsultationsTable({
     } else {
       setSelectedIds(new Set(sortedConsultations.map((c) => c.id!)));
     }
-  }; // TODO - fix bulk delete
+  };
 
   const toggleSelectRow = (id: string) => {
     const newSelected = new Set(selectedIds);
