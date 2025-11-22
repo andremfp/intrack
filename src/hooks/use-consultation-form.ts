@@ -5,7 +5,7 @@ import {
   getSpecialtyFields,
   type SpecialtyField,
 } from "@/constants";
-import { resolveTypeSections } from "@/utils/consultation-form-utils";
+import { resolveTypeSections } from "@/components/forms/consultation/utils";
 
 export interface FormValues {
   [key: string]: string | string[];

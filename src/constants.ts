@@ -8,6 +8,19 @@ export const PAGINATION_CONSTANTS = {
   CONSULTATIONS_PAGE_SIZE: 50,
 } as const;
 
+// Tab constants
+export const TAB_CONSTANTS = {
+  MAIN_TABS: {
+    METRICS: "Métricas",
+    CONSULTATIONS: "Consultas",
+  },
+  METRICS_SUB_TABS: {
+    GENERAL: "Geral",
+    CONSULTATIONS: "Consultas",
+    ICPC2: "ICPC-2",
+  },
+} as const;
+
 // Specialty codes
 export const SPECIALTY_CODES = {
   MGF: "mgf",
