@@ -1,771 +1,253 @@
-import { TableCell, TableHead } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { TableCell } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  IconTrash,
-  IconPlus,
-  IconChevronLeft,
-  IconChevronRight,
-} from "@tabler/icons-react";
 import { IconStar, IconStarFilled } from "@tabler/icons-react";
 import type {
   ConsultationMGF,
   MGFConsultationsFilters,
   MGFConsultationsSorting,
 } from "@/lib/api/consultations";
-import { updateConsultation } from "@/lib/api/consultations";
 import {
   getSpecialtyFields,
   SPECIALTY_CODES,
   COMMON_CONSULTATION_FIELDS,
 } from "@/constants";
-import { useState, useEffect } from "react";
-import { ConsultationsFilters } from "./consultations-filters";
+import { useMemo } from "react";
+import type { FilterConfig } from "@/components/filters/consultation-filters";
+import type { SortingConfig } from "@/components/filters/consultation-sorting";
+import { CommonFieldCell } from "./cells/common-field-cell";
+import { SpecialtyFieldCell } from "./cells/specialty-field-cell";
+import { useFavorites } from "@/hooks/use-favorites";
+import { useDeleteMode } from "@/hooks/use-delete-mode";
+import { createFilterSetter } from "@/components/filters/utils";
+import { TablePagination } from "@/components/ui/table-pagination";
+import { TableToolbar } from "./table-toolbar";
+import { TableHeader } from "./table-header";
+import { EmptyConsultationsState } from "./empty-consultations-state";
+import { getConsultationFieldValue } from "./utils";
 
 interface ConsultationsTableProps {
-  consultations: ConsultationMGF[];
-  totalCount: number;
-  currentPage: number;
-  pageSize: number;
-  specialtyCode?: string;
-  specialtyYear?: number;
-  filters: MGFConsultationsFilters;
-  sorting: MGFConsultationsSorting;
+  data: {
+    consultations: ConsultationMGF[];
+    totalCount: number;
+  };
+  pagination: {
+    currentPage: number;
+    pageSize: number;
+    onPageChange?: (page: number) => void;
+  };
+  specialty?: {
+    code?: string;
+    year?: number;
+  };
+  filters: {
+    filters: MGFConsultationsFilters;
+    sorting: MGFConsultationsSorting;
+    onFiltersChange?: (
+      filters:
+        | MGFConsultationsFilters
+        | ((prev: MGFConsultationsFilters) => MGFConsultationsFilters)
+    ) => void;
+    onSortingChange?: (sorting: MGFConsultationsSorting) => void;
+    onApplyFilters?: (newFilters?: Record<string, unknown>) => void;
+    onClearFilters?: () => void;
+  };
+  actions?: {
+    onRowClick?: (consultation: ConsultationMGF) => void;
+    onAddConsultation?: () => void;
+    onBulkDelete?: (
+      ids: string[]
+    ) => Promise<{ deletedIds: string[]; failedIds: string[] }>;
+    onEdit?: (consultation: ConsultationMGF) => void;
+    onDelete?: (id: string) => void;
+    onFavoriteToggle?: () => void;
+  };
   isLoading?: boolean;
-  onEdit?: (consultation: ConsultationMGF) => void;
-  onDelete?: (id: string) => void;
-  onRowClick?: (consultation: ConsultationMGF) => void;
-  onAddConsultation?: () => void;
-  onBulkDelete?: (ids: string[]) => void;
-  onPageChange?: (page: number) => void;
-  onFiltersChange?: (filters: MGFConsultationsFilters) => void;
-  onSortingChange?: (sorting: MGFConsultationsSorting) => void;
-  onApplyFilters?: () => void;
-  onClearFilters?: () => void;
-  onFavoriteToggle?: () => void;
 }
 
 export function ConsultationsTable({
-  consultations,
-  totalCount,
-  currentPage,
-  pageSize,
-  specialtyCode = SPECIALTY_CODES.MGF,
-  specialtyYear,
-  filters,
-  sorting,
+  data: { consultations, totalCount },
+  pagination: { currentPage, pageSize, onPageChange },
+  specialty = { code: SPECIALTY_CODES.MGF },
+  filters: {
+    filters,
+    sorting,
+    onFiltersChange,
+    onSortingChange,
+    onApplyFilters,
+    onClearFilters,
+  },
+  actions: {
+    onRowClick,
+    onAddConsultation,
+    onBulkDelete,
+    onFavoriteToggle,
+  } = {},
   isLoading = false,
-  onRowClick,
-  onAddConsultation,
-  onBulkDelete,
-  onPageChange,
-  onFiltersChange,
-  onSortingChange,
-  onApplyFilters,
-  onClearFilters,
-  onFavoriteToggle,
 }: ConsultationsTableProps) {
+  const specialtyCode = specialty.code ?? SPECIALTY_CODES.MGF;
+  const specialtyYear = specialty.year;
+
   // Get specialty-specific fields
   const specialtyFields = getSpecialtyFields(specialtyCode);
 
-  // State for delete mode
-  const [isDeleteMode, setIsDeleteMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [pageInput, setPageInput] = useState(currentPage.toString());
-  // Optimistic updates for favorites
-  const [optimisticFavorites, setOptimisticFavorites] = useState<
-    Map<string, boolean>
-  >(new Map());
+  // Helper function to create filter setters
+  const createFilterSetters = useMemo(():
+    | Record<string, (value: unknown) => void>
+    | undefined => {
+    if (!onFiltersChange) return undefined;
 
-  // Sort consultations: favorites first (sorted by date), then non-favorites (preserve original order)
-  const sortedConsultations = (() => {
-    // Separate favorites and non-favorites
-    const favorites: ConsultationMGF[] = [];
-    const nonFavorites: ConsultationMGF[] = [];
+    return {
+      processNumber: createFilterSetter<string>(
+        "processNumber",
+        onFiltersChange
+      ),
+      location: createFilterSetter<string>("location", onFiltersChange),
+      autonomy: createFilterSetter<string>("autonomy", onFiltersChange),
+      sex: createFilterSetter<string>("sex", onFiltersChange),
+      ageMin: createFilterSetter<number>("ageMin", onFiltersChange),
+      ageMax: createFilterSetter<number>("ageMax", onFiltersChange),
+      type: createFilterSetter<string>("type", onFiltersChange),
+      presential: createFilterSetter<boolean>("presential", onFiltersChange),
+      smoker: createFilterSetter<boolean>("smoker", onFiltersChange),
+      dateFrom: createFilterSetter<string>("dateFrom", onFiltersChange),
+      dateTo: createFilterSetter<string>("dateTo", onFiltersChange),
+    };
+  }, [onFiltersChange]);
 
-    consultations.forEach((consultation) => {
-      const isFavorite =
-        optimisticFavorites.get(consultation.id!) ??
-        consultation.favorite ??
-        false;
-      if (isFavorite) {
-        favorites.push(consultation);
-      } else {
-        nonFavorites.push(consultation);
-      }
-    });
-
-    // Sort favorites by date
-    favorites.sort((a, b) => {
-      const dateA = a.date ? new Date(a.date).getTime() : 0;
-      const dateB = b.date ? new Date(b.date).getTime() : 0;
-      // Use the current sorting order for date if it's the date field
-      if (sorting.field === "date") {
-        return sorting.order === "asc" ? dateA - dateB : dateB - dateA;
-      }
-      // Default to descending for favorites
-      return dateB - dateA;
-    });
-
-    // Non-favorites preserve their original order from backend
-    // Return favorites first, then non-favorites
-    return [...favorites, ...nonFavorites];
-  })();
-
-  // Update page input when current page changes
-  useEffect(() => {
-    setPageInput(currentPage.toString());
-  }, [currentPage]);
-
-  // Clear optimistic updates only when the database value matches the optimistic value
-  // This prevents flickering when data is refreshed after a favorite toggle
-  useEffect(() => {
-    setOptimisticFavorites((prev) => {
-      const next = new Map(prev);
-      let hasChanges = false;
-
-      // Check each optimistic update
-      prev.forEach((optimisticValue, id) => {
-        const consultation = consultations.find((c) => c.id === id);
-        if (consultation) {
-          const dbValue = consultation.favorite ?? false;
-          // If database value matches optimistic value, clear the optimistic update
-          if (dbValue === optimisticValue) {
-            next.delete(id);
-            hasChanges = true;
-          }
-        } else {
-          // Consultation no longer exists, remove from optimistic updates
-          next.delete(id);
-          hasChanges = true;
-        }
-      });
-
-      return hasChanges ? next : prev;
-    });
-  }, [consultations]);
-
-  const handlePageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-
-    // Allow empty string for clearing
-    if (value === "") {
-      setPageInput(value);
-      return;
+  // Helper function to create filter config
+  const getFilterConfig = useMemo((): FilterConfig | null => {
+    if (
+      !onFiltersChange ||
+      !onApplyFilters ||
+      !onClearFilters ||
+      !createFilterSetters
+    ) {
+      return null;
     }
 
-    // Only allow numbers
-    if (/^\d+$/.test(value)) {
-      const pageNum = parseInt(value);
-      // Prevent 0 and numbers greater than totalPages
-      if (pageNum >= 1 && pageNum <= totalPages) {
-        setPageInput(value);
-      }
-      // If they try to type a number > totalPages, set it to totalPages
-      else if (pageNum > totalPages) {
-        setPageInput(totalPages.toString());
-      }
-      // Don't allow 0 or leading zeros
-    }
-  };
+    return {
+      enabledFields: [
+        "processNumber",
+        "location",
+        "autonomy",
+        "sex",
+        "ageRange",
+        "type",
+        "presential",
+        "smoker",
+        "dateRange",
+      ],
+      badgeLocation: "inside",
+      locations:
+        COMMON_CONSULTATION_FIELDS.find(
+          (field) => field.key === "location"
+        )?.options?.map((opt) => opt.value) || [],
+      filterValues: filters as Record<string, unknown>,
+      filterSetters: createFilterSetters,
+      onClearFilters: () => {
+        onClearFilters();
+      },
+      onApplyFilters: (newFilters) => {
+        onApplyFilters(newFilters);
+      },
+    };
+  }, [
+    filters,
+    createFilterSetters,
+    onApplyFilters,
+    onClearFilters,
+    onFiltersChange,
+  ]);
 
-  const handlePageInputSubmit = () => {
-    if (pageInput === "") {
-      // If empty, reset to current page
-      setPageInput(currentPage.toString());
-      return;
-    }
-
-    const pageNum = parseInt(pageInput);
-    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
-      onPageChange?.(pageNum);
-    } else {
-      // Reset to current page if invalid
-      setPageInput(currentPage.toString());
-    }
-  };
-
-  const handlePageInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      handlePageInputSubmit();
-      e.currentTarget.blur();
-    }
-  };
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString("pt-PT", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
-
-  const getCommonSelectLabels = (
-    key: string,
-    value: string | null | undefined
-  ): { displayLabel: string; fullLabel: string } | null => {
-    if (!value) return null;
-
-    const field = COMMON_CONSULTATION_FIELDS.find((f) => f.key === key);
-    const option = field?.options?.find((opt) => opt.value === value);
-    const fullLabel = option?.label ?? value;
-
-    if (key === "sex") {
-      // Keep existing behaviour: single-letter badge except for "Outro"
-      const displayLabel = fullLabel.charAt(0).toUpperCase();
-
-      return { displayLabel, fullLabel };
+  // Helper function to create sorting config
+  const getSortingConfig = useMemo((): SortingConfig | null => {
+    if (!onSortingChange) {
+      return null;
     }
 
-    // Default: display and full labels are the same
-    return { displayLabel: fullLabel, fullLabel };
-  };
-
-  // Delete mode functions
-  const toggleDeleteMode = () => {
-    setIsDeleteMode(!isDeleteMode);
-    setSelectedIds(new Set());
-  };
-
-  const toggleStar = async (consultation: ConsultationMGF) => {
-    const id = consultation.id!;
-    const currentFavorite =
-      optimisticFavorites.get(id) ?? consultation.favorite ?? false;
-    const newFavorite = !currentFavorite;
-
-    // Optimistic update
-    setOptimisticFavorites((prev) => {
-      const next = new Map(prev);
-      next.set(id, newFavorite);
-      return next;
-    });
-
-    // Update in database
-    try {
-      const result = await updateConsultation(id, {
-        favorite: newFavorite,
-      });
-      if (!result.success) {
-        // Revert optimistic update on error
-        setOptimisticFavorites((prev) => {
-          const next = new Map(prev);
-          next.delete(id);
-          return next;
+    return {
+      field: sorting.field,
+      order: sorting.order,
+      fieldLabels: {
+        date: "Data",
+        age: "Idade",
+        process_number: "N° Processo",
+      },
+      onSortingChange: (newSorting) => {
+        onSortingChange({
+          field: newSorting.field as MGFConsultationsSorting["field"],
+          order: newSorting.order as MGFConsultationsSorting["order"],
         });
-        console.error("Failed to update favorite:", result.error);
-      } else {
-        // Keep the optimistic update - it will be cleared when the refreshed data arrives
-        // Notify parent to refresh data
-        onFavoriteToggle?.();
-      }
-    } catch (error) {
-      // Revert optimistic update on error
-      setOptimisticFavorites((prev) => {
-        const next = new Map(prev);
-        next.delete(id);
-        return next;
-      });
-      console.error("Error updating favorite:", error);
-    }
-  };
+      },
+    };
+  }, [sorting, onSortingChange]);
 
-  const toggleSelectAll = () => {
-    if (selectedIds.size === sortedConsultations.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(sortedConsultations.map((c) => c.id!)));
-    }
-  };
+  // Favorites management hook
+  const { sortedConsultations, toggleStar, isFavorite } = useFavorites({
+    consultations,
+    onFavoriteToggle,
+  });
 
-  const toggleSelectRow = (id: string) => {
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
-    } else {
-      newSelected.add(id);
-    }
-    setSelectedIds(newSelected);
-  };
-
-  const handleBulkDelete = () => {
-    if (selectedIds.size > 0 && onBulkDelete) {
-      onBulkDelete(Array.from(selectedIds));
-      setSelectedIds(new Set());
-      setIsDeleteMode(false);
-    }
-  };
-
-  // Pagination helpers
-  const totalPages = Math.ceil(totalCount / pageSize);
-  const startItem = (currentPage - 1) * pageSize + 1;
-  const endItem = Math.min(currentPage * pageSize, totalCount);
-
-  const handlePreviousPage = () => {
-    if (currentPage > 1 && onPageChange) {
-      onPageChange(currentPage - 1);
-    }
-  };
-
-  const handleNextPage = () => {
-    if (currentPage < totalPages && onPageChange) {
-      onPageChange(currentPage + 1);
-    }
-  };
-
-  const getFieldValue = (
-    consultation: ConsultationMGF,
-    fieldKey: string
-  ): unknown => {
-    // Try top-level column first (e.g. type, presential, smoker)
-    const topLevelValue = (consultation as Record<string, unknown>)[fieldKey];
-    if (topLevelValue !== undefined && topLevelValue !== null) {
-      return topLevelValue;
-    }
-
-    // Fallback to details JSONB
-    const details = consultation.details as
-      | Record<string, unknown>
-      | null
-      | undefined;
-    if (details && fieldKey in details) {
-      return details[fieldKey];
-    }
-
-    return null;
-  };
-
-  const renderCommonField = (consultation: ConsultationMGF, key: string) => {
-    switch (key) {
-      case "date":
-        return formatDate(consultation.date);
-      case "sex": {
-        const labels = getCommonSelectLabels("sex", consultation.sex);
-        const displayLabel = labels?.displayLabel ?? "-";
-        const fullLabel = labels?.fullLabel ?? displayLabel;
-
-        return (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Badge variant="outline" className="text-xs cursor-help">
-                  {displayLabel}
-                </Badge>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                <p className="text-sm">{fullLabel}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        );
-      }
-      case "age": {
-        if (consultation.age === null) return "-";
-
-        const ageUnitLabels = getCommonSelectLabels(
-          "age_unit",
-          consultation.age_unit
-        );
-        const displayText = `${consultation.age} ${
-          ageUnitLabels?.displayLabel.charAt(0).toUpperCase() ?? ""
-        }`;
-        const fullLabel = ageUnitLabels?.fullLabel
-          ? `${consultation.age} ${ageUnitLabels.fullLabel}`
-          : displayText;
-
-        return (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="cursor-help">{displayText}</span>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                <p className="text-sm">{fullLabel}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        );
-      }
-      case "age_unit":
-        // Don't display age_unit separately since it's included in age
-        return null;
-      case "process_number":
-        return consultation.process_number ?? "-";
-      case "location":
-        return (
-          getCommonSelectLabels("location", consultation.location)
-            ?.displayLabel ?? "-"
-        );
-      case "autonomy":
-        return (
-          getCommonSelectLabels("autonomy", consultation.autonomy)
-            ?.displayLabel ?? "-"
-        );
-
-      default:
-        return "-";
-    }
-  };
-
-  const renderCellValue = (
-    value: unknown,
-    field: {
-      key: string;
-      type: string;
-      options?: { value: string; label: string }[];
-    }
-  ) => {
-    if (value === null || value === undefined) return "-";
-
-    switch (field.type) {
-      case "boolean":
-        return (
-          <Badge variant={value ? "default" : "secondary"} className="text-xs">
-            {value ? "Sim" : "Não"}
-          </Badge>
-        );
-      case "select":
-      case "combobox": {
-        // Display select value with tooltip showing full label
-        const stringValue = String(value);
-        const option = field.options?.find((opt) => opt.value === stringValue);
-
-        if (!option) {
-          return (
-            <Badge variant="outline" className="text-xs">
-              {stringValue}
-            </Badge>
-          );
-        }
-
-        return (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Badge
-                  variant="outline"
-                  className="text-xs cursor-help font-semibold"
-                >
-                  {stringValue}
-                </Badge>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                <p className="text-sm">{option.label}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        );
-      }
-      case "text-list": {
-        // Display semicolon-separated values as a list
-        const items = String(value)
-          .split(";")
-          .map((item) => item.trim())
-          .filter((item) => item.length > 0);
-
-        if (items.length === 0) return "-";
-
-        return (
-          <div className="max-w-[200px] space-y-1">
-            {items.map((item, idx) => (
-              <TooltipProvider key={idx}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-start gap-1 text-xs cursor-help">
-                      <span className="font-semibold text-muted-foreground shrink-0 text-[10px]">
-                        {idx + 1}.
-                      </span>
-                      <span className="line-clamp-1 text-[10px] leading-tight">
-                        {item}
-                      </span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-[300px]">
-                    <p className="text-sm">
-                      <span className="font-semibold">{idx + 1}.</span> {item}
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ))}
-          </div>
-        );
-      }
-      case "icpc2-codes": {
-        // Display ICPC-2 codes with descriptions
-        // Format: "CODE - Description; CODE - Description"
-        const codeEntries = String(value)
-          .split(";")
-          .map((entry) => entry.trim())
-          .filter((entry) => entry.length > 0);
-
-        if (codeEntries.length === 0) return "-";
-
-        return (
-          <div className="max-w-[200px] space-y-1">
-            {codeEntries.map((entry, idx) => {
-              const match = entry.match(/^([A-Z]\d{2})\s*-\s*(.+)$/);
-              if (match) {
-                const code = match[1];
-                const description = match[2];
-                return (
-                  <TooltipProvider key={idx}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-start gap-1 text-xs cursor-help">
-                          <Badge
-                            variant="outline"
-                            className="font-mono font-semibold shrink-0 text-[10px] px-1 py-0"
-                          >
-                            {code}
-                          </Badge>
-                          <span className="text-muted-foreground line-clamp-1 text-[10px] leading-tight">
-                            {description}
-                          </span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-[300px]">
-                        <p className="text-sm">
-                          <span className="font-mono font-semibold">
-                            {code}
-                          </span>
-                          <span className="text-muted-foreground"> - </span>
-                          <span>{description}</span>
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                );
-              }
-              // Fallback for old format (just code)
-              return (
-                <Badge
-                  key={idx}
-                  variant="outline"
-                  className="text-xs font-mono"
-                >
-                  {entry}
-                </Badge>
-              );
-            })}
-          </div>
-        );
-      }
-      case "text":
-        return (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="max-w-[200px] truncate block">
-                  {String(value) || "-"}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-[260px]">
-                <p className="text-sm whitespace-normal break-words leading-relaxed">
-                  {String(value) || "-"}
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        );
-      default:
-        return String(value);
-    }
-  };
+  // Delete mode management hook
+  const {
+    isDeleteMode,
+    selectedIds,
+    filteredConsultations,
+    toggleDeleteMode,
+    toggleSelectAll,
+    toggleSelectRow,
+    handleBulkDelete,
+  } = useDeleteMode({
+    consultations: sortedConsultations,
+    onBulkDelete,
+  });
 
   if (consultations.length === 0) {
-    const yearText = specialtyYear
-      ? ` em ${specialtyCode.toUpperCase()}.${specialtyYear}`
-      : "";
     return (
-      <div className="flex flex-col h-full gap-2">
-        {/* Action buttons and filters */}
-        <div className="flex items-center justify-between flex-shrink-0 gap-2 pt-2">
-          {/* Left side: Primary actions */}
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            {onAddConsultation && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onAddConsultation}
-                disabled={isLoading}
-                className="h-8 flex-shrink-0"
-              >
-                <IconPlus className="h-4 w-4" />
-                <span className="hidden sm:inline">Adicionar Consulta</span>
-              </Button>
-            )}
-            {onBulkDelete && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={toggleDeleteMode}
-                disabled={isLoading}
-                className="h-8 flex-shrink-0"
-              >
-                <IconTrash className="h-4 w-4" />
-                <span className="hidden sm:inline">
-                  {isDeleteMode ? "Cancelar" : "Eliminar"}
-                </span>
-              </Button>
-            )}
-          </div>
-
-          {/* Right side: Sort and Filter controls */}
-          {onFiltersChange &&
-            onSortingChange &&
-            onApplyFilters &&
-            onClearFilters && (
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <ConsultationsFilters
-                  filters={filters}
-                  sorting={sorting}
-                  isLoading={isLoading}
-                  onFiltersChange={onFiltersChange}
-                  onSortingChange={onSortingChange}
-                  onApplyFilters={onApplyFilters}
-                  onClearFilters={onClearFilters}
-                />
-              </div>
-            )}
-        </div>
-
-        {/* Empty state */}
-        <div className="flex flex-1 items-center justify-center py-12 px-4">
-          <div className="text-center">
-            <p className="text-muted-foreground">
-              Ainda não tem consultas registadas{yearText}.
-            </p>
-            <p className="text-muted-foreground text-sm mt-2">
-              Clique em "Nova Consulta" para adicionar a sua primeira consulta.
-            </p>
-          </div>
-        </div>
-      </div>
+      <EmptyConsultationsState
+        specialtyCode={specialtyCode}
+        specialtyYear={specialtyYear}
+        isDeleteMode={isDeleteMode}
+        selectedIds={selectedIds}
+        isLoading={isLoading}
+        onAddConsultation={onAddConsultation}
+        onBulkDelete={onBulkDelete}
+        onToggleDeleteMode={toggleDeleteMode}
+        onHandleBulkDelete={handleBulkDelete}
+        filterConfig={getFilterConfig}
+        sortingConfig={getSortingConfig}
+      />
     );
   }
 
   return (
     <div className="flex flex-col h-full gap-2">
-      {/* Action buttons and filters */}
-      <div className="flex items-center justify-between flex-shrink-0 gap-2 pt-2">
-        {/* Left side: Primary actions */}
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          {onAddConsultation && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onAddConsultation}
-              className="h-8 flex-shrink-0"
-            >
-              <IconPlus className="h-4 w-4" />
-              <span className="hidden sm:inline">Adicionar Consulta</span>
-            </Button>
-          )}
-          {onBulkDelete && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={toggleDeleteMode}
-              className="h-8 flex-shrink-0"
-            >
-              <IconTrash className="h-4 w-4" />
-              <span className="hidden sm:inline">
-                {isDeleteMode ? "Cancelar" : "Eliminar"}
-              </span>
-            </Button>
-          )}
-
-          {/* Delete mode actions */}
-          {isDeleteMode && (
-            <>
-              <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
-                {selectedIds.size} selecionada(s)
-              </span>
-              {selectedIds.size > 0 && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleBulkDelete}
-                  className="h-8 flex-shrink-0"
-                >
-                  <IconTrash className="h-4 w-4" />
-                  <span className="hidden sm:inline">
-                    Eliminar Selecionadas
-                  </span>
-                </Button>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Right side: Sort and Filter controls */}
-        {!isDeleteMode &&
-          onFiltersChange &&
-          onSortingChange &&
-          onApplyFilters &&
-          onClearFilters && (
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <ConsultationsFilters
-                filters={filters}
-                sorting={sorting}
-                onFiltersChange={onFiltersChange}
-                onSortingChange={onSortingChange}
-                onApplyFilters={onApplyFilters}
-                onClearFilters={onClearFilters}
-              />
-            </div>
-          )}
-      </div>
+      <TableToolbar
+        isDeleteMode={isDeleteMode}
+        selectedIds={selectedIds}
+        isLoading={isLoading}
+        isEmpty={false}
+        onAddConsultation={onAddConsultation}
+        onBulkDelete={onBulkDelete}
+        onToggleDeleteMode={toggleDeleteMode}
+        onHandleBulkDelete={handleBulkDelete}
+        filterConfig={getFilterConfig}
+        sortingConfig={getSortingConfig}
+      />
 
       <div className="rounded-lg border overflow-hidden flex flex-col flex-1 min-h-0">
         <div className="overflow-auto flex-1 min-h-0 relative [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-corner]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40">
           <table className="w-full caption-bottom text-sm">
-            <thead className="sticky top-0 bg-background z-10 border-b">
-              <tr className="border-b hover:bg-transparent">
-                {/* Star / bookmark column */}
-                <TableHead className="w-10 bg-background" />
-
-                {/* Checkbox column for delete mode */}
-                {isDeleteMode && (
-                  <TableHead className="w-12 bg-background">
-                    <Checkbox
-                      checked={
-                        selectedIds.size === consultations.length &&
-                        consultations.length > 0
-                      }
-                      onCheckedChange={toggleSelectAll}
-                      aria-label="Selecionar todas"
-                    />
-                  </TableHead>
-                )}
-
-                {/* Common fields */}
-                {COMMON_CONSULTATION_FIELDS.filter(
-                  (field) => field.key !== "age_unit"
-                ).map((field) => (
-                  <TableHead key={field.key} className="bg-background">
-                    {field.label}
-                  </TableHead>
-                ))}
-
-                {/* Dynamic specialty-specific fields */}
-                {specialtyFields.map((field) => (
-                  <TableHead key={field.key} className="bg-background">
-                    {field.label}
-                  </TableHead>
-                ))}
-              </tr>
-            </thead>
+            <TableHeader
+              commonFields={COMMON_CONSULTATION_FIELDS}
+              specialtyFields={specialtyFields}
+              isDeleteMode={isDeleteMode}
+              isAllSelected={selectedIds.size === filteredConsultations.length}
+              hasItems={filteredConsultations.length > 0}
+              onToggleSelectAll={toggleSelectAll}
+            />
             <tbody className="[&_tr:last-child]:border-0">
-              {sortedConsultations.map((consultation) => (
+              {filteredConsultations.map((consultation) => (
                 <tr
                   key={consultation.id}
                   className={`border-b transition-colors ${
@@ -785,16 +267,12 @@ export function ConsultationsTable({
                       }}
                       className="p-1 rounded hover:bg-muted transition-colors"
                       aria-label={
-                        optimisticFavorites.get(consultation.id!) ??
-                        consultation.favorite ??
-                        false
+                        isFavorite(consultation.id!)
                           ? "Remover destaque"
                           : "Destacar consulta"
                       }
                     >
-                      {optimisticFavorites.get(consultation.id!) ??
-                      consultation.favorite ??
-                      false ? (
+                      {isFavorite(consultation.id!) ? (
                         <IconStarFilled className="h-4 w-4 text-yellow-500" />
                       ) : (
                         <IconStar className="h-4 w-4 text-muted-foreground" />
@@ -818,14 +296,24 @@ export function ConsultationsTable({
                   {/* Common fields */}
                   {COMMON_CONSULTATION_FIELDS.filter(
                     (field) => field.key !== "age_unit"
-                  ).map((field) => (
-                    <TableCell
-                      key={field.key}
-                      className={field.key === "date" ? "font-medium" : ""}
-                    >
-                      {renderCommonField(consultation, field.key)}
-                    </TableCell>
-                  ))}
+                  ).map((field) => {
+                    const cellContent = (
+                      <CommonFieldCell
+                        consultation={consultation}
+                        fieldKey={field.key}
+                      />
+                    );
+                    // Skip rendering if cell returns null (e.g., age_unit)
+                    if (cellContent === null) return null;
+                    return (
+                      <TableCell
+                        key={field.key}
+                        className={field.key === "date" ? "font-medium" : ""}
+                      >
+                        {cellContent}
+                      </TableCell>
+                    );
+                  })}
 
                   {/* Dynamic specialty-specific fields */}
                   {specialtyFields.map((field) => (
@@ -838,10 +326,13 @@ export function ConsultationsTable({
                           : ""
                       }
                     >
-                      {renderCellValue(
-                        getFieldValue(consultation, field.key),
-                        field
-                      )}
+                      <SpecialtyFieldCell
+                        value={getConsultationFieldValue(
+                          consultation,
+                          field.key
+                        )}
+                        field={field}
+                      />
                     </TableCell>
                   ))}
                 </tr>
@@ -851,52 +342,13 @@ export function ConsultationsTable({
         </div>
 
         {/* Fixed pagination at bottom */}
-        <div className="flex items-center justify-between gap-2 px-3 py-2 border-t flex-shrink-0">
-          <div className="text-xs text-muted-foreground">
-            <span className="hidden sm:inline">
-              Mostrando {startItem} a {endItem} de {totalCount} consultas
-            </span>
-            <span className="inline sm:hidden">
-              {startItem}-{endItem} de {totalCount}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5 text-sm">
-            <button
-              onClick={handlePreviousPage}
-              disabled={currentPage <= 1 || isLoading}
-              className="p-1 hover:bg-muted rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <IconChevronLeft className="h-4 w-4" />
-            </button>
-
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-muted-foreground hidden sm:inline">
-                Página
-              </span>
-              <input
-                type="text"
-                value={pageInput}
-                onChange={handlePageInputChange}
-                onBlur={handlePageInputSubmit}
-                onKeyDown={handlePageInputKeyDown}
-                disabled={isLoading}
-                className="w-10 h-7 px-2 text-center text-sm border rounded bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-              <span className="text-xs text-muted-foreground">
-                de {totalPages}
-              </span>
-            </div>
-
-            <button
-              onClick={handleNextPage}
-              disabled={currentPage >= totalPages || isLoading}
-              className="p-1 hover:bg-muted rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <IconChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
+        <TablePagination
+          totalCount={totalCount}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          isLoading={isLoading}
+          onPageChange={onPageChange}
+        />
       </div>
     </div>
   );

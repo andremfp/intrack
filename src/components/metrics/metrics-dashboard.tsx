@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 
 import {
   getConsultationMetrics,
@@ -10,8 +10,8 @@ import {
   type MetricsFilters,
 } from "@/lib/api/consultations";
 import type { Specialty } from "@/lib/api/specialties";
-import { toast } from "sonner";
-import { getSexLabel } from "./metrics-utils";
+import { errorToast } from "@/utils/error-toast";
+import { getSexLabel } from "./utils";
 import { GeneralTab } from "./tabs/general/general-tab";
 import { ConsultationsTab } from "./tabs/consultations/consultations-tab";
 import { ICPC2Tab } from "./tabs/icpc-2-codes/icpc-2-tab";
@@ -27,31 +27,151 @@ export function MetricsDashboard({
   specialty,
   activeSubTab,
 }: MetricsDashboardProps) {
+  // Helper to get localStorage key for this tab's filters
+  const filtersKey = useMemo(
+    () => `metrics-filters-${activeSubTab}`,
+    [activeSubTab]
+  );
+
+  // Load persisted filters from localStorage for this tab
+  // Memoize the default filters object to avoid recreating it
+  const defaultFilters = useMemo(
+    () => ({
+      year: undefined,
+      location: undefined,
+      internship: undefined,
+      sex: undefined,
+      autonomy: undefined,
+      ageMin: undefined,
+      ageMax: undefined,
+      dateFrom: undefined,
+      dateTo: undefined,
+      type: undefined,
+      presential: undefined,
+      smoker: undefined,
+    }),
+    []
+  );
+
+  // Load persisted filters directly from cache (no callback wrapper)
+  const loadPersistedFilters = useMemo(() => {
+    try {
+      const cached = localStorage.getItem(filtersKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        return {
+          year: parsed.year,
+          location: parsed.location,
+          internship: parsed.internship,
+          sex: parsed.sex,
+          autonomy: parsed.autonomy,
+          ageMin: parsed.ageMin,
+          ageMax: parsed.ageMax,
+          dateFrom: parsed.dateFrom,
+          dateTo: parsed.dateTo,
+          type: parsed.type,
+          presential: parsed.presential,
+          smoker: parsed.smoker,
+        };
+      }
+    } catch {
+      // Ignore errors
+    }
+    return defaultFilters;
+  }, [filtersKey, defaultFilters]);
+
+  // Load persisted filters when tab changes
+  const persistedFilters = loadPersistedFilters;
+
   const [selectedYear, setSelectedYear] = useState<number | undefined>(
-    specialty && specialty.years > 1 ? 1 : undefined
+    persistedFilters.year
   );
   const [selectedLocation, setSelectedLocation] = useState<string | undefined>(
-    undefined
+    persistedFilters.location
   );
   const [selectedInternship, setSelectedInternship] = useState<
     string | undefined
-  >(undefined);
-  const [selectedSex, setSelectedSex] = useState<string | undefined>(undefined);
+  >(persistedFilters.internship);
+  const [selectedSex, setSelectedSex] = useState<string | undefined>(
+    persistedFilters.sex
+  );
   const [selectedAutonomy, setSelectedAutonomy] = useState<string | undefined>(
-    undefined
+    persistedFilters.autonomy
   );
   const [selectedAgeMin, setSelectedAgeMin] = useState<number | undefined>(
-    undefined
+    persistedFilters.ageMin
   );
   const [selectedAgeMax, setSelectedAgeMax] = useState<number | undefined>(
-    undefined
+    persistedFilters.ageMax
   );
   const [selectedDateFrom, setSelectedDateFrom] = useState<string | undefined>(
-    undefined
+    persistedFilters.dateFrom
   );
   const [selectedDateTo, setSelectedDateTo] = useState<string | undefined>(
-    undefined
+    persistedFilters.dateTo
   );
+  const [selectedType, setSelectedType] = useState<string | undefined>(
+    persistedFilters.type
+  );
+  const [selectedPresential, setSelectedPresential] = useState<
+    boolean | undefined
+  >(persistedFilters.presential);
+  const [selectedSmoker, setSelectedSmoker] = useState<boolean | undefined>(
+    persistedFilters.smoker
+  );
+
+  // Update filters when tab changes
+  useEffect(() => {
+    setSelectedYear(persistedFilters.year);
+    setSelectedLocation(persistedFilters.location);
+    setSelectedInternship(persistedFilters.internship);
+    setSelectedSex(persistedFilters.sex);
+    setSelectedAutonomy(persistedFilters.autonomy);
+    setSelectedAgeMin(persistedFilters.ageMin);
+    setSelectedAgeMax(persistedFilters.ageMax);
+    setSelectedDateFrom(persistedFilters.dateFrom);
+    setSelectedDateTo(persistedFilters.dateTo);
+    setSelectedType(persistedFilters.type);
+    setSelectedPresential(persistedFilters.presential);
+    setSelectedSmoker(persistedFilters.smoker);
+  }, [persistedFilters]);
+
+  // Persist filters to localStorage when they change
+  useEffect(() => {
+    try {
+      const filtersToSave = {
+        year: selectedYear,
+        location: selectedLocation,
+        internship: selectedInternship,
+        sex: selectedSex,
+        autonomy: selectedAutonomy,
+        ageMin: selectedAgeMin,
+        ageMax: selectedAgeMax,
+        dateFrom: selectedDateFrom,
+        dateTo: selectedDateTo,
+        type: selectedType,
+        presential: selectedPresential,
+        smoker: selectedSmoker,
+      };
+      localStorage.setItem(filtersKey, JSON.stringify(filtersToSave));
+    } catch (error) {
+      console.error("Error saving metrics filters to cache:", error);
+    }
+  }, [
+    filtersKey,
+    selectedYear,
+    selectedLocation,
+    selectedInternship,
+    selectedSex,
+    selectedAutonomy,
+    selectedAgeMin,
+    selectedAgeMax,
+    selectedDateFrom,
+    selectedDateTo,
+    selectedType,
+    selectedPresential,
+    selectedSmoker,
+  ]);
   const [locations, setLocations] = useState<string[]>([]);
   const [internships, setInternships] = useState<string[]>([]);
   const [metrics, setMetrics] = useState<ConsultationMetrics | null>(null);
@@ -69,9 +189,7 @@ export function MetricsDashboard({
           setSelectedLocation(undefined);
         }
       } else {
-        toast.error("Erro ao carregar locais", {
-          description: result.error.userMessage,
-        });
+        errorToast.fromApiError(result.error, "Erro ao carregar locais");
       }
     };
 
@@ -102,9 +220,7 @@ export function MetricsDashboard({
           setSelectedInternship(undefined);
         }
       } else {
-        toast.error("Erro ao carregar estágios", {
-          description: result.error.userMessage,
-        });
+        errorToast.fromApiError(result.error, "Erro ao carregar estágios");
       }
     };
 
@@ -112,47 +228,53 @@ export function MetricsDashboard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, selectedYear, selectedLocation]);
 
-  // Load metrics when any filter changes
-  useEffect(() => {
-    const loadMetrics = async () => {
-      setIsLoading(true);
-      const filters: MetricsFilters = {
-        specialtyYear: selectedYear,
-        internship: selectedInternship,
-        location: selectedLocation,
-        sex: selectedSex,
-        autonomy: selectedAutonomy,
-        ageMin: selectedAgeMin,
-        ageMax: selectedAgeMax,
-        dateFrom: selectedDateFrom,
-        dateTo: selectedDateTo,
-      };
-      const result = await getConsultationMetrics(userId, filters);
-
-      if (result.success) {
-        setMetrics(result.data);
-      } else {
-        toast.error("Erro ao carregar métricas", {
-          description: result.error.userMessage,
-        });
-      }
-
-      setIsLoading(false);
+  // Load metrics function
+  const loadMetrics = async (filtersOverride?: Record<string, unknown>) => {
+    setIsLoading(true);
+    const filters: MetricsFilters = {
+      specialtyYear:
+        (filtersOverride?.year as number | undefined) ?? selectedYear,
+      location:
+        (filtersOverride?.location as string | undefined) ?? selectedLocation,
+      internship:
+        (filtersOverride?.internship as string | undefined) ??
+        selectedInternship,
+      sex: (filtersOverride?.sex as string | undefined) ?? selectedSex,
+      autonomy:
+        (filtersOverride?.autonomy as string | undefined) ?? selectedAutonomy,
+      ageMin: (filtersOverride?.ageMin as number | undefined) ?? selectedAgeMin,
+      ageMax: (filtersOverride?.ageMax as number | undefined) ?? selectedAgeMax,
+      type: (filtersOverride?.type as string | undefined) ?? selectedType,
+      presential:
+        (filtersOverride?.presential as boolean | undefined) ??
+        selectedPresential,
+      smoker:
+        (filtersOverride?.smoker as boolean | undefined) ?? selectedSmoker,
+      dateFrom:
+        (filtersOverride?.dateFrom as string | undefined) ?? selectedDateFrom,
+      dateTo: (filtersOverride?.dateTo as string | undefined) ?? selectedDateTo,
     };
+    const result = await getConsultationMetrics(userId, filters);
 
+    if (result.success) {
+      setMetrics(result.data);
+    } else {
+      errorToast.fromApiError(result.error, "Erro ao carregar métricas");
+    }
+
+    setIsLoading(false);
+  };
+
+  // Load metrics on initial mount or when userId/specialty changes
+  useEffect(() => {
     loadMetrics();
-  }, [
-    userId,
-    selectedYear,
-    selectedLocation,
-    selectedInternship,
-    selectedSex,
-    selectedAutonomy,
-    selectedAgeMin,
-    selectedAgeMax,
-    selectedDateFrom,
-    selectedDateTo,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, specialty?.id]);
+
+  // Handle apply filters
+  const handleApplyFilters = async (newFilters?: Record<string, unknown>) => {
+    await loadMetrics(newFilters);
+  };
 
   if (isLoading) {
     return (
@@ -182,7 +304,9 @@ export function MetricsDashboard({
         specialty={specialty}
         selectedYear={selectedYear}
         selectedLocation={selectedLocation}
-        selectedInternship={selectedInternship}
+        selectedType={selectedType}
+        selectedPresential={selectedPresential}
+        selectedSmoker={selectedSmoker}
         selectedSex={selectedSex}
         selectedAutonomy={selectedAutonomy}
         selectedAgeMin={selectedAgeMin}
@@ -195,13 +319,16 @@ export function MetricsDashboard({
         getSexLabel={getSexLabel}
         onSelectedYearChange={setSelectedYear}
         onSelectedLocationChange={setSelectedLocation}
-        onSelectedInternshipChange={setSelectedInternship}
+        onSelectedTypeChange={setSelectedType}
+        onSelectedPresentialChange={setSelectedPresential}
+        onSelectedSmokerChange={setSelectedSmoker}
         onSelectedSexChange={setSelectedSex}
         onSelectedAutonomyChange={setSelectedAutonomy}
         onSelectedAgeMinChange={setSelectedAgeMin}
         onSelectedAgeMaxChange={setSelectedAgeMax}
         onSelectedDateFromChange={setSelectedDateFrom}
         onSelectedDateToChange={setSelectedDateTo}
+        onApplyFilters={handleApplyFilters}
       />
     );
   }
@@ -213,6 +340,9 @@ export function MetricsDashboard({
         selectedYear={selectedYear}
         selectedLocation={selectedLocation}
         selectedInternship={selectedInternship}
+        selectedType={selectedType}
+        selectedPresential={selectedPresential}
+        selectedSmoker={selectedSmoker}
         selectedSex={selectedSex}
         selectedAutonomy={selectedAutonomy}
         selectedAgeMin={selectedAgeMin}
@@ -225,12 +355,16 @@ export function MetricsDashboard({
         onSelectedYearChange={setSelectedYear}
         onSelectedLocationChange={setSelectedLocation}
         onSelectedInternshipChange={setSelectedInternship}
+        onSelectedTypeChange={setSelectedType}
+        onSelectedPresentialChange={setSelectedPresential}
+        onSelectedSmokerChange={setSelectedSmoker}
         onSelectedSexChange={setSelectedSex}
         onSelectedAutonomyChange={setSelectedAutonomy}
         onSelectedAgeMinChange={setSelectedAgeMin}
         onSelectedAgeMaxChange={setSelectedAgeMax}
         onSelectedDateFromChange={setSelectedDateFrom}
         onSelectedDateToChange={setSelectedDateTo}
+        onApplyFilters={handleApplyFilters}
       />
     );
   }
@@ -242,6 +376,9 @@ export function MetricsDashboard({
         selectedYear={selectedYear}
         selectedLocation={selectedLocation}
         selectedInternship={selectedInternship}
+        selectedType={selectedType}
+        selectedPresential={selectedPresential}
+        selectedSmoker={selectedSmoker}
         selectedSex={selectedSex}
         selectedAutonomy={selectedAutonomy}
         selectedAgeMin={selectedAgeMin}
@@ -254,12 +391,16 @@ export function MetricsDashboard({
         onSelectedYearChange={setSelectedYear}
         onSelectedLocationChange={setSelectedLocation}
         onSelectedInternshipChange={setSelectedInternship}
+        onSelectedTypeChange={setSelectedType}
+        onSelectedPresentialChange={setSelectedPresential}
+        onSelectedSmokerChange={setSelectedSmoker}
         onSelectedSexChange={setSelectedSex}
         onSelectedAutonomyChange={setSelectedAutonomy}
         onSelectedAgeMinChange={setSelectedAgeMin}
         onSelectedAgeMaxChange={setSelectedAgeMax}
         onSelectedDateFromChange={setSelectedDateFrom}
         onSelectedDateToChange={setSelectedDateTo}
+        onApplyFilters={handleApplyFilters}
       />
     );
   }

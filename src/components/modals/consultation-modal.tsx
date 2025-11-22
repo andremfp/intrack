@@ -31,7 +31,7 @@ import { useConsultationForm } from "@/hooks/use-consultation-form";
 import {
   validateForm,
   serializeFormValues,
-} from "@/utils/consultation-form-utils";
+} from "@/components/forms/consultation/utils";
 import { ConsultationFieldWithLayout } from "@/components/forms/consultation/consultation-form";
 
 interface ConsultationModalProps {

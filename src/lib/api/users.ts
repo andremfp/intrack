@@ -59,7 +59,7 @@ export async function checkUserExists(): Promise<ApiResponse<boolean>> {
   return success(!!data?.[0]);
 }
 
-export async function upsertUser(): Promise<ApiResponse<void>> {
+export async function upsertUser(): Promise<ApiResponse<UserData>> {
   const {
     data: { user },
     error: authError,
@@ -72,15 +72,27 @@ export async function upsertUser(): Promise<ApiResponse<void>> {
   const derivedName =
     user.user_metadata?.full_name || user.email.split("@")[0] || "Utilizador";
 
-  const { error } = await supabase
+  // Upsert and return the created/updated user data in one operation
+  const { data, error } = await supabase
     .from("users")
     .upsert(
       { user_id: user.id, display_name: derivedName, email: user.email },
-      { onConflict: "user_id", ignoreDuplicates: true }
-    );
+      { onConflict: "user_id", ignoreDuplicates: false }
+    )
+    .select()
+    .single();
 
   if (error) return failure(error, "upsertUser");
-  return success();
+  if (!data) {
+    return failure(
+      new AppError("Não foi possível criar o perfil do utilizador."),
+      "upsertUser"
+    );
+  }
+
+  return success({
+    data,
+  });
 }
 
 export async function updateUser({

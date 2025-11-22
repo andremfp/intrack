@@ -7,7 +7,9 @@ import {
   type SpecialtyDetails,
   PAGINATION_CONSTANTS,
   MGF_FIELDS,
+  ageToYears,
 } from "@/constants";
+import { sortConsultationsWithFavorites } from "@/utils/consultations-sorting";
 
 export type Consultation = Tables<"consultations">;
 export type ConsultationInsert = TablesInsert<"consultations">;
@@ -174,6 +176,16 @@ export async function getMGFConsultations(
       }
       conditions.push(`and(${monthsCondition})`);
 
+      // For weeks (convert years to weeks)
+      let weeksCondition = "age_unit.eq.weeks";
+      if (filters.ageMin !== undefined) {
+        weeksCondition += `,age.gte.${filters.ageMin * 52}`;
+      }
+      if (filters.ageMax !== undefined) {
+        weeksCondition += `,age.lte.${filters.ageMax * 52}`;
+      }
+      conditions.push(`and(${weeksCondition})`);
+
       // For days (convert years to days)
       let daysCondition = "age_unit.eq.days";
       if (filters.ageMin !== undefined) {
@@ -216,7 +228,37 @@ export async function getMGFConsultations(
   // Apply sorting (default to date descending)
   const sortField = sorting?.field || "date";
   const sortOrder = sorting?.order || "desc";
-  query = query.order(sortField, { ascending: sortOrder === "asc" });
+
+  // Special handling for age sorting - need to convert all ages to years first
+  // Since Supabase doesn't support computed expressions in ORDER BY, we need to
+  // fetch all matching records, sort in JavaScript, then apply pagination
+  if (sortField === "age") {
+    // Fetch all matching records (without pagination limit)
+    const { data: allData, error, count } = await query;
+
+    if (error) return failure(error, "getMGFConsultations");
+    if (!allData) return success({ consultations: [], totalCount: 0 });
+
+    // Sort by favorites first, then by age using utility function
+    const sortedData = sortConsultationsWithFavorites(allData, {
+      field: "age",
+      order: sortOrder,
+    });
+
+    // Apply pagination manually
+    const paginatedData = sortedData.slice(from, to + 1);
+
+    return success({
+      consultations: paginatedData,
+      totalCount: count || 0,
+    });
+  }
+
+  // For non-age sorting, use database sorting
+  // Sort by favorites first (favorites at top), then by the selected field
+  query = query
+    .order("favorite", { ascending: false, nullsFirst: false })
+    .order(sortField, { ascending: sortOrder === "asc" });
 
   // Apply pagination
   query = query.range(from, to);
@@ -344,6 +386,9 @@ export async function getDistinctLocations(
 export interface MetricsFilters {
   specialtyYear?: number;
   internship?: string;
+  type?: string;
+  presential?: boolean;
+  smoker?: boolean;
   location?: string;
   sex?: string;
   autonomy?: string;
@@ -387,6 +432,18 @@ export async function getConsultationMetrics(
       query = query.eq("autonomy", filters.autonomy);
     }
 
+    if (filters?.type) {
+      query = query.eq("type", filters.type);
+    }
+
+    if (filters?.presential) {
+      query = query.eq("presential", filters.presential);
+    }
+
+    if (filters?.smoker) {
+      query = query.eq("smoker", filters.smoker);
+    }
+
     // Age filtering with unit conversion to years
     if (filters?.ageMin !== undefined || filters?.ageMax !== undefined) {
       const conditions: string[] = [];
@@ -411,13 +468,23 @@ export async function getConsultationMetrics(
       }
       conditions.push(`and(${monthsCondition})`);
 
+      // For weeks (convert years to weeks)
+      let weeksCondition = "age_unit.eq.weeks";
+      if (filters.ageMin !== undefined) {
+        weeksCondition += `,age.gte.${Math.floor(filters.ageMin * 52.1429)}`;
+      }
+      if (filters.ageMax !== undefined) {
+        weeksCondition += `,age.lte.${Math.ceil(filters.ageMax * 52.1429)}`;
+      }
+      conditions.push(`and(${weeksCondition})`);
+
       // For days (convert years to days)
       let daysCondition = "age_unit.eq.days";
       if (filters.ageMin !== undefined) {
-        daysCondition += `,age.gte.${Math.floor(filters.ageMin * 365)}`;
+        daysCondition += `,age.gte.${Math.floor(filters.ageMin * 365.25)}`;
       }
       if (filters.ageMax !== undefined) {
-        daysCondition += `,age.lte.${Math.floor(filters.ageMax * 365)}`;
+        daysCondition += `,age.lte.${Math.ceil(filters.ageMax * 365.25)}`;
       }
       conditions.push(`and(${daysCondition})`);
 
@@ -484,13 +551,7 @@ function calculateMetrics(
   // Average age (convert all ages to years)
   const totalAgeInYears = consultations.reduce((sum, c) => {
     if (!c.age || !c.age_unit) return sum;
-    let ageInYears = c.age;
-    if (c.age_unit === "months") {
-      ageInYears = c.age / 12;
-    } else if (c.age_unit === "days") {
-      ageInYears = c.age / 365;
-    }
-    return sum + ageInYears;
+    return sum + ageToYears(c.age, c.age_unit);
   }, 0);
   const averageAge =
     totalConsultations > 0 ? totalAgeInYears / totalConsultations : 0;
@@ -509,9 +570,7 @@ function calculateMetrics(
   ];
   consultations.forEach((c) => {
     if (c.age !== null && c.age !== undefined && c.age_unit) {
-      let ageYears = c.age;
-      if (c.age_unit === "months") ageYears = c.age / 12;
-      else if (c.age_unit === "days") ageYears = c.age / 365;
+      const ageYears = ageToYears(c.age, c.age_unit);
       const age = Math.floor(ageYears);
       const bucket = ageRangeBuckets.find((b) =>
         b.max !== undefined ? age >= b.min && age <= b.max : age >= b.min
