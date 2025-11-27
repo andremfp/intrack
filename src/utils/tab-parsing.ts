@@ -7,7 +7,7 @@ export type MetricsSubTab = "Geral" | "Consultas" | "ICPC-2";
 export interface ParsedTab {
   mainTab: MainTab;
   activeSpecialtyYear: number | undefined; // Only set for Consultas tabs
-  metricsSubTab: MetricsSubTab | null;
+  metricsSubTab: MetricsSubTab;
 }
 
 /**
@@ -27,11 +27,9 @@ export function parseTab(activeTab: TabType): ParsedTab {
     ? parseInt(activeTab.split(".")[1])
     : undefined;
 
-  const metricsSubTab: MetricsSubTab | null = activeTab.startsWith(`${TAB_CONSTANTS.MAIN_TABS.METRICS}.`)
+  const metricsSubTab = activeTab.startsWith(`${TAB_CONSTANTS.MAIN_TABS.METRICS}.`)
     ? (activeTab.split(".")[1] as MetricsSubTab)
-    : activeTab === TAB_CONSTANTS.MAIN_TABS.METRICS
-    ? TAB_CONSTANTS.METRICS_SUB_TABS.GENERAL // Default to Geral if just "Métricas"
-    : null;
+    : TAB_CONSTANTS.METRICS_SUB_TABS.GENERAL;
 
   return {
     mainTab,

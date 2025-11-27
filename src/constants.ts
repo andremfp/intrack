@@ -29,6 +29,7 @@ export const SPECIALTY_CODES = {
 // Import ICPC-2 codes
 export type { ICPC2Code } from "./icpc2-codes";
 import { MGF_ICPC2_CODES } from "./icpc2-codes";
+import type { FilterFieldType } from "@/components/filters/types";
 
 // Common types
 export type TabType = "Métricas" | "Consultas" | string; // string allows "Métricas.Geral", "Métricas.Consultas", "Métricas.ICPC-2", "Consultas.1", "Consultas.2", etc.
@@ -504,3 +505,61 @@ export function ageToYears(age: number, unit: string): number {
       return age;
   }
 }
+
+// Filter field configurations for each component.
+// Each component specifies which filters from ConsultationsFilters are enabled in the UI.
+
+/**
+ * Enabled filter fields for ConsultationsDashboard/ConsultationsTable
+ */
+export const CONSULTATIONS_ENABLED_FIELDS: FilterFieldType[] = [
+  "processNumber",
+  "location",
+  "internship",
+  "autonomy",
+  "sex",
+  "ageRange",
+  "type",
+  "presential",
+  "smoker",
+  "dateRange",
+];
+
+/**
+ * Enabled filter fields for MetricsDashboard - GeneralTab
+ */
+export const METRICS_GENERAL_ENABLED_FIELDS: FilterFieldType[] = [
+  "year",
+  "location",
+  "internship",
+  "sex",
+  "autonomy",
+  "ageRange",
+  "dateRange",
+];
+
+/**
+ * Enabled filter fields for MetricsDashboard - ConsultationsTab
+ */
+export const METRICS_CONSULTATIONS_ENABLED_FIELDS: FilterFieldType[] = [
+  "year",
+  "location",
+  "internship",
+  "sex",
+  "autonomy",
+  "ageRange",
+  "dateRange",
+];
+
+/**
+ * Enabled filter fields for MetricsDashboard - ICPC2Tab
+ */
+export const METRICS_ICPC2_ENABLED_FIELDS: FilterFieldType[] = [
+  "year",
+  "location",
+  "internship",
+  "sex",
+  "autonomy",
+  "ageRange",
+  "dateRange",
+];

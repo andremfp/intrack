@@ -3,27 +3,28 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { IconStar, IconStarFilled } from "@tabler/icons-react";
 import type {
   ConsultationMGF,
-  MGFConsultationsFilters,
-  MGFConsultationsSorting,
+  ConsultationsSorting,
 } from "@/lib/api/consultations";
+import type { ConsultationsFilters } from "@/lib/api/consultations";
 import {
   getSpecialtyFields,
   SPECIALTY_CODES,
   COMMON_CONSULTATION_FIELDS,
 } from "@/constants";
 import { useMemo } from "react";
-import type { FilterConfig } from "@/components/filters/consultation-filters";
-import type { SortingConfig } from "@/components/filters/consultation-sorting";
+import type { FilterUIConfig } from "@/components/filters/types";
+import type { SortingConfig } from "@/components/filters/types";
 import { CommonFieldCell } from "./cells/common-field-cell";
 import { SpecialtyFieldCell } from "./cells/specialty-field-cell";
-import { useFavorites } from "@/hooks/use-favorites";
-import { useDeleteMode } from "@/hooks/use-delete-mode";
-import { createFilterSetter } from "@/components/filters/utils";
+import { useFavorites } from "@/hooks/consultations/use-consultation-favorites";
+import { useDeleteMode } from "@/hooks/consultations/use-consultation-delete-mode";
+import { createFilterConfig } from "@/components/filters/helpers";
+import { CONSULTATIONS_ENABLED_FIELDS } from "@/constants";
 import { TablePagination } from "@/components/ui/table-pagination";
 import { TableToolbar } from "./table-toolbar";
 import { TableHeader } from "./table-header";
 import { EmptyConsultationsState } from "./empty-consultations-state";
-import { getConsultationFieldValue } from "./utils";
+import { getConsultationFieldValue } from "./helpers";
 
 interface ConsultationsTableProps {
   data: {
@@ -40,16 +41,13 @@ interface ConsultationsTableProps {
     year?: number;
   };
   filters: {
-    filters: MGFConsultationsFilters;
-    sorting: MGFConsultationsSorting;
-    onFiltersChange?: (
-      filters:
-        | MGFConsultationsFilters
-        | ((prev: MGFConsultationsFilters) => MGFConsultationsFilters)
+    filters: ConsultationsFilters;
+    sorting: ConsultationsSorting;
+    setFilter: <K extends keyof ConsultationsFilters>(
+      key: K,
+      value: ConsultationsFilters[K]
     ) => void;
-    onSortingChange?: (sorting: MGFConsultationsSorting) => void;
-    onApplyFilters?: (newFilters?: Record<string, unknown>) => void;
-    onClearFilters?: () => void;
+    onSortingChange?: (sorting: ConsultationsSorting) => void;
   };
   actions?: {
     onRowClick?: (consultation: ConsultationMGF) => void;
@@ -71,10 +69,8 @@ export function ConsultationsTable({
   filters: {
     filters,
     sorting,
-    onFiltersChange,
+    setFilter,
     onSortingChange,
-    onApplyFilters,
-    onClearFilters,
   },
   actions: {
     onRowClick,
@@ -90,74 +86,15 @@ export function ConsultationsTable({
   // Get specialty-specific fields
   const specialtyFields = getSpecialtyFields(specialtyCode);
 
-  // Helper function to create filter setters
-  const createFilterSetters = useMemo(():
-    | Record<string, (value: unknown) => void>
-    | undefined => {
-    if (!onFiltersChange) return undefined;
-
-    return {
-      processNumber: createFilterSetter<string>(
-        "processNumber",
-        onFiltersChange
-      ),
-      location: createFilterSetter<string>("location", onFiltersChange),
-      autonomy: createFilterSetter<string>("autonomy", onFiltersChange),
-      sex: createFilterSetter<string>("sex", onFiltersChange),
-      ageMin: createFilterSetter<number>("ageMin", onFiltersChange),
-      ageMax: createFilterSetter<number>("ageMax", onFiltersChange),
-      type: createFilterSetter<string>("type", onFiltersChange),
-      presential: createFilterSetter<boolean>("presential", onFiltersChange),
-      smoker: createFilterSetter<boolean>("smoker", onFiltersChange),
-      dateFrom: createFilterSetter<string>("dateFrom", onFiltersChange),
-      dateTo: createFilterSetter<string>("dateTo", onFiltersChange),
-    };
-  }, [onFiltersChange]);
-
   // Helper function to create filter config
-  const getFilterConfig = useMemo((): FilterConfig | null => {
-    if (
-      !onFiltersChange ||
-      !onApplyFilters ||
-      !onClearFilters ||
-      !createFilterSetters
-    ) {
-      return null;
-    }
-
-    return {
-      enabledFields: [
-        "processNumber",
-        "location",
-        "autonomy",
-        "sex",
-        "ageRange",
-        "type",
-        "presential",
-        "smoker",
-        "dateRange",
-      ],
+  const getFilterConfig = useMemo((): FilterUIConfig | null => {
+    return createFilterConfig<ConsultationsFilters>({
+      enabledFields: CONSULTATIONS_ENABLED_FIELDS,
       badgeLocation: "inside",
-      locations:
-        COMMON_CONSULTATION_FIELDS.find(
-          (field) => field.key === "location"
-        )?.options?.map((opt) => opt.value) || [],
       filterValues: filters as Record<string, unknown>,
-      filterSetters: createFilterSetters,
-      onClearFilters: () => {
-        onClearFilters();
-      },
-      onApplyFilters: (newFilters) => {
-        onApplyFilters(newFilters);
-      },
-    };
-  }, [
-    filters,
-    createFilterSetters,
-    onApplyFilters,
-    onClearFilters,
-    onFiltersChange,
-  ]);
+      setFilter,
+    }) as FilterUIConfig;
+  }, [filters, setFilter]);
 
   // Helper function to create sorting config
   const getSortingConfig = useMemo((): SortingConfig | null => {
@@ -175,8 +112,8 @@ export function ConsultationsTable({
       },
       onSortingChange: (newSorting) => {
         onSortingChange({
-          field: newSorting.field as MGFConsultationsSorting["field"],
-          order: newSorting.order as MGFConsultationsSorting["order"],
+          field: newSorting.field as ConsultationsSorting["field"],
+          order: newSorting.order as ConsultationsSorting["order"],
         });
       },
     };

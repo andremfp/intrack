@@ -27,11 +27,11 @@ import {
   getICPC2Codes,
   MGF_SECTION_LABELS,
 } from "@/constants";
-import { useConsultationForm } from "@/hooks/use-consultation-form";
+import { useConsultationForm } from "@/hooks/consultations/use-consultation-form";
 import {
   validateForm,
   serializeFormValues,
-} from "@/components/forms/consultation/utils";
+} from "@/components/forms/consultation/helpers";
 import { ConsultationFieldWithLayout } from "@/components/forms/consultation/consultation-form";
 
 interface ConsultationModalProps {
@@ -404,13 +404,7 @@ export function ConsultationModal({
                         return null;
                       }
 
-                      // Filter out internship field when location is 'health_unit'
-                      const visibleFields = sectionFields.filter((field) => {
-                        if (field.key === "internship") {
-                          return formValues.location !== "health_unit";
-                        }
-                        return true;
-                      });
+                      const visibleFields = sectionFields;
 
                       // Skip if no visible fields and no type-specific sections
                       if (

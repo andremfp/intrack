@@ -1,12 +1,5 @@
 import React from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { DataErrorDisplay } from "@/components/ui/data-error-display";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -69,6 +62,7 @@ export class ErrorBoundary extends React.Component<
 
 /**
  * Default error fallback UI component
+ * Uses the shared DataErrorDisplay for consistency
  */
 export function DefaultErrorFallback({
   error,
@@ -77,28 +71,21 @@ export function DefaultErrorFallback({
   error: Error | null;
   resetError: () => void;
 }) {
+  if (!error) {
+    return (
+      <DataErrorDisplay
+        error={new Error("Erro desconhecido")}
+        onRetry={resetError}
+        title="Algo correu mal"
+      />
+    );
+  }
+
   return (
-    <div className="flex h-full w-full items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Algo correu mal</CardTitle>
-          <CardDescription>
-            Ocorreu um erro inesperado. Por favor, tenta novamente.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {error && (
-            <div className="rounded-md bg-muted p-3">
-              <p className="text-sm font-mono text-muted-foreground">
-                {error.message}
-              </p>
-            </div>
-          )}
-          <Button onClick={resetError} className="w-full">
-            Tentar novamente
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
+    <DataErrorDisplay
+      error={error}
+      onRetry={resetError}
+      title="Algo correu mal"
+    />
   );
 }

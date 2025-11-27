@@ -4,12 +4,8 @@ import { checkUserExists, getCurrentUser, upsertUser } from "@/lib/api/users";
 import { getSpecialty } from "@/lib/api/specialties";
 import type { UserData } from "@/lib/api/users";
 import type { Specialty } from "@/lib/api/specialties";
-import { useIsMounted } from "./use-is-mounted";
-
-interface UseUserInitializationResult {
-  isLoading: boolean;
-  showSpecialtyModal: boolean;
-}
+import { useIsMounted } from "../ui/use-is-mounted";
+import type { UseUserInitializationResult } from "./types";
 
 /**
  * Hook to handle user initialization logic

@@ -1,5 +1,5 @@
 import { TableToolbar } from "./table-toolbar";
-import type { FilterConfig } from "@/components/filters/consultation-filters";
+import type { FilterUIConfig } from "@/components/filters/types";
 import type { SortingConfig } from "@/components/filters/consultation-sorting";
 
 interface EmptyConsultationsStateProps {
@@ -14,7 +14,7 @@ interface EmptyConsultationsStateProps {
   ) => Promise<{ deletedIds: string[]; failedIds: string[] }>;
   onToggleDeleteMode?: () => void;
   onHandleBulkDelete?: () => void;
-  filterConfig: FilterConfig | null;
+  filterConfig: FilterUIConfig | null;
   sortingConfig: SortingConfig | null;
 }
 

@@ -1,4 +1,4 @@
-import type { ConsultationMGF, MGFConsultationsSorting } from "@/lib/api/consultations";
+import type { ConsultationMGF, ConsultationsSorting } from "@/lib/api/consultations";
 import { ageToYears } from "@/constants";
 
 /**
@@ -54,7 +54,7 @@ function compareAge(
  */
 export function sortConsultationsWithFavorites(
   consultations: ConsultationMGF[],
-  sorting: MGFConsultationsSorting
+  sorting: ConsultationsSorting
 ): ConsultationMGF[] {
   return [...consultations].sort((a, b) => {
     // First, sort by favorite (favorites first)

@@ -1,13 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import type { ConsultationMGF } from "@/lib/api/consultations";
-
-interface UseDeleteModeProps {
-  consultations: ConsultationMGF[];
-  onBulkDelete?: (ids: string[]) => Promise<{
-    deletedIds: string[];
-    failedIds: string[];
-  }>;
-}
+import type { UseDeleteModeProps } from "./types";
 
 export function useDeleteMode({
   consultations,

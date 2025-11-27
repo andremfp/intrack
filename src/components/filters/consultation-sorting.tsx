@@ -12,24 +12,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { IconSortAscending, IconSortDescending } from "@tabler/icons-react";
+import type { ConsultationSortingProps } from "./types";
 
 /**
  * UI component for consultation sorting controls.
  * Note: This is different from consultations-sorting.ts which contains sorting utility functions.
  */
-
-// Sorting configuration
-export interface SortingConfig {
-  field: string;
-  order: "asc" | "desc";
-  fieldLabels: Record<string, string>;
-  onSortingChange: (sorting: SortingConfig) => void;
-}
-
-interface ConsultationSortingProps {
-  sorting: SortingConfig;
-  isLoading?: boolean;
-}
 
 export function ConsultationSorting({
   sorting,
