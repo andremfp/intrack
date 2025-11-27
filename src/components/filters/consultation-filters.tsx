@@ -23,96 +23,44 @@ import {
 } from "@/components/ui/sheet";
 import { X } from "lucide-react";
 import { IconFilter, IconX } from "@tabler/icons-react";
-import React, { useState, useCallback, useEffect } from "react";
-import type { Specialty } from "@/lib/api/specialties";
-import { COMMON_CONSULTATION_FIELDS, MGF_FIELDS } from "@/constants";
-import { useIsMobile } from "@/hooks/use-mobile";
+import React, { useState, useCallback, useEffect, useRef } from "react";
+import { useIsMobile } from "@/hooks/ui/use-mobile";
+import type { ConsultationFiltersProps } from "./types";
+import {
+  getSexOptions,
+  getAutonomyOptions,
+  getLocationOptions,
+  getInternshipOptions,
+  getTypeOptions,
+  getFilterDisplayLabel,
+} from "./helpers";
 
-// Filter field types
-export type FilterFieldType =
-  | "year"
-  | "location"
-  | "internship"
-  | "sex"
-  | "autonomy"
-  | "ageRange"
-  | "dateRange"
-  | "processNumber"
-  | "type"
-  | "presential"
-  | "smoker";
-
-// Filter configuration
-export interface FilterConfig {
-  // Filter fields to show
-  enabledFields: FilterFieldType[];
-  // Badge display location
-  badgeLocation: "outside" | "inside";
-  // Specialty for year selector
-  specialty?: Specialty | null;
-  // Available options
-  locations?: string[];
-  internships?: string[];
-  // Callbacks for filter changes
-  onApplyFilters?: (newFilters: Record<string, unknown>) => void;
-  onClearFilters?: () => void;
-  // Individual filter values and setters
-  filterValues?: Record<string, unknown>;
-  filterSetters?: Record<string, (value: unknown) => void>;
-}
-
-// Helper function to get internship label from value
-function getInternshipLabel(value: string): string {
-  const internshipField = MGF_FIELDS.find(
-    (field) => field.key === "internship"
-  );
-  if (!internshipField?.options) return value;
-  const option = internshipField.options.find((opt) => opt.value === value);
-  return option?.label || value;
-}
-
-// Helper function to get location label from value
-function getLocationLabel(value: string): string {
-  const locationField = COMMON_CONSULTATION_FIELDS.find(
-    (field) => field.key === "location"
-  );
-  if (!locationField?.options) return value;
-  const option = locationField.options.find((opt) => opt.value === value);
-  return option?.label || value;
-}
-
-// Helper function to format date for display
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString("pt-PT", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
-
-interface ConsultationFiltersProps {
-  config: FilterConfig;
-  isLoading?: boolean;
-}
-
-export function ConsultationFilters({
+/**
+ * Generic filter component that can work with any filter type.
+ * Supports both metrics dashboard and consultations table.
+ */
+export function ConsultationFilters<T extends Record<string, unknown>>({
   config,
   isLoading = false,
-}: ConsultationFiltersProps) {
+}: ConsultationFiltersProps<T>) {
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
 
   // Local state for filter values (only used in onApply mode)
   const [localFilters, setLocalFilters] = useState<Record<string, unknown>>(
-    config.filterValues || {}
+    config.filterValues
   );
 
-  // Reset local state when popover opens or when props change
+  // Track previous isOpen state to detect when popover opens
+  const prevIsOpenRef = useRef(isOpen);
+
+  // Reset local state only when popover opens (not on every filterValues change)
   useEffect(() => {
-    if (isOpen && config.filterValues) {
+    // Only reset when popover transitions from closed to open
+    if (isOpen && !prevIsOpenRef.current && config.filterValues) {
       setLocalFilters({ ...config.filterValues });
     }
+    prevIsOpenRef.current = isOpen;
   }, [isOpen, config.filterValues]);
 
   // Get current filter values from local state
@@ -129,8 +77,8 @@ export function ConsultationFilters({
   const handleApplyFilters = () => {
     // Get all filter keys that have setters (to ensure we clear filters that were removed)
     const allFilterKeys = new Set([
-      ...Object.keys(config.filterSetters || {}),
-      ...Object.keys(config.filterValues || {}),
+      ...Object.keys(config.filterSetters),
+      ...Object.keys(config.filterValues),
     ]);
 
     // Build the new filters object from localFilters
@@ -138,7 +86,6 @@ export function ConsultationFilters({
     allFilterKeys.forEach((key) => {
       const value = localFilters[key];
       // Only include defined values (exclude undefined, null, empty string)
-      // Note: boolean false is a valid value, so we check explicitly for undefined/null/empty string
       if (value !== undefined && value !== null && value !== "") {
         newFilters[key] = value;
       }
@@ -149,11 +96,9 @@ export function ConsultationFilters({
       const value = localFilters[key];
       // If key exists in localFilters, use its value (even if undefined)
       // If key doesn't exist in localFilters, clear it (set to undefined)
-      config.filterSetters?.[key]?.(value);
+      config.filterSetters[key]?.(value);
     });
 
-    // Pass the new filters to the callback so parent can use them immediately
-    config.onApplyFilters?.(newFilters);
     setIsOpen(false);
   };
 
@@ -167,12 +112,11 @@ export function ConsultationFilters({
 
   // Clear all local filter values (in the popover) - only clears input fields, not applied filters
   const handleClearLocalFilters = () => {
-    // Clear local filters (input fields only)
     setLocalFilters({});
   };
 
   // Check if there are any active filters
-  const hasActiveFilters = Object.values(config.filterValues || {}).some(
+  const hasActiveFilters = Object.values(config.filterValues).some(
     (v) => v !== undefined && v !== "" && v !== null
   );
 
@@ -182,74 +126,19 @@ export function ConsultationFilters({
   );
 
   // Count active filters
-  const activeFilterCount = Object.values(config.filterValues || {}).filter(
+  const activeFilterCount = Object.values(config.filterValues).filter(
     (v) => v !== undefined && v !== "" && v !== null
   ).length;
 
   // Get filter label for display (from applied filters)
   const getFilterLabel = useCallback(
     (key: string): string => {
-      const value = config.filterValues?.[key];
-      if (value === undefined || value === "" || value === null) return "";
-
-      switch (key) {
-        case "year": {
-          const year = value as number;
-          return `Ano: ${config.specialty?.code.toUpperCase()}.${year}`;
-        }
-        case "location":
-          return `Local: ${getLocationLabel(value as string)}`;
-        case "internship":
-          return `Estágio: ${getInternshipLabel(value as string)}`;
-        case "sex": {
-          const sexField = COMMON_CONSULTATION_FIELDS.find(
-            (field) => field.key === "sex"
-          );
-          const sexOption = sexField?.options?.find(
-            (opt) => opt.value === value
-          );
-          return `Sexo: ${sexOption?.label || value}`;
-        }
-        case "autonomy": {
-          const autonomyField = COMMON_CONSULTATION_FIELDS.find(
-            (field) => field.key === "autonomy"
-          );
-          const autonomyOption = autonomyField?.options?.find(
-            (opt) => opt.value === value
-          );
-          return `Autonomia: ${autonomyOption?.label || value}`;
-        }
-        case "ageMin": {
-          const ageMax = config.filterValues?.ageMax as number | undefined;
-          return ageMax
-            ? `Idade: ${value}-${ageMax} anos`
-            : `Idade: ≥${value} anos`;
-        }
-        case "ageMax": {
-          const ageMin = config.filterValues?.ageMin as number | undefined;
-          return ageMin ? "" : `Idade: ≤${value} anos`;
-        }
-        case "dateFrom": {
-          const dateTo = config.filterValues?.dateTo as string | undefined;
-          return dateTo
-            ? `Data: ${formatDate(value as string)} - ${formatDate(dateTo)}`
-            : `Data: ≥${formatDate(value as string)}`;
-        }
-        case "dateTo": {
-          const dateFrom = config.filterValues?.dateFrom as string | undefined;
-          return dateFrom ? "" : `Data: ≤${formatDate(value as string)}`;
-        }
-        case "processNumber":
-          return `N° Processo: ${value}`;
-        case "type":
-          return `Tipo: ${value}`;
-        case "presential":
-          return `Presencial: ${value ? "Sim" : "Não"}`;
-        case "smoker":
-          return `Fumador: ${value ? "Sim" : "Não"}`;
-        default:
-          return "";
-      }
+      return getFilterDisplayLabel(
+        key,
+        config.filterValues[key],
+        config.specialty,
+        config.filterValues
+      );
     },
     [config.filterValues, config.specialty]
   );
@@ -257,67 +146,12 @@ export function ConsultationFilters({
   // Get filter label for display (from local filters in popover)
   const getLocalFilterLabel = useCallback(
     (key: string): string => {
-      const value = localFilters[key];
-      if (value === undefined || value === "" || value === null) return "";
-
-      switch (key) {
-        case "year": {
-          const year = value as number;
-          return `Ano: ${config.specialty?.code.toUpperCase()}.${year}`;
-        }
-        case "location":
-          return `Local: ${getLocationLabel(value as string)}`;
-        case "internship":
-          return `Estágio: ${getInternshipLabel(value as string)}`;
-        case "sex": {
-          const sexField = COMMON_CONSULTATION_FIELDS.find(
-            (field) => field.key === "sex"
-          );
-          const sexOption = sexField?.options?.find(
-            (opt) => opt.value === value
-          );
-          return `Sexo: ${sexOption?.label || value}`;
-        }
-        case "autonomy": {
-          const autonomyField = COMMON_CONSULTATION_FIELDS.find(
-            (field) => field.key === "autonomy"
-          );
-          const autonomyOption = autonomyField?.options?.find(
-            (opt) => opt.value === value
-          );
-          return `Autonomia: ${autonomyOption?.label || value}`;
-        }
-        case "ageMin": {
-          const ageMax = localFilters.ageMax as number | undefined;
-          return ageMax
-            ? `Idade: ${value}-${ageMax} anos`
-            : `Idade: ≥${value} anos`;
-        }
-        case "ageMax": {
-          const ageMin = localFilters.ageMin as number | undefined;
-          return ageMin ? "" : `Idade: ≤${value} anos`;
-        }
-        case "dateFrom": {
-          const dateTo = localFilters.dateTo as string | undefined;
-          return dateTo
-            ? `Data: ${formatDate(value as string)} - ${formatDate(dateTo)}`
-            : `Data: ≥${formatDate(value as string)}`;
-        }
-        case "dateTo": {
-          const dateFrom = localFilters.dateFrom as string | undefined;
-          return dateFrom ? "" : `Data: ≤${formatDate(value as string)}`;
-        }
-        case "processNumber":
-          return `N° Processo: ${value}`;
-        case "type":
-          return `Tipo: ${value}`;
-        case "presential":
-          return `Presencial: ${value ? "Sim" : "Não"}`;
-        case "smoker":
-          return `Fumador: ${value ? "Sim" : "Não"}`;
-        default:
-          return "";
-      }
+      return getFilterDisplayLabel(
+        key,
+        localFilters[key],
+        config.specialty,
+        localFilters
+      );
     },
     [localFilters, config.specialty]
   );
@@ -325,15 +159,14 @@ export function ConsultationFilters({
   // Helper function to remove individual filter (applied filters)
   const removeFilter = useCallback(
     (filterKey: string) => {
-      // Use setters to remove filter
-      config.filterSetters?.[filterKey]?.(undefined);
+      config.filterSetters[filterKey]?.(undefined);
       // Handle special cases for age and date ranges
       if (filterKey === "ageMin" || filterKey === "ageMax") {
-        config.filterSetters?.ageMin?.(undefined);
-        config.filterSetters?.ageMax?.(undefined);
+        config.filterSetters.ageMin?.(undefined);
+        config.filterSetters.ageMax?.(undefined);
       } else if (filterKey === "dateFrom" || filterKey === "dateTo") {
-        config.filterSetters?.dateFrom?.(undefined);
-        config.filterSetters?.dateTo?.(undefined);
+        config.filterSetters.dateFrom?.(undefined);
+        config.filterSetters.dateTo?.(undefined);
       }
     },
     [config]
@@ -341,7 +174,6 @@ export function ConsultationFilters({
 
   // Helper function to remove individual local filter (in popover)
   const removeLocalFilter = useCallback((filterKey: string) => {
-    // Clear the local filter value
     setFilterValue(filterKey, undefined);
     // Handle special cases for age and date ranges
     if (filterKey === "ageMin" || filterKey === "ageMax") {
@@ -353,21 +185,18 @@ export function ConsultationFilters({
     }
   }, []);
 
-  // Only show internship selector when location is not 'health_unit'
+  // Get field options
+  const sexOptions = getSexOptions();
+  const autonomyOptions = getAutonomyOptions();
+  const locationOptions = getLocationOptions();
+  const internshipOptions = getInternshipOptions();
+  const typeOptions = getTypeOptions();
+
+  // Show internship selector when enabled and options exist
   const shouldShowInternship =
     config.enabledFields.includes("internship") &&
-    config.internships &&
-    config.internships.length > 0 &&
-    getFilterValue("location") !== "health_unit";
-
-  // Get field options
-  const sexField = COMMON_CONSULTATION_FIELDS.find(
-    (field) => field.key === "sex"
-  );
-  const autonomyField = COMMON_CONSULTATION_FIELDS.find(
-    (field) => field.key === "autonomy"
-  );
-  const typeField = MGF_FIELDS.find((field) => field.key === "type");
+    internshipOptions &&
+    internshipOptions.length > 0;
 
   // Render filter badges
   const renderFilterBadges = () => {
@@ -376,10 +205,10 @@ export function ConsultationFilters({
     const badges: React.ReactElement[] = [];
     const processedKeys = new Set<string>();
 
-    Object.keys(config.filterValues || {}).forEach((key) => {
+    Object.keys(config.filterValues).forEach((key) => {
       if (processedKeys.has(key)) return;
 
-      const value = config.filterValues?.[key];
+      const value = config.filterValues[key];
       if (value === undefined || value === "" || value === null) return;
 
       // Handle age range
@@ -434,8 +263,8 @@ export function ConsultationFilters({
       }
 
       // Skip ageMax and dateTo if their counterparts exist
-      if (key === "ageMax" && config.filterValues?.ageMin) return;
-      if (key === "dateTo" && config.filterValues?.dateFrom) return;
+      if (key === "ageMax" && config.filterValues.ageMin) return;
+      if (key === "dateTo" && config.filterValues.dateFrom) return;
 
       const label = getFilterLabel(key);
       if (!label) return;
@@ -461,7 +290,7 @@ export function ConsultationFilters({
     return badges;
   };
 
-  // Render filter badges from local filters (for inside popover)
+  // Render local filter badges (for inside popover)
   const renderLocalFilterBadges = () => {
     if (!hasLocalActiveFilters) return null;
 
@@ -636,36 +465,34 @@ export function ConsultationFilters({
           )}
 
           {/* Location selector */}
-          {config.enabledFields.includes("location") &&
-            config.locations &&
-            config.locations.length > 0 && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">
-                  Local
-                </label>
-                <Select
-                  value={(getFilterValue("location") as string) || "all"}
-                  onValueChange={(value) =>
-                    setFilterValue(
-                      "location",
-                      value === "all" ? undefined : value
-                    )
-                  }
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os locais</SelectItem>
-                    {config.locations.map((location) => (
-                      <SelectItem key={location} value={location}>
-                        {getLocationLabel(location)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+          {config.enabledFields.includes("location") && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">
+                Local
+              </label>
+              <Select
+                value={(getFilterValue("location") as string) || "all"}
+                onValueChange={(value) =>
+                  setFilterValue(
+                    "location",
+                    value === "all" ? undefined : value
+                  )
+                }
+              >
+                <SelectTrigger className="h-8">
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os locais</SelectItem>
+                  {locationOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Internship selector - only shown when location is not 'health_unit' */}
           {shouldShowInternship && (
@@ -687,9 +514,9 @@ export function ConsultationFilters({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os estágios</SelectItem>
-                  {config.internships?.map((internship) => (
-                    <SelectItem key={internship} value={internship}>
-                      {getInternshipLabel(internship)}
+                  {internshipOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -698,7 +525,7 @@ export function ConsultationFilters({
           )}
 
           {/* Sex selector */}
-          {config.enabledFields.includes("sex") && sexField?.options && (
+          {config.enabledFields.includes("sex") && sexOptions.length > 0 && (
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">
                 Sexo
@@ -714,7 +541,7 @@ export function ConsultationFilters({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  {sexField.options.map((option) => (
+                  {sexOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -726,7 +553,7 @@ export function ConsultationFilters({
 
           {/* Autonomy selector */}
           {config.enabledFields.includes("autonomy") &&
-            autonomyField?.options && (
+            autonomyOptions.length > 0 && (
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">
                   Autonomia
@@ -745,7 +572,7 @@ export function ConsultationFilters({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todas</SelectItem>
-                    {autonomyField.options.map((option) => (
+                    {autonomyOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>
@@ -795,7 +622,7 @@ export function ConsultationFilters({
           )}
 
           {/* Type filter */}
-          {config.enabledFields.includes("type") && typeField?.options && (
+          {config.enabledFields.includes("type") && typeOptions.length > 0 && (
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">
                 Tipo de Consulta
@@ -811,7 +638,7 @@ export function ConsultationFilters({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  {typeField.options.map((option) => (
+                  {typeOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -932,8 +759,8 @@ export function ConsultationFilters({
             variant="ghost"
             size="sm"
             onClick={() => {
-              Object.keys(config.filterValues || {}).forEach((key) => {
-                config.filterSetters?.[key]?.(undefined);
+              Object.keys(config.filterValues).forEach((key) => {
+                config.filterSetters[key]?.(undefined);
               });
             }}
             className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground shrink-0"
@@ -954,7 +781,7 @@ export function ConsultationFilters({
                 variant="outline"
                 size="sm"
                 className="relative gap-2"
-                disabled={isLoading}
+                disabled={config.isLoading || isLoading}
               >
                 <IconFilter className="h-4 w-4" />
                 <span className="hidden sm:inline">Filtros</span>
@@ -1001,7 +828,7 @@ export function ConsultationFilters({
                 variant="outline"
                 size="sm"
                 className="relative gap-2"
-                disabled={isLoading}
+                disabled={config.isLoading || isLoading}
               >
                 <IconFilter className="h-4 w-4" />
                 <span className="hidden sm:inline">Filtros</span>

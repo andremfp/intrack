@@ -2,8 +2,8 @@ import { Button } from "@/components/ui/button";
 import { IconTrash, IconPlus } from "@tabler/icons-react";
 import { ConsultationFilters } from "@/components/filters/consultation-filters";
 import { ConsultationSorting } from "@/components/filters/consultation-sorting";
-import type { FilterConfig } from "@/components/filters/consultation-filters";
-import type { SortingConfig } from "@/components/filters/consultation-sorting";
+import type { FilterUIConfig } from "@/components/filters/types";
+import type { SortingConfig } from "@/components/filters/types";
 
 interface TableToolbarProps {
   isDeleteMode: boolean;
@@ -16,7 +16,7 @@ interface TableToolbarProps {
   ) => Promise<{ deletedIds: string[]; failedIds: string[] }>;
   onToggleDeleteMode?: () => void;
   onHandleBulkDelete?: () => void;
-  filterConfig: FilterConfig | null;
+  filterConfig: FilterUIConfig | null;
   sortingConfig: SortingConfig | null;
 }
 

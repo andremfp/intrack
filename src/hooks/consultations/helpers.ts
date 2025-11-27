@@ -1,32 +1,18 @@
-import { useState, useMemo } from "react";
 import type { ConsultationMGF } from "@/lib/api/consultations";
-import {
-  COMMON_CONSULTATION_FIELDS,
-  getSpecialtyFields,
-  type SpecialtyField,
-} from "@/constants";
-import { resolveTypeSections } from "@/components/forms/consultation/utils";
-
-export interface FormValues {
-  [key: string]: string | string[];
-}
-
-export interface FieldError {
-  key: string;
-  message: string;
-}
+import { COMMON_CONSULTATION_FIELDS, type SpecialtyField } from "@/constants";
+import { resolveTypeSections } from "@/components/forms/consultation/helpers";
 
 /**
  * Converts a database value to the format expected by form inputs.
- * 
+ *
  * Database stores values in various types (number, boolean, string, null),
  * but form inputs always work with strings (or string arrays for text-list).
- * 
+ *
  * @param field - Field definition with type and default value
  * @param databaseValue - Raw value from database (can be any type or undefined), either from top level columns or flattened details (has type from db) or nested fields in details JSONB (is string or string[])
  * @returns Normalized value for form: string or string[]
  */
-function getFieldValue(
+export function getFieldValue(
   field: SpecialtyField,
   databaseValue?: unknown
 ): string | string[] {
@@ -69,21 +55,21 @@ function getFieldValue(
 
 /**
  * Initializes form values from database consultation data.
- * 
+ *
  * Reads from three different locations in the database structure:
  * 1. Top-level view columns (from consultations_mgf view)
  * 2. Flat fields in details JSONB: type, presential, diagnosis, etc. (from details.type, details.presential, etc.)
  * 3. Nested fields in details JSONB: dm.exams.creatinina (from details.dm.exams.creatinina)
- * 
+ *
  * @param specialtyFields - All specialty-specific field definitions (specialty details)
  * @param editingConsultation - Existing consultation from database (null for new consultation)
  * @returns FormValues object with all fields initialized as strings/string arrays
  */
-function initializeFormValues(
+export function initializeFormValues(
   specialtyFields: SpecialtyField[],
   editingConsultation?: ConsultationMGF | null
-): FormValues {
-  const formValues: FormValues = {};
+) {
+  const formValues: Record<string, string | string[]> = {};
 
   // ============================================================================
   // SOURCE 1: Top-level fields from database view columns
@@ -116,7 +102,7 @@ function initializeFormValues(
   // Examples: type, presential, diagnosis, problems, contraceptive
   // ============================================================================
   const detailsJsonb = (editingConsultation?.details as Record<string, unknown>) || {};
-  
+
   specialtyFields.forEach((field) => {
     // Skip if already initialized
     if (!(field.key in formValues)) {
@@ -163,149 +149,4 @@ function initializeFormValues(
   });
 
   return formValues;
-}
-
-/**
- * Hook for managing consultation form state and field organization.
- * 
- * Handles:
- * - Initializing form values from database (or defaults for new consultation)
- * - Organizing fields into groups for UI rendering
- * - Managing field updates and validation errors
- * - Dynamically showing/hiding type-specific sections
- * 
- * @param specialtyCode - Code of the specialty (e.g., "mgf") or null
- * @param editingConsultation - Existing consultation from database (null for new consultation)
- */
-export function useConsultationForm(
-  specialtyCode: string | null,
-  editingConsultation?: ConsultationMGF | null
-) {
-  // Get all specialty-specific field definitions
-  const specialtyFields = useMemo(
-    () => (specialtyCode ? getSpecialtyFields(specialtyCode) : []),
-    [specialtyCode]
-  );
-
-  // Initialize form values from database (or use defaults for new consultation)
-  const initialFormValues = useMemo(
-    () => initializeFormValues(specialtyFields, editingConsultation),
-    [specialtyFields, editingConsultation]
-  );
-
-  // Form state: current values and validation errors
-  const [formValues, setFormValues] = useState<FormValues>(initialFormValues);
-  const [fieldError, setFieldError] = useState<FieldError | null>(null);
-
-  /**
-   * Updates a single field value and clears any error for that field.
-   */
-  const updateField = (key: string, value: string | string[]) => {
-    setFormValues((prev) => ({ ...prev, [key]: value }));
-    // Clear error if this field had one
-    if (fieldError?.key === key) {
-      setFieldError(null);
-    }
-  };
-
-  /**
-   * Sets a validation error for a field and scrolls to it.
-   */
-  const showFieldError = (key: string, message: string) => {
-    setFieldError({ key, message });
-    // Scroll to the field after React renders
-    requestAnimationFrame(() => {
-      const fieldElement = document.getElementById(key);
-      if (fieldElement instanceof HTMLElement) {
-        fieldElement.focus();
-        fieldElement.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-    });
-  };
-
-  // Get the currently selected consultation type (e.g., "DM", "SA", "SIJ")
-  const selectedConsultationType =
-    typeof formValues.type === "string" ? formValues.type : undefined;
-
-  // Get sections that should be shown for the selected type
-  // Example: If type is "DM", returns [{ key: "exams", fields: [...] }]
-  const sectionsForSelectedType = useMemo(
-    () => resolveTypeSections(selectedConsultationType),
-    [selectedConsultationType]
-  );
-
-  // Organize specialty fields into sections for UI rendering
-  const fieldsBySection = useMemo(() => {
-    const sections: Record<string, SpecialtyField[]> = {};
-    
-    specialtyFields.forEach((field) => {
-      const sectionKey = field.section || "other";
-      if (!sections[sectionKey]) {
-        sections[sectionKey] = [];
-      }
-      sections[sectionKey].push(field);
-    });
-    
-    return sections;
-  }, [specialtyFields]);
-
-  // Get section order (maintain logical order)
-  const sectionOrder = useMemo(() => {
-    const order = [
-      "consultation_type",
-      "type_specific", // Type-specific sections appear right after consultation_type
-      "clinical_history",
-      "diagnosis",
-      "referral",
-      "family_planning",
-      "procedures",
-    ];
-    
-    // Get all section keys from fields, maintaining order
-    const allSections = new Set<string>();
-    specialtyFields.forEach((field) => {
-      if (field.section) {
-        allSections.add(field.section);
-      }
-    });
-    
-    // Add type_specific if there are type-specific sections
-    if (sectionsForSelectedType.length > 0) {
-      allSections.add("type_specific");
-    }
-    
-    // Return ordered sections, then any others
-    const ordered = order.filter((s) => allSections.has(s));
-    const others = Array.from(allSections).filter((s) => !order.includes(s));
-    
-    return [...ordered, ...others];
-  }, [specialtyFields, sectionsForSelectedType]);
-
-  // Organize type-specific sections by their section property
-  const typeSpecificSectionsBySection = useMemo(() => {
-    const sections: Record<string, typeof sectionsForSelectedType> = {};
-    
-    sectionsForSelectedType.forEach((section) => {
-      const sectionKey = section.section || "type_specific";
-      if (!sections[sectionKey]) {
-        sections[sectionKey] = [];
-      }
-      sections[sectionKey].push(section);
-    });
-    
-    return sections;
-  }, [sectionsForSelectedType]);
-
-  return {
-    formValues,
-    fieldError,
-    updateField,
-    showFieldError,
-    setFieldError,
-    sectionsForSelectedType,
-    fieldsBySection,
-    sectionOrder,
-    typeSpecificSectionsBySection,
-    specialtyFields,
-  };
 }

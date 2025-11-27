@@ -1,11 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import type { ConsultationMGF } from "@/lib/api/consultations";
 import { updateConsultation } from "@/lib/api/consultations";
-
-interface UseFavoritesProps {
-  consultations: ConsultationMGF[];
-  onFavoriteToggle?: () => void;
-}
+import type { UseFavoritesProps } from "./types";
 
 export function useFavorites({
   consultations,

@@ -17,6 +17,27 @@ export type ConsultationUpdate = TablesUpdate<"consultations">;
 export type ConsultationMGF = Tables<"consultations_mgf">;
 
 /**
+ * Consultation filter state type with all possible filter fields.
+ * All fields are optional to support different use cases (metrics, consultations, etc.)
+ * This is the single source of truth for all consultation filter types.
+ */
+export type ConsultationsFilters = {
+  year?: number;
+  location?: string;
+  internship?: string;
+  processNumber?: string;
+  sex?: string;
+  autonomy?: string;
+  ageMin?: number;
+  ageMax?: number;
+  dateFrom?: string;
+  dateTo?: string;
+  type?: string;
+  presential?: boolean;
+  smoker?: boolean;
+};
+
+/**
  * Prepares complete details object for a consultation
  * Merges provided details with default specialty fields
  */
@@ -96,22 +117,9 @@ export async function deleteConsultation(
   return success();
 }
 
-// Filtering and sorting options for MGF consultations
-export interface MGFConsultationsFilters {
-  sex?: string;
-  processNumber?: string;
-  location?: string;
-  autonomy?: string;
-  ageMin?: number;
-  ageMax?: number;
-  type?: string;
-  presential?: boolean;
-  smoker?: boolean;
-  dateFrom?: string;
-  dateTo?: string;
-}
 
-export interface MGFConsultationsSorting {
+// Generic sorting options for consultations (works for any specialty)
+export interface ConsultationsSorting extends Record<string, unknown> {
   field: "date" | "age" | "process_number";
   order: "asc" | "desc";
 }
@@ -122,11 +130,12 @@ export async function getMGFConsultations(
   specialtyYear?: number,
   page: number = 1,
   pageSize: number = PAGINATION_CONSTANTS.CONSULTATIONS_PAGE_SIZE,
-  filters?: MGFConsultationsFilters,
-  sorting?: MGFConsultationsSorting
+  filters?: ConsultationsFilters,
+  sorting?: ConsultationsSorting
 ): Promise<
   ApiResponse<{ consultations: ConsultationMGF[]; totalCount: number }>
 > {
+
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -223,6 +232,9 @@ export async function getMGFConsultations(
     if (filters.dateTo) {
       query = query.lte("date", filters.dateTo);
     }
+    if (filters.internship) {
+      query = query.eq("details->>internship", filters.internship);
+    }
   }
 
   // Apply sorting (default to date descending)
@@ -291,117 +303,13 @@ export interface ConsultationMetrics {
   byNewDiagnosis: Array<{ code: string; count: number }>;
 }
 
-// Get distinct internships from consultations
-// Group all without internship as ""
-export async function getDistinctInternships(
-  userId: string,
-  specialtyYear?: number,
-  location?: string
-): Promise<ApiResponse<string[]>> {
-  try {
-    let query = supabase
-      .from("consultations_mgf")
-      .select("details, location")
-      .eq("user_id", userId);
 
-    if (specialtyYear !== undefined) {
-      query = query.eq("specialty_year", specialtyYear);
-    }
-
-    if (location) {
-      query = query.eq("location", location);
-    }
-
-    const { data, error } = await query;
-
-    if (error) return failure(error, "getDistinctInternships");
-    if (!data) return success([]);
-
-    // Extract distinct internships from details JSONB
-    // Only include internships for consultations where location is not 'health_unit'
-    const internships = new Set<string>();
-    data.forEach((consultation) => {
-      // Only show internships for locations other than 'health_unit'
-      if (consultation.location === "health_unit") {
-        return;
-      }
-
-      if (
-        consultation.details &&
-        typeof consultation.details === "object"
-      ) {
-        const internship = (consultation.details as Record<string, unknown>)[
-          "internship"
-        ];
-        if (internship && typeof internship === "string") {
-          internships.add(internship);
-        }
-      }
-    });
-
-    // Sort alphabetically
-    const sortedInternships = Array.from(internships).sort();
-    return success(sortedInternships);
-  } catch (error) {
-    return failure(error as Error, "getDistinctInternships");
-  }
-}
-
-export async function getDistinctLocations(
-  userId: string,
-  specialtyYear?: number
-): Promise<ApiResponse<string[]>> {
-  try {
-    let query = supabase
-      .from("consultations_mgf")
-      .select("location")
-      .eq("user_id", userId);
-
-    if (specialtyYear !== undefined) {
-      query = query.eq("specialty_year", specialtyYear);
-    }
-
-    const { data, error } = await query;
-
-    if (error) return failure(error, "getDistinctLocations");
-    if (!data) return success([]);
-
-    // Extract distinct locations
-    const locations = new Set<string>();
-    data.forEach((consultation) => {
-      if (consultation.location && typeof consultation.location === "string") {
-        locations.add(consultation.location);
-      }
-    });
-
-    // Sort alphabetically
-    const sortedLocations = Array.from(locations).sort();
-    return success(sortedLocations);
-  } catch (error) {
-    return failure(error as Error, "getDistinctLocations");
-  }
-}
-
-// Metrics filters interface
-export interface MetricsFilters {
-  specialtyYear?: number;
-  internship?: string;
-  type?: string;
-  presential?: boolean;
-  smoker?: boolean;
-  location?: string;
-  sex?: string;
-  autonomy?: string;
-  ageMin?: number;
-  ageMax?: number;
-  dateFrom?: string;
-  dateTo?: string;
-}
 
 // Fetch aggregated metrics for consultations
+// Accepts ConsultationsFilters and converts year to specialtyYear internally
 export async function getConsultationMetrics(
   userId: string,
-  filters?: MetricsFilters
+  filters?: ConsultationsFilters
 ): Promise<ApiResponse<ConsultationMetrics>> {
   try {
     // Build query with database-level filtering
@@ -410,8 +318,10 @@ export async function getConsultationMetrics(
       .select("*")
       .eq("user_id", userId);
 
-    if (filters?.specialtyYear !== undefined) {
-      query = query.eq("specialty_year", filters.specialtyYear);
+    // Convert year to specialtyYear for API compatibility
+    const specialtyYear = filters?.year;
+    if (specialtyYear !== undefined) {
+      query = query.eq("specialty_year", specialtyYear);
     }
 
     if (filters?.location) {
@@ -421,7 +331,7 @@ export async function getConsultationMetrics(
     // Filter by internship at database level using JSONB operator (details->>internship)
     // This is more efficient than fetching all data and filtering in JavaScript
     if (filters?.internship) {
-      query = query.eq("details->>internship", filters.internship);
+      query = query.ilike("details->>internship", filters.internship);
     }
 
     if (filters?.sex) {
@@ -436,11 +346,11 @@ export async function getConsultationMetrics(
       query = query.eq("type", filters.type);
     }
 
-    if (filters?.presential) {
+    if (filters?.presential !== undefined) {
       query = query.eq("presential", filters.presential);
     }
 
-    if (filters?.smoker) {
+    if (filters?.smoker !== undefined) {
       query = query.eq("smoker", filters.smoker);
     }
 

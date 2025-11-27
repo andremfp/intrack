@@ -5,7 +5,7 @@ import {
   MGF_CONSULTATION_TYPE_SECTIONS,
   type SpecialtyDetails,
 } from "@/constants";
-import type { FormValues, FieldError } from "@/hooks/use-consultation-form";
+import type { FormValues, FieldError } from "@/hooks/consultations/types";
 
 export function resolveTypeSections(typeValue: string | null | undefined) {
   if (!typeValue) return [];
