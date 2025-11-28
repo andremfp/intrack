@@ -55,6 +55,7 @@ function DashboardContent() {
     closeModal,
     withMobileClose: baseWithMobileClose,
     refreshConsultationsRef,
+    refreshMetricsRef,
     updateInitShowSpecialtyModal,
   } = useDashboardModals(userSpecialty, setOpenMobile);
 
@@ -115,8 +116,11 @@ function DashboardContent() {
           metricsSubTab={metricsSubTab}
           onRowClick={handleRowClick}
           onAddConsultation={handleAddConsultation}
-          onRefreshReady={(refresh) => {
+          onConsultationsRefreshReady={(refresh) => {
             refreshConsultationsRef.current = refresh;
+          }}
+          onMetricsRefreshReady={(refresh) => {
+            refreshMetricsRef.current = refresh;
           }}
         />
       </SidebarInset>

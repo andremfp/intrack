@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import type { Specialty } from "@/lib/api/specialties";
 import { useMetricsData } from "@/hooks/metrics/use-metrics-data";
 import { useFilters } from "@/hooks/filters/use-filters";
@@ -14,12 +15,14 @@ interface MetricsDashboardProps {
   userId: string;
   specialty: Specialty | null;
   activeSubTab: "Geral" | "Consultas" | "ICPC-2";
+  onRefreshReady?: (refresh: () => Promise<void>) => void;
 }
 
 export function MetricsDashboard({
   userId,
   specialty,
   activeSubTab,
+  onRefreshReady,
 }: MetricsDashboardProps) {
   // Metrics have their own filter state, independent from consultations.
   // Filters are shared across all metrics sub-tabs (better UX for graphs).
@@ -29,11 +32,19 @@ export function MetricsDashboard({
   });
 
   // Use custom hook for metrics data fetching
-  const { metrics, isLoading, error, retryLoadMetrics } = useMetricsData({
-    userId,
-    specialty,
-    filters,
-  });
+  const { metrics, isLoading, error, retryLoadMetrics, loadMetrics } =
+    useMetricsData({
+      userId,
+      specialty,
+      filters,
+    });
+
+  // Expose a refresh function to the parent so metrics can be reloaded
+  // after side-effects like creating or editing consultations.
+  useEffect(() => {
+    if (!onRefreshReady) return;
+    onRefreshReady(() => loadMetrics());
+  }, [onRefreshReady, loadMetrics]);
 
   if (isLoading && !metrics) {
     return (

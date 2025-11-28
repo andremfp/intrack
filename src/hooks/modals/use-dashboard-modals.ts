@@ -13,6 +13,7 @@ export function useDashboardModals(
 ) {
   const { isMobile } = useSidebar();
   const refreshConsultationsRef = useRef<(() => Promise<void>) | null>(null);
+  const refreshMetricsRef = useRef<(() => Promise<void>) | null>(null);
   const [initShowSpecialtyModal, setInitShowSpecialtyModal] = useState<boolean | null>(null);
 
   // Use the generic modals hook
@@ -63,8 +64,9 @@ export function useDashboardModals(
   }, [isMobile, setOpenMobile]);
 
   const handleConsultationSaved = useCallback(async () => {
-    // Refresh consultations after save
+    // Refresh consultations and metrics after save
     await refreshConsultationsRef.current?.();
+    await refreshMetricsRef.current?.();
   }, []);
 
   return {
@@ -90,6 +92,7 @@ export function useDashboardModals(
 
     // Refs
     refreshConsultationsRef,
+    refreshMetricsRef,
 
     // Initialization
     updateInitShowSpecialtyModal,
