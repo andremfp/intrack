@@ -32,17 +32,17 @@ import {
   getLocationOptions,
   getInternshipOptions,
   getTypeOptions,
-  getFilterDisplayLabel,
+  generatePrettyFilterLabel,
 } from "./helpers";
 
 /**
- * Generic filter component that can work with any filter type.
+ * Filter component specialized to consultations filters.
  * Supports both metrics dashboard and consultations table.
  */
-export function ConsultationFilters<T extends Record<string, unknown>>({
+export function ConsultationFilters({
   config,
   isLoading = false,
-}: ConsultationFiltersProps<T>) {
+}: ConsultationFiltersProps) {
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -133,9 +133,12 @@ export function ConsultationFilters<T extends Record<string, unknown>>({
   // Get filter label for display (from applied filters)
   const getFilterLabel = useCallback(
     (key: string): string => {
-      return getFilterDisplayLabel(
+      return generatePrettyFilterLabel(
         key,
-        config.filterValues[key],
+        // Indexing by string is safe here because keys come from enabledFields
+        // which are aligned with ConsultationsFilters keys.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (config.filterValues as any)[key],
         config.specialty,
         config.filterValues
       );
@@ -146,7 +149,7 @@ export function ConsultationFilters<T extends Record<string, unknown>>({
   // Get filter label for display (from local filters in popover)
   const getLocalFilterLabel = useCallback(
     (key: string): string => {
-      return getFilterDisplayLabel(
+      return generatePrettyFilterLabel(
         key,
         localFilters[key],
         config.specialty,
@@ -208,7 +211,9 @@ export function ConsultationFilters<T extends Record<string, unknown>>({
     Object.keys(config.filterValues).forEach((key) => {
       if (processedKeys.has(key)) return;
 
-      const value = config.filterValues[key];
+      // Indexing by string is safe here because keys come from ConsultationsFilters.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const value = (config.filterValues as any)[key];
       if (value === undefined || value === "" || value === null) return;
 
       // Handle age range

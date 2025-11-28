@@ -1,7 +1,12 @@
 import { useCallback, useMemo } from "react";
 import { usePersistedReducer } from "./use-persisted-reducer";
-import { filtersReducer } from "./helpers";
-import type { FiltersAction, UseFiltersOptions, UseFiltersReturn } from "./types";
+import { keyValueStateReducer } from "./helpers";
+import type {
+  KeyValueStateAction,
+  UseFiltersOptions,
+  UseFiltersReturn,
+} from "./types";
+import type { ConsultationsFilters } from "@/lib/api/consultations";
 
 /**
  * Generic hook for managing filter state with optional dynamic data loading.
@@ -12,16 +17,19 @@ import type { FiltersAction, UseFiltersOptions, UseFiltersReturn } from "./types
  * - Validation to ensure selected values are still valid
  * - Works for both metrics dashboard and consultations table
  *
- * @param options - Configuration options for the hook
+ * @param options - Configuration options for the consultations filters hook
  * @returns Filter state and setters
  */
-export function useFilters<T extends Record<string, unknown>>({
+export function useFilters({
   filtersKey,
   defaultFilters,
-}: UseFiltersOptions<T>): UseFiltersReturn<T> {
+}: UseFiltersOptions): UseFiltersReturn {
   // Memoize reset action creator to maintain stable reference
   const resetActionCreator = useMemo(
-    () => (payload: T): FiltersAction<T> => ({
+    () =>
+      (
+        payload: ConsultationsFilters
+      ): KeyValueStateAction<ConsultationsFilters> => ({
       type: "RESET",
       payload,
     }),
@@ -30,15 +38,23 @@ export function useFilters<T extends Record<string, unknown>>({
 
   // Use persisted reducer for centralized filter state management
   const [filters, dispatch] = usePersistedReducer<
-    T,
-    FiltersAction<T>
-  >(filtersKey, filtersReducer<T>, defaultFilters, resetActionCreator);
+    ConsultationsFilters,
+    KeyValueStateAction<ConsultationsFilters>
+  >(
+    filtersKey,
+    keyValueStateReducer<ConsultationsFilters>,
+    defaultFilters,
+    resetActionCreator
+  );
 
   // Generic function to update any filter property
   const setFilter = useCallback(
-    <K extends keyof T>(key: K, value: T[K]) => {
+    <K extends keyof ConsultationsFilters>(
+      key: K,
+      value: ConsultationsFilters[K]
+    ) => {
       dispatch({
-        type: "SET_FILTER",
+        type: "SET_FIELD",
         payload: { key, value },
       });
     },

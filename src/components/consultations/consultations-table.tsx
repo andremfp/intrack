@@ -4,22 +4,22 @@ import { IconStar, IconStarFilled } from "@tabler/icons-react";
 import type {
   ConsultationMGF,
   ConsultationsSorting,
+  ConsultationsFilters,
 } from "@/lib/api/consultations";
-import type { ConsultationsFilters } from "@/lib/api/consultations";
 import {
   getSpecialtyFields,
   SPECIALTY_CODES,
   COMMON_CONSULTATION_FIELDS,
+  CONSULTATIONS_ENABLED_FIELDS,
+  CONSULTATIONS_SORTING_FIELD_LABELS,
 } from "@/constants";
 import { useMemo } from "react";
-import type { FilterUIConfig } from "@/components/filters/types";
-import type { SortingConfig } from "@/components/filters/types";
+import type { FilterUIConfig, SortingConfig } from "@/components/filters/types";
 import { CommonFieldCell } from "./cells/common-field-cell";
 import { SpecialtyFieldCell } from "./cells/specialty-field-cell";
 import { useFavorites } from "@/hooks/consultations/use-consultation-favorites";
 import { useDeleteMode } from "@/hooks/consultations/use-consultation-delete-mode";
 import { createFilterConfig } from "@/components/filters/helpers";
-import { CONSULTATIONS_ENABLED_FIELDS } from "@/constants";
 import { TablePagination } from "@/components/ui/table-pagination";
 import { TableToolbar } from "./table-toolbar";
 import { TableHeader } from "./table-header";
@@ -66,12 +66,7 @@ export function ConsultationsTable({
   data: { consultations, totalCount },
   pagination: { currentPage, pageSize, onPageChange },
   specialty = { code: SPECIALTY_CODES.MGF },
-  filters: {
-    filters,
-    sorting,
-    setFilter,
-    onSortingChange,
-  },
+  filters: { filters, sorting, setFilter, onSortingChange },
   actions: {
     onRowClick,
     onAddConsultation,
@@ -87,17 +82,17 @@ export function ConsultationsTable({
   const specialtyFields = getSpecialtyFields(specialtyCode);
 
   // Helper function to create filter config
-  const getFilterConfig = useMemo((): FilterUIConfig | null => {
-    return createFilterConfig<ConsultationsFilters>({
+  const uiFilterConfig = useMemo((): FilterUIConfig | null => {
+    return createFilterConfig({
       enabledFields: CONSULTATIONS_ENABLED_FIELDS,
       badgeLocation: "inside",
-      filterValues: filters as Record<string, unknown>,
+      filterValues: filters,
       setFilter,
-    }) as FilterUIConfig;
+    });
   }, [filters, setFilter]);
 
   // Helper function to create sorting config
-  const getSortingConfig = useMemo((): SortingConfig | null => {
+  const uiSortingConfig = useMemo((): SortingConfig | null => {
     if (!onSortingChange) {
       return null;
     }
@@ -105,11 +100,7 @@ export function ConsultationsTable({
     return {
       field: sorting.field,
       order: sorting.order,
-      fieldLabels: {
-        date: "Data",
-        age: "Idade",
-        process_number: "N° Processo",
-      },
+      fieldLabels: CONSULTATIONS_SORTING_FIELD_LABELS,
       onSortingChange: (newSorting) => {
         onSortingChange({
           field: newSorting.field as ConsultationsSorting["field"],
@@ -151,8 +142,8 @@ export function ConsultationsTable({
         onBulkDelete={onBulkDelete}
         onToggleDeleteMode={toggleDeleteMode}
         onHandleBulkDelete={handleBulkDelete}
-        filterConfig={getFilterConfig}
-        sortingConfig={getSortingConfig}
+        uiFilterConfig={uiFilterConfig}
+        uiSortingConfig={uiSortingConfig}
       />
     );
   }
@@ -168,8 +159,8 @@ export function ConsultationsTable({
         onBulkDelete={onBulkDelete}
         onToggleDeleteMode={toggleDeleteMode}
         onHandleBulkDelete={handleBulkDelete}
-        filterConfig={getFilterConfig}
-        sortingConfig={getSortingConfig}
+        uiFilterConfig={uiFilterConfig}
+        uiSortingConfig={uiSortingConfig}
       />
 
       <div className="rounded-lg border overflow-hidden flex flex-col flex-1 min-h-0">

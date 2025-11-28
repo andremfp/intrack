@@ -3,10 +3,7 @@
 import { useEffect, useMemo } from "react";
 import type { Specialty } from "@/lib/api/specialties";
 import { useConsultations } from "@/hooks/consultations/use-consultations";
-import type {
-  ConsultationsFilters,
-  ConsultationMGF,
-} from "@/lib/api/consultations";
+import type { ConsultationMGF } from "@/lib/api/consultations";
 import { PAGINATION_CONSTANTS, TAB_CONSTANTS } from "@/constants";
 import { useFilters } from "@/hooks/filters/use-filters";
 import {
@@ -44,7 +41,7 @@ export function ConsultationsDashboard({
     [specialtyYear]
   );
 
-  const { filters, setFilter } = useFilters<ConsultationsFilters>({
+  const { filters, setFilter } = useFilters({
     filtersKey,
     defaultFilters: defaultConsultationsFilters,
   });

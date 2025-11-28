@@ -1,6 +1,7 @@
 import type { Specialty } from "@/lib/api/specialties";
+import type { ConsultationsFilters } from "@/lib/api/consultations";
 
-// Filter field types - generic across all filter implementations
+// Filter field types - fixed to consultations filters
 export type FilterFieldType =
   | "year"
   | "location"
@@ -15,23 +16,24 @@ export type FilterFieldType =
   | "smoker";
 
 // UI configuration for filter display - specifies which filters to show and how
-export interface FilterUIConfig<T = Record<string, unknown>> {
+export interface FilterUIConfig {
   // Which fields to enable
   enabledFields: FilterFieldType[];
   // Badge display location
   badgeLocation: "inside" | "outside";
   // Specialty for year selector
   specialty?: Specialty | null;
-  // Current filter values
-  filterValues: T;
-  // Setters for filter values
+  // Current filter values (always ConsultationsFilters)
+  filterValues: ConsultationsFilters;
+  // Setters for filter values (keyed by filter field name)
+  // Value is intentionally unknown here to keep the UI layer simple.
   filterSetters: Record<string, (value: unknown) => void>;
   // Loading state
   isLoading?: boolean;
 }
 
-export interface ConsultationFiltersProps<T = Record<string, unknown>> {
-  config: FilterUIConfig<T>;
+export interface ConsultationFiltersProps {
+  config: FilterUIConfig;
   isLoading?: boolean;
 }
 
@@ -44,6 +46,6 @@ export interface SortingConfig {
 }
 
 export interface ConsultationSortingProps {
-  sorting: SortingConfig;
+  sortingConfig: SortingConfig;
   isLoading?: boolean;
 }

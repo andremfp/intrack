@@ -3,6 +3,7 @@ import { errorToast } from "@/utils/error-toast";
 import type { AppError } from "@/errors";
 import { mergeFilters } from "./helpers";
 import type { UseDataFetchingOptions, UseDataFetchingReturn } from "./types";
+import type { ConsultationsFilters } from "@/lib/api/consultations";
 
 /**
  * DATA FETCHING WITH FILTERS
@@ -21,12 +22,12 @@ import type { UseDataFetchingOptions, UseDataFetchingReturn } from "./types";
  *
  * Filter persistence is handled by the parent component via useFilters hook.
  */
-export function useDataFetching<TFilters extends Record<string, unknown>, TData>({
+export function useDataFetching<TData>({
   filters,
   fetchFunction,
   loadDependencies,
   errorMessage = "Erro ao carregar dados",
-}: UseDataFetchingOptions<TFilters, TData>): UseDataFetchingReturn<TFilters, TData> {
+}: UseDataFetchingOptions<TData>): UseDataFetchingReturn<TData> {
   const [data, setData] = useState<TData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<AppError | null>(null);
@@ -34,7 +35,7 @@ export function useDataFetching<TFilters extends Record<string, unknown>, TData>
 
   // Load data function - memoized to avoid unnecessary re-renders
   const loadData = useCallback(
-    async (filtersOverride?: Partial<TFilters>) => {
+    async (filtersOverride?: Partial<ConsultationsFilters>) => {
       // Only show loading spinner on initial load
       const isInitialLoad = !hasLoadedRef.current;
       if (isInitialLoad) {

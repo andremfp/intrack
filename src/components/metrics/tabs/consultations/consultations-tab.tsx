@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { BreakdownChart } from "../../charts/breakdown-chart";
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
@@ -20,50 +19,21 @@ export function ConsultationsTab({
   setFilter,
   metrics,
 }: MetricsTabProps) {
-  // Memoize filterValues to prevent unnecessary re-renders and resets
-  const filterValues = useMemo(
-    () => ({
-      year: filters.year,
-      location: filters.location,
-      internship: filters.internship,
-      type: filters.type,
-      presential: filters.presential,
-      smoker: filters.smoker,
-      sex: filters.sex,
-      autonomy: filters.autonomy,
-      ageMin: filters.ageMin,
-      ageMax: filters.ageMax,
-      dateFrom: filters.dateFrom,
-      dateTo: filters.dateTo,
-    }),
-    [
-      filters.year,
-      filters.location,
-      filters.internship,
-      filters.type,
-      filters.presential,
-      filters.smoker,
-      filters.sex,
-      filters.autonomy,
-      filters.ageMin,
-      filters.ageMax,
-      filters.dateFrom,
-      filters.dateTo,
-    ]
-  );
-
-  const filterConfig: FilterUIConfig = (createFilterConfig({
+  const filterConfig: FilterUIConfig = createFilterConfig({
     enabledFields: METRICS_CONSULTATIONS_ENABLED_FIELDS,
     badgeLocation: "outside",
-    filterValues,
+    filterValues: filters,
     setFilter,
     specialty,
   }) || {
     enabledFields: [],
     badgeLocation: "outside",
-    filterValues: {},
+    // This fallback is only used if setFilter is missing, which shouldn't happen,
+    // so the empty object here is acceptable.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    filterValues: {} as any,
     filterSetters: {},
-  }) as FilterUIConfig;
+  };
 
   return (
     <div className="flex flex-col gap-3 px-1">
