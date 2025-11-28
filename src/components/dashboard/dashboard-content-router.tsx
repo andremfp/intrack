@@ -19,7 +19,8 @@ export function DashboardContentRouter({
   metricsSubTab,
   onRowClick,
   onAddConsultation,
-  onRefreshReady,
+  onConsultationsRefreshReady,
+  onMetricsRefreshReady,
 }: DashboardContentRouterProps) {
   return (
     <div className="flex flex-1 flex-col min-h-0">
@@ -41,6 +42,7 @@ export function DashboardContentRouter({
                   userId={userId}
                   specialty={userSpecialty}
                   activeSubTab={metricsSubTab!}
+                  onRefreshReady={onMetricsRefreshReady}
                 />
               </div>
             )}
@@ -54,7 +56,7 @@ export function DashboardContentRouter({
                 specialtyYear={activeSpecialtyYear}
                 onRowClick={onRowClick}
                 onAddConsultation={onAddConsultation}
-                onRefreshReady={onRefreshReady}
+                onRefreshReady={onConsultationsRefreshReady}
               />
             </div>
           )}
