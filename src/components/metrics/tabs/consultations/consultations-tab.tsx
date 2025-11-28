@@ -11,13 +11,15 @@ import { ConsultationFilters } from "@/components/filters/consultation-filters";
 import type { FilterUIConfig } from "@/components/filters/types";
 import { createFilterConfig } from "@/components/filters/helpers";
 import { METRICS_CONSULTATIONS_ENABLED_FIELDS } from "@/constants";
-import type { MetricsTabProps } from "../../helpers";
+import type { ConsultationsFilters, MetricsTabProps } from "../../helpers";
+import { EmptyMetricsState } from "../../empty-metrics-state";
 
 export function ConsultationsTab({
   specialty,
   filters,
   setFilter,
   metrics,
+  hasActiveFilters,
 }: MetricsTabProps) {
   const filterConfig: FilterUIConfig = createFilterConfig({
     enabledFields: METRICS_CONSULTATIONS_ENABLED_FIELDS,
@@ -28,17 +30,31 @@ export function ConsultationsTab({
   }) || {
     enabledFields: [],
     badgeLocation: "outside",
-    // This fallback is only used if setFilter is missing, which shouldn't happen,
-    // so the empty object here is acceptable.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    filterValues: {} as any,
+    filterValues: {} as ConsultationsFilters,
     filterSetters: {},
   };
+
+  // If there are no consultations in the metrics data, show a single
+  // empty state instead of rendering multiple empty charts/tables.
+  if (metrics.totalConsultations === 0) {
+    const disableFilters =
+      !hasActiveFilters && metrics.totalConsultations === 0;
+
+    return (
+      <EmptyMetricsState
+        filterConfig={filterConfig}
+        disableFilters={disableFilters}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col h-full min-h-0 gap-3 pt-4 px-1">
       {/* Filters - badges on left, button on right */}
-      <ConsultationFilters config={filterConfig} />
+      <ConsultationFilters
+        config={filterConfig}
+        isLoading={!hasActiveFilters && metrics.totalConsultations === 0}
+      />
 
       <div className="grid gap-3 grid-cols-1 lg:grid-cols-2">
         <BreakdownChart

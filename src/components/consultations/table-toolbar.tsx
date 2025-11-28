@@ -10,6 +10,7 @@ interface TableToolbarProps {
   selectedIds: Set<string>;
   isLoading?: boolean;
   isEmpty?: boolean;
+  hasActiveFilters?: boolean;
   onAddConsultation?: () => void;
   onBulkDelete?: (
     ids: string[]
@@ -25,6 +26,7 @@ export function TableToolbar({
   selectedIds,
   isLoading = false,
   isEmpty = false,
+  hasActiveFilters,
   onAddConsultation,
   onBulkDelete,
   onToggleDeleteMode,
@@ -41,7 +43,7 @@ export function TableToolbar({
             variant="outline"
             size="sm"
             onClick={onAddConsultation}
-            disabled={isLoading || isEmpty}
+            disabled={isLoading}
             className="h-8 flex-shrink-0"
           >
             <IconPlus className="h-4 w-4" />
@@ -93,7 +95,7 @@ export function TableToolbar({
           />
           <ConsultationFilters
             config={uiFilterConfig}
-            isLoading={isLoading || isEmpty}
+            isLoading={isLoading || (!hasActiveFilters && isEmpty)}
           />
         </div>
       )}

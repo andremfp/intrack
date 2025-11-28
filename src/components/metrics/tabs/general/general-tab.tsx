@@ -6,12 +6,14 @@ import type { FilterUIConfig } from "@/components/filters/types";
 import { createFilterConfig } from "@/components/filters/helpers";
 import { METRICS_GENERAL_ENABLED_FIELDS } from "@/constants";
 import type { GeneralTabProps } from "../../helpers";
+import { EmptyMetricsState } from "../../empty-metrics-state";
 
 export function GeneralTab({
   specialty,
   filters,
   setFilter,
   metrics,
+  hasActiveFilters,
   getSexLabel,
 }: GeneralTabProps) {
   // Memoize filterValues to prevent unnecessary re-renders and resets
@@ -57,10 +59,27 @@ export function GeneralTab({
     filterSetters: {},
   }) as FilterUIConfig;
 
+  // If there are no consultations in the metrics data, show a single
+  // empty state instead of rendering multiple empty charts.
+  if (metrics.totalConsultations === 0) {
+    const disableFilters =
+      !hasActiveFilters && metrics.totalConsultations === 0;
+
+    return (
+      <EmptyMetricsState
+        filterConfig={filterConfig}
+        disableFilters={disableFilters}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col h-full min-h-0 gap-3 pt-4 px-1">
       {/* Filters - badges on left, button on right */}
-      <ConsultationFilters config={filterConfig} />
+      <ConsultationFilters
+        config={filterConfig}
+        isLoading={!hasActiveFilters && metrics.totalConsultations === 0}
+      />
 
       {/* Key metrics charts: keep side-by-side even on small screens */}
       <div className="grid gap-3 grid-cols-2 flex-shrink-0">

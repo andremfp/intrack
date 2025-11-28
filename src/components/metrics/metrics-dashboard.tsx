@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import type { Specialty } from "@/lib/api/specialties";
 import { useMetricsData } from "@/hooks/metrics/use-metrics-data";
 import { useFilters } from "@/hooks/filters/use-filters";
@@ -38,6 +38,15 @@ export function MetricsDashboard({
       specialty,
       filters,
     });
+
+  // Track whether any filters are currently active
+  const hasActiveFilters = useMemo(
+    () =>
+      Object.values(filters).some(
+        (value) => value !== undefined && value !== null && value !== ""
+      ),
+    [filters]
+  );
 
   // Expose a refresh function to the parent so metrics can be reloaded
   // after side-effects like creating or editing consultations.
@@ -80,6 +89,7 @@ export function MetricsDashboard({
         filters={filters}
         setFilter={setFilter}
         metrics={metrics}
+        hasActiveFilters={hasActiveFilters}
         getSexLabel={getSexLabel}
       />
     );
@@ -92,6 +102,7 @@ export function MetricsDashboard({
         filters={filters}
         setFilter={setFilter}
         metrics={metrics}
+        hasActiveFilters={hasActiveFilters}
       />
     );
   }
@@ -103,6 +114,7 @@ export function MetricsDashboard({
         filters={filters}
         setFilter={setFilter}
         metrics={metrics}
+        hasActiveFilters={hasActiveFilters}
       />
     );
   }

@@ -40,6 +40,7 @@ export interface MetricsTabProps {
     value: ConsultationsFilters[K]
   ) => void;
   metrics: ConsultationMetrics;
+  hasActiveFilters?: boolean;
 }
 
 /**
