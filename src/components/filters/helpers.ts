@@ -4,10 +4,7 @@ import type {
 } from "@/components/filters/types";
 import type { Specialty } from "@/lib/api/specialties";
 import type { ConsultationsFilters } from "@/lib/api/consultations";
-import {
-  COMMON_CONSULTATION_FIELDS,
-  MGF_FIELDS,
-} from "@/constants";
+import { COMMON_CONSULTATION_FIELDS, MGF_FIELDS } from "@/constants";
 import type { SpecialtyFieldOption } from "@/constants";
 
 // Re-export for convenience
@@ -22,6 +19,17 @@ type FilterSetter = (value: unknown) => void;
  * Type for a record of filter setters
  */
 export type FilterSetters = Record<string, FilterSetter>;
+
+export type FiltersRecord = Record<string, unknown>;
+
+export const hasValue = (value: unknown) =>
+  value !== undefined && value !== "" && value !== null;
+
+export interface FilterBadgeConfig {
+  id: string;
+  label: string;
+  removeKey: string;
+}
 
 /**
  * Options for creating filter setters using setFilter function (unified API)
@@ -248,6 +256,74 @@ export function getAutonomyLabel(value: string): string {
     (opt) => opt.value === value
   );
   return autonomyOption?.label || value;
+}
+
+// Badge helpers (logic-only, UI rendering stays in TSX)
+
+export function buildFilterBadgeConfigs(params: {
+  values: FiltersRecord;
+  getLabel: (key: string) => string;
+}): FilterBadgeConfig[] {
+  const { values, getLabel } = params;
+  const badges: FilterBadgeConfig[] = [];
+  const processedKeys = new Set<string>();
+
+  Object.keys(values).forEach((key) => {
+    if (processedKeys.has(key)) return;
+
+    const value = values[key];
+    if (!hasValue(value)) return;
+
+    // Handle age range as a single badge
+    if (key === "ageMin" || key === "ageMax") {
+      if (processedKeys.has("ageMin") || processedKeys.has("ageMax")) return;
+      processedKeys.add("ageMin");
+      processedKeys.add("ageMax");
+
+      const label = getLabel("ageMin") || getLabel("ageMax");
+      if (!label) return;
+
+      badges.push({
+        id: "age",
+        label,
+        removeKey: "ageMin",
+      });
+      return;
+    }
+
+    // Handle date range as a single badge
+    if (key === "dateFrom" || key === "dateTo") {
+      if (processedKeys.has("dateFrom") || processedKeys.has("dateTo")) return;
+      processedKeys.add("dateFrom");
+      processedKeys.add("dateTo");
+
+      const label = getLabel("dateFrom") || getLabel("dateTo");
+      if (!label) return;
+
+      badges.push({
+        id: "date",
+        label,
+        removeKey: "dateFrom",
+      });
+      return;
+    }
+
+    // Skip secondary range keys when primary is present
+    if (key === "ageMax" && hasValue(values.ageMin)) return;
+    if (key === "dateTo" && hasValue(values.dateFrom)) return;
+
+    const label = getLabel(key);
+    if (!label) return;
+
+    processedKeys.add(key);
+    badges.push({
+      id: key,
+      label,
+      removeKey: key,
+    });
+  });
+
+  return badges;
 }
 
 // Field options helpers

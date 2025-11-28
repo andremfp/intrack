@@ -23,7 +23,13 @@ import {
 } from "@/components/ui/sheet";
 import { X } from "lucide-react";
 import { IconFilter, IconX } from "@tabler/icons-react";
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  useMemo,
+} from "react";
 import { useIsMobile } from "@/hooks/ui/use-mobile";
 import type { ConsultationFiltersProps } from "./types";
 import {
@@ -33,6 +39,9 @@ import {
   getInternshipOptions,
   getTypeOptions,
   generatePrettyFilterLabel,
+  buildFilterBadgeConfigs,
+  hasValue,
+  type FiltersRecord,
 } from "./helpers";
 
 /**
@@ -116,13 +125,13 @@ export function ConsultationFilters({
   };
 
   // Check if there are any active filters
-  const hasActiveFilters = Object.values(config.filterValues).some(
-    (v) => v !== undefined && v !== "" && v !== null
+  const hasActiveFilters = Object.values(config.filterValues).some((v) =>
+    hasValue(v)
   );
 
   // Check if there are any local filters active (for clear button in popover)
-  const hasLocalActiveFilters = Object.values(localFilters).some(
-    (v) => v !== undefined && v !== "" && v !== null
+  const hasLocalActiveFilters = Object.values(localFilters).some((v) =>
+    hasValue(v)
   );
 
   // Count active filters
@@ -201,193 +210,60 @@ export function ConsultationFilters({
     internshipOptions &&
     internshipOptions.length > 0;
 
-  // Render filter badges
-  const renderFilterBadges = () => {
-    if (!hasActiveFilters) return null;
-
-    const badges: React.ReactElement[] = [];
-    const processedKeys = new Set<string>();
-
-    Object.keys(config.filterValues).forEach((key) => {
-      if (processedKeys.has(key)) return;
-
-      // Indexing by string is safe here because keys come from ConsultationsFilters.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const value = (config.filterValues as any)[key];
-      if (value === undefined || value === "" || value === null) return;
-
-      // Handle age range
-      if (key === "ageMin" || key === "ageMax") {
-        if (processedKeys.has("ageMin") || processedKeys.has("ageMax")) return;
-        processedKeys.add("ageMin");
-        processedKeys.add("ageMax");
-        const label = getFilterLabel("ageMin") || getFilterLabel("ageMax");
-        if (!label) return;
-        badges.push(
-          <Badge
-            key="age"
-            variant="secondary"
-            className="text-xs pr-1 gap-1 group hover:bg-secondary/80"
-          >
-            <span>{label}</span>
-            <button
-              onClick={() => removeFilter("ageMin")}
-              className="h-3 w-3 rounded-full hover:bg-muted-foreground/20 flex items-center justify-center"
+  const appliedFilterBadges = useMemo(
+    () =>
+      hasActiveFilters
+        ? buildFilterBadgeConfigs({
+            values: config.filterValues as FiltersRecord,
+            getLabel: getFilterLabel,
+          }).map(({ id, label, removeKey }) => (
+            <Badge
+              key={id}
+              variant="secondary"
+              className="text-xs pr-1 gap-1 group hover:bg-secondary/80"
             >
-              <X className="h-2.5 w-2.5" />
-            </button>
-          </Badge>
-        );
-        return;
-      }
+              <span>{label}</span>
+              <button
+                onClick={() => removeFilter(removeKey)}
+                className="h-3 w-3 rounded-full hover:bg-muted-foreground/20 flex items-center justify-center"
+              >
+                <X className="h-2.5 w-2.5" />
+              </button>
+            </Badge>
+          ))
+        : [],
+    [config.filterValues, getFilterLabel, hasActiveFilters, removeFilter]
+  );
 
-      // Handle date range
-      if (key === "dateFrom" || key === "dateTo") {
-        if (processedKeys.has("dateFrom") || processedKeys.has("dateTo"))
-          return;
-        processedKeys.add("dateFrom");
-        processedKeys.add("dateTo");
-        const label = getFilterLabel("dateFrom") || getFilterLabel("dateTo");
-        if (!label) return;
-        badges.push(
-          <Badge
-            key="date"
-            variant="secondary"
-            className="text-xs pr-1 gap-1 group hover:bg-secondary/80"
-          >
-            <span>{label}</span>
-            <button
-              onClick={() => removeFilter("dateFrom")}
-              className="h-3 w-3 rounded-full hover:bg-muted-foreground/20 flex items-center justify-center"
+  const localFilterBadges = useMemo(
+    () =>
+      hasLocalActiveFilters
+        ? buildFilterBadgeConfigs({
+            values: localFilters,
+            getLabel: getLocalFilterLabel,
+          }).map(({ id, label, removeKey }) => (
+            <Badge
+              key={id}
+              variant="secondary"
+              className="text-xs pr-1 gap-1 group hover:bg-secondary/80"
             >
-              <X className="h-2.5 w-2.5" />
-            </button>
-          </Badge>
-        );
-        return;
-      }
-
-      // Skip ageMax and dateTo if their counterparts exist
-      if (key === "ageMax" && config.filterValues.ageMin) return;
-      if (key === "dateTo" && config.filterValues.dateFrom) return;
-
-      const label = getFilterLabel(key);
-      if (!label) return;
-
-      processedKeys.add(key);
-      badges.push(
-        <Badge
-          key={key}
-          variant="secondary"
-          className="text-xs pr-1 gap-1 group hover:bg-secondary/80"
-        >
-          <span>{label}</span>
-          <button
-            onClick={() => removeFilter(key)}
-            className="h-3 w-3 rounded-full hover:bg-muted-foreground/20 flex items-center justify-center"
-          >
-            <X className="h-2.5 w-2.5" />
-          </button>
-        </Badge>
-      );
-    });
-
-    return badges;
-  };
-
-  // Render local filter badges (for inside popover)
-  const renderLocalFilterBadges = () => {
-    if (!hasLocalActiveFilters) return null;
-
-    const badges: React.ReactElement[] = [];
-    const processedKeys = new Set<string>();
-
-    Object.keys(localFilters).forEach((key) => {
-      if (processedKeys.has(key)) return;
-
-      const value = localFilters[key];
-      if (value === undefined || value === "" || value === null) return;
-
-      // Handle age range
-      if (key === "ageMin" || key === "ageMax") {
-        if (processedKeys.has("ageMin") || processedKeys.has("ageMax")) return;
-        processedKeys.add("ageMin");
-        processedKeys.add("ageMax");
-        const label =
-          getLocalFilterLabel("ageMin") || getLocalFilterLabel("ageMax");
-        if (!label) return;
-        badges.push(
-          <Badge
-            key="age"
-            variant="secondary"
-            className="text-xs pr-1 gap-1 group hover:bg-secondary/80"
-          >
-            <span>{label}</span>
-            <button
-              onClick={() => removeLocalFilter("ageMin")}
-              className="h-3 w-3 rounded-full hover:bg-muted-foreground/20 flex items-center justify-center"
-            >
-              <X className="h-2.5 w-2.5" />
-            </button>
-          </Badge>
-        );
-        return;
-      }
-
-      // Handle date range
-      if (key === "dateFrom" || key === "dateTo") {
-        if (processedKeys.has("dateFrom") || processedKeys.has("dateTo"))
-          return;
-        processedKeys.add("dateFrom");
-        processedKeys.add("dateTo");
-        const label =
-          getLocalFilterLabel("dateFrom") || getLocalFilterLabel("dateTo");
-        if (!label) return;
-        badges.push(
-          <Badge
-            key="date"
-            variant="secondary"
-            className="text-xs pr-1 gap-1 group hover:bg-secondary/80"
-          >
-            <span>{label}</span>
-            <button
-              onClick={() => removeLocalFilter("dateFrom")}
-              className="h-3 w-3 rounded-full hover:bg-muted-foreground/20 flex items-center justify-center"
-            >
-              <X className="h-2.5 w-2.5" />
-            </button>
-          </Badge>
-        );
-        return;
-      }
-
-      // Skip ageMax and dateTo if their counterparts exist
-      if (key === "ageMax" && localFilters.ageMin) return;
-      if (key === "dateTo" && localFilters.dateFrom) return;
-
-      const label = getLocalFilterLabel(key);
-      if (!label) return;
-
-      processedKeys.add(key);
-      badges.push(
-        <Badge
-          key={key}
-          variant="secondary"
-          className="text-xs pr-1 gap-1 group hover:bg-secondary/80"
-        >
-          <span>{label}</span>
-          <button
-            onClick={() => removeLocalFilter(key)}
-            className="h-3 w-3 rounded-full hover:bg-muted-foreground/20 flex items-center justify-center"
-          >
-            <X className="h-2.5 w-2.5" />
-          </button>
-        </Badge>
-      );
-    });
-
-    return badges;
-  };
+              <span>{label}</span>
+              <button
+                onClick={() => removeLocalFilter(removeKey)}
+                className="h-3 w-3 rounded-full hover:bg-muted-foreground/20 flex items-center justify-center"
+              >
+                <X className="h-2.5 w-2.5" />
+              </button>
+            </Badge>
+          ))
+        : [],
+    [
+      getLocalFilterLabel,
+      hasLocalActiveFilters,
+      localFilters,
+      removeLocalFilter,
+    ]
+  );
 
   // Render filter content (reusable for both Sheet and Popover)
   const renderFilterContent = () => {
@@ -407,9 +283,7 @@ export function ConsultationFilters({
                 Limpar
               </Button>
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {renderLocalFilterBadges()}
-            </div>
+            <div className="flex flex-wrap gap-1.5">{localFilterBadges}</div>
           </div>
         )}
 
@@ -759,7 +633,7 @@ export function ConsultationFilters({
       {/* Active filters displayed on the left (only if badgeLocation is outside) */}
       {config.badgeLocation === "outside" && hasActiveFilters && (
         <div className="flex items-center flex-wrap gap-2 flex-1 min-w-0">
-          <div className="flex flex-wrap gap-1.5">{renderFilterBadges()}</div>
+          <div className="flex flex-wrap gap-1.5">{appliedFilterBadges}</div>
           <Button
             variant="ghost"
             size="sm"

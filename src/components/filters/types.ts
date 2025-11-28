@@ -37,15 +37,8 @@ export interface ConsultationFiltersProps {
   isLoading?: boolean;
 }
 
-// Sorting configuration
-export interface SortingConfig {
-  field: string;
-  order: "asc" | "desc";
-  fieldLabels: Record<string, string>;
-  onSortingChange: (sorting: SortingConfig) => void;
-}
-
-export interface ConsultationSortingProps {
-  sortingConfig: SortingConfig;
-  isLoading?: boolean;
-}
+// Sorting types (re-exported from sorting module for convenience)
+export type {
+  SortingConfig,
+  ConsultationSortingProps,
+} from "../sorting/types";

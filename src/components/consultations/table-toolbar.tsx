@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { IconTrash, IconPlus } from "@tabler/icons-react";
 import { ConsultationFilters } from "@/components/filters/consultation-filters";
-import { ConsultationSorting } from "@/components/filters/consultation-sorting";
+import { ConsultationSorting } from "@/components/sorting/consultation-sorting";
 import type { FilterUIConfig } from "@/components/filters/types";
 import type { SortingConfig } from "@/components/filters/types";
 
