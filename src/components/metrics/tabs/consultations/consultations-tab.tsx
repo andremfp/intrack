@@ -36,11 +36,9 @@ export function ConsultationsTab({
   };
 
   return (
-    <div className="flex flex-col gap-3 px-1">
-      {/* Filters button */}
-      <div className="flex justify-end pt-4">
-        <ConsultationFilters config={filterConfig} />
-      </div>
+    <div className="flex flex-col h-full min-h-0 gap-3 pt-4 px-1">
+      {/* Filters - badges on left, button on right */}
+      <ConsultationFilters config={filterConfig} />
 
       <div className="grid gap-3 grid-cols-1 lg:grid-cols-2">
         <BreakdownChart
