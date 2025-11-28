@@ -1,23 +1,24 @@
 import type { AppError } from "@/errors";
+import type { ConsultationsFilters } from "@/lib/api/consultations";
 
 /**
- * Generic action types for filters reducer
- * Works with any filter state type T
+ * Generic action types for reducer-like state management over key/value objects.
+ * Used both for filters and for other persisted UI state such as sorting.
  */
-export type FiltersAction<T extends Record<string, unknown>> =
+export type KeyValueStateAction<T extends Record<string, unknown>> =
   | {
-      type: "SET_FILTER";
+      type: "SET_FIELD";
       payload: {
         key: keyof T;
         value: T[keyof T];
       };
     }
   | {
-      type: "SET_FILTERS";
+      type: "SET_FIELDS";
       payload: Partial<T>;
     }
   | {
-      type: "RESET_FILTER";
+      type: "RESET_FIELD";
       payload: keyof T;
     }
   | {
@@ -30,30 +31,41 @@ export type FiltersAction<T extends Record<string, unknown>> =
     };
 
 /**
- * Generic hook for managing filter state with optional dynamic data loading.
- * Supports both metrics dashboard and consultations table use cases.
+ * @deprecated Use KeyValueStateAction instead. Left for backwards compatibility.
  */
-export interface UseFiltersOptions<T> {
+export type FiltersAction<T extends Record<string, unknown>> =
+  KeyValueStateAction<T>;
+
+/**
+ * Options for managing consultations filters state.
+ * Filters are always typed as ConsultationsFilters.
+ */
+export interface UseFiltersOptions {
   filtersKey: string;
-  defaultFilters: T;
+  defaultFilters: ConsultationsFilters;
 }
 
 /**
- * Return type for the generic use-filters hook
+ * Return type for the consultations filters hook.
  */
-export interface UseFiltersReturn<T> {
-  filters: T;
-  setFilter: <K extends keyof T>(key: K, value: T[K]) => void;
+export interface UseFiltersReturn {
+  filters: ConsultationsFilters;
+  setFilter: <K extends keyof ConsultationsFilters>(
+    key: K,
+    value: ConsultationsFilters[K]
+  ) => void;
 }
 
 /**
- * Generic options for data fetching hook
+ * Options for data fetching hook, specialized to ConsultationsFilters.
  */
-export interface UseDataFetchingOptions<TFilters extends Record<string, unknown>, TData> {
+export interface UseDataFetchingOptions<TData> {
   /** Current filter state (read-only, managed by parent) */
-  filters: TFilters;
+  filters: ConsultationsFilters;
   /** Function to fetch data with filters */
-  fetchFunction: (filters: TFilters) => Promise<{ success: boolean; data?: TData; error?: AppError }>;
+  fetchFunction: (
+    filters: ConsultationsFilters
+  ) => Promise<{ success: boolean; data?: TData; error?: AppError }>;
   /** Dependencies that should trigger initial load */
   loadDependencies: unknown[];
   /** Optional: Custom error message for toast */
@@ -63,7 +75,7 @@ export interface UseDataFetchingOptions<TFilters extends Record<string, unknown>
 /**
  * Return type for data fetching hook
  */
-export interface UseDataFetchingReturn<TFilters extends Record<string, unknown>, TData> {
+export interface UseDataFetchingReturn<TData> {
   /** Fetched data */
   data: TData | null;
   /** Loading state */
@@ -71,7 +83,7 @@ export interface UseDataFetchingReturn<TFilters extends Record<string, unknown>,
   /** Error state */
   error: AppError | null;
   /** Load function with optional filter override */
-  loadData: (filtersOverride?: Partial<TFilters>) => Promise<void>;
+  loadData: (filtersOverride?: Partial<ConsultationsFilters>) => Promise<void>;
   /** Retry loading data */
   retryLoadData: () => Promise<void>;
 }

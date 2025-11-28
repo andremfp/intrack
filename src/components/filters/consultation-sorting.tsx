@@ -20,12 +20,12 @@ import type { ConsultationSortingProps } from "./types";
  */
 
 export function ConsultationSorting({
-  sorting,
+  sortingConfig,
   isLoading = false,
 }: ConsultationSortingProps) {
   // Get sorting label for display
   const getSortingLabel = () => {
-    const { field, order, fieldLabels } = sorting;
+    const { field, order, fieldLabels } = sortingConfig;
     const orderLabel = order === "asc" ? "↑" : "↓";
     return `${fieldLabels[field] || field} ${orderLabel}`;
   };
@@ -34,7 +34,7 @@ export function ConsultationSorting({
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" disabled={isLoading}>
-          {sorting.order === "asc" ? (
+          {sortingConfig.order === "asc" ? (
             <IconSortAscending className="h-4 w-4" />
           ) : (
             <IconSortDescending className="h-4 w-4" />
@@ -52,10 +52,10 @@ export function ConsultationSorting({
               Ordenar por
             </label>
             <Select
-              value={sorting.field}
+              value={sortingConfig.field}
               onValueChange={(value) =>
-                sorting.onSortingChange({
-                  ...sorting,
+                sortingConfig.onSortingChange({
+                  ...sortingConfig,
                   field: value,
                 })
               }
@@ -64,11 +64,13 @@ export function ConsultationSorting({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(sorting.fieldLabels).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
+                {Object.entries(sortingConfig.fieldLabels).map(
+                  ([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  )
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -80,11 +82,11 @@ export function ConsultationSorting({
             </label>
             <div className="grid grid-cols-2 gap-2">
               <Button
-                variant={sorting.order === "asc" ? "default" : "outline"}
+                variant={sortingConfig.order === "asc" ? "default" : "outline"}
                 size="sm"
                 onClick={() =>
-                  sorting.onSortingChange({
-                    ...sorting,
+                  sortingConfig.onSortingChange({
+                    ...sortingConfig,
                     order: "asc",
                   })
                 }
@@ -94,11 +96,11 @@ export function ConsultationSorting({
                 <span className="text-xs">Crescente</span>
               </Button>
               <Button
-                variant={sorting.order === "desc" ? "default" : "outline"}
+                variant={sortingConfig.order === "desc" ? "default" : "outline"}
                 size="sm"
                 onClick={() =>
-                  sorting.onSortingChange({
-                    ...sorting,
+                  sortingConfig.onSortingChange({
+                    ...sortingConfig,
                     order: "desc",
                   })
                 }

@@ -563,3 +563,31 @@ export const METRICS_ICPC2_ENABLED_FIELDS: FilterFieldType[] = [
   "ageRange",
   "dateRange",
 ];
+
+/**
+ * SORTING CONFIGURATION
+ * =====================
+ */
+
+// Shared sorting field type for consultations (used in API, UI, and utilities).
+export type ConsultationsSortingField = "date" | "age" | "process_number";
+
+/**
+ * Enabled sorting fields for consultations (table, API, etc.).
+ * Central place to add/remove supported sorting fields.
+ */
+export const CONSULTATIONS_ENABLED_SORTING_FIELDS: ConsultationsSortingField[] =
+  ["date", "age", "process_number"];
+
+/**
+ * Human-readable labels for each consultations sorting field.
+ * Used by sorting UI components.
+ */
+export const CONSULTATIONS_SORTING_FIELD_LABELS: Record<
+  ConsultationsSortingField,
+  string
+> = {
+  date: "Data",
+  age: "Idade",
+  process_number: "N° Processo",
+};

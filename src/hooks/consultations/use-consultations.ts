@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { errorToast } from "@/utils/error-toast";
 import type { AppError } from "@/errors";
@@ -10,9 +10,8 @@ import {
 } from "@/lib/api/consultations";
 import type { ConsultationsFilters } from "@/lib/api/consultations";
 import { PAGINATION_CONSTANTS, TAB_CONSTANTS } from "@/constants";
-import { filtersReducer, mergeFilters } from "@/hooks/filters/helpers";
-import type { FiltersAction } from "@/hooks/filters/types";
-import { usePersistedReducer } from "@/hooks/filters/use-persisted-reducer";
+import { mergeFilters } from "@/hooks/filters/helpers";
+import { useConsultationsSorting } from "@/hooks/consultations/use-consultations-sorting";
 
 interface UseConsultationsParams {
   userId: string | undefined;
@@ -66,37 +65,8 @@ export function useConsultations({
 
   const pageSize = PAGINATION_CONSTANTS.CONSULTATIONS_PAGE_SIZE;
 
-  // Generate localStorage key for sorting (filters are managed by parent)
-  // Use consistent pattern: consultations-sorting-{specialtyYear}
-  const sortingKey = useMemo(() => {
-    const year = specialtyYear ?? "default";
-    return `consultations-sorting-${year}`;
-  }, [specialtyYear]);
-
-  // Memoize reset action creator for sorting
-  const sortingResetActionCreator = useMemo(
-    () => (payload: ConsultationsSorting): FiltersAction<ConsultationsSorting> => ({
-      type: "RESET",
-      payload,
-    }),
-    []
-  );
-
-  // Use persisted reducer for sorting (unified with filters approach)
-  // Memoize defaultSorting to prevent infinite loops (object reference must be stable)
-  const defaultSorting: ConsultationsSorting = useMemo(
-    () => ({ field: "date", order: "desc" }),
-    []
-  );
-  const [sorting, dispatchSorting] = usePersistedReducer<
-    ConsultationsSorting,
-    FiltersAction<ConsultationsSorting>
-  >(
-    sortingKey,
-    filtersReducer<ConsultationsSorting>,
-    defaultSorting,
-    sortingResetActionCreator
-  );
+  // Sorting state & persistence, kept separate from filters
+  const { sorting, setSorting } = useConsultationsSorting({ specialtyYear });
 
   const loadConsultations = useCallback(
     async (
@@ -156,22 +126,18 @@ export function useConsultations({
     [userId, specialtyYear, pageSize, filters, sorting]
   );
 
-  const setSorting = useCallback((newSorting: ConsultationsSorting) => {
-    dispatchSorting(sortingResetActionCreator(newSorting));
-  }, [dispatchSorting, sortingResetActionCreator]);
-
   const handleSortingChange = useCallback(
     async (newSorting: ConsultationsSorting) => {
       if (!userId) return;
 
-      // Update sorting (persistence is handled automatically by usePersistedReducer)
-      dispatchSorting(sortingResetActionCreator(newSorting));
+      // Update sorting (persistence is handled by useConsultationsSorting)
+      setSorting(newSorting);
 
       setCurrentPage(1);
       // Pass undefined to use current filters (they're already in the hook's scope)
       await loadConsultations(1, undefined, newSorting);
     },
-    [userId, loadConsultations, dispatchSorting, sortingResetActionCreator]
+    [userId, setSorting, loadConsultations]
   );
 
   const handlePageChange = useCallback(

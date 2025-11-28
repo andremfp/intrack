@@ -1,23 +1,23 @@
 import { TAB_CONSTANTS } from "@/constants";
 import type { ConsultationsFilters } from "@/lib/api/consultations";
-import type { FiltersAction } from "./types";
+import type { KeyValueStateAction } from "./types";
 
 /**
- * FILTER STATE MANAGEMENT
- * =======================
+ * FILTER / SORTING STATE MANAGEMENT
+ * =================================
  */
 
 /**
- * Generic reducer for filter state management.
- * Centralizes all filter state updates in one place.
- * Works with any filter state type that extends Record<string, unknown>.
+ * Generic reducer for key/value UI state management.
+ * Centralizes all state updates (filters, sorting, etc.) in one place.
+ * Works with any state type that extends Record<string, unknown>.
  */
-export function filtersReducer<T extends Record<string, unknown>>(
+export function keyValueStateReducer<T extends Record<string, unknown>>(
   state: T,
-  action: FiltersAction<T>
+  action: KeyValueStateAction<T>
 ): T {
   switch (action.type) {
-    case "SET_FILTER": {
+    case "SET_FIELD": {
       const { key, value } = action.payload;
       return {
         ...state,
@@ -25,14 +25,14 @@ export function filtersReducer<T extends Record<string, unknown>>(
       };
     }
 
-    case "SET_FILTERS": {
+    case "SET_FIELDS": {
       return {
         ...state,
         ...action.payload,
       };
     }
 
-    case "RESET_FILTER": {
+    case "RESET_FIELD": {
       return {
         ...state,
         [action.payload]: undefined,
@@ -92,10 +92,10 @@ export function loadPersistedState<T extends Record<string, unknown>>(
  * @param override - Optional partial filters to override base filters
  * @returns Merged filters
  */
-export function mergeFilters<T extends Record<string, unknown>>(
-  base: T,
-  override?: Partial<T> | T
-): T {
+export function mergeFilters(
+  base: ConsultationsFilters,
+  override?: Partial<ConsultationsFilters> | ConsultationsFilters
+): ConsultationsFilters {
   if (!override) {
     return base;
   }

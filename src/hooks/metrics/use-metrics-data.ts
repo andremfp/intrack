@@ -1,7 +1,6 @@
 import {
   getConsultationMetrics,
   type ConsultationMetrics,
-  type ConsultationsFilters,
 } from "@/lib/api/consultations";
 import { useDataFetching } from "@/hooks/filters/use-data-fetching";
 import type { UseMetricsDataParams, UseMetricsDataReturn } from "./types";
@@ -16,7 +15,7 @@ export function useMetricsData({
   filters,
 }: UseMetricsDataParams): UseMetricsDataReturn {
   const { data: metrics, isLoading, error, loadData: loadMetrics, retryLoadData: retryLoadMetrics } =
-    useDataFetching<ConsultationsFilters, ConsultationMetrics>({
+    useDataFetching<ConsultationMetrics>({
       filters,
       fetchFunction: async (filtersToUse) => {
         const result = await getConsultationMetrics(userId, filtersToUse);

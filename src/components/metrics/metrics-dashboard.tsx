@@ -1,7 +1,6 @@
 "use client";
 
 import type { Specialty } from "@/lib/api/specialties";
-import type { ConsultationsFilters } from "@/lib/api/consultations";
 import { useMetricsData } from "@/hooks/metrics/use-metrics-data";
 import { useFilters } from "@/hooks/filters/use-filters";
 import { defaultConsultationsFilters } from "@/hooks/filters/helpers";
@@ -24,7 +23,7 @@ export function MetricsDashboard({
 }: MetricsDashboardProps) {
   // Metrics have their own filter state, independent from consultations.
   // Filters are shared across all metrics sub-tabs (better UX for graphs).
-  const { filters, setFilter } = useFilters<ConsultationsFilters>({
+  const { filters, setFilter } = useFilters({
     filtersKey: "metrics-filters",
     defaultFilters: defaultConsultationsFilters,
   });

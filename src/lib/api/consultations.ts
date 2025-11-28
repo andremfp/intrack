@@ -8,8 +8,9 @@ import {
   PAGINATION_CONSTANTS,
   MGF_FIELDS,
   ageToYears,
+  type ConsultationsSortingField,
 } from "@/constants";
-import { sortConsultationsWithFavorites } from "@/utils/consultations-sorting";
+import { sortConsultationsWithFavorites } from "@/lib/api/helpers";
 
 export type Consultation = Tables<"consultations">;
 export type ConsultationInsert = TablesInsert<"consultations">;
@@ -120,7 +121,7 @@ export async function deleteConsultation(
 
 // Generic sorting options for consultations (works for any specialty)
 export interface ConsultationsSorting extends Record<string, unknown> {
-  field: "date" | "age" | "process_number";
+  field: ConsultationsSortingField;
   order: "asc" | "desc";
 }
 

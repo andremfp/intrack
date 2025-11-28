@@ -16,8 +16,8 @@ interface TableToolbarProps {
   ) => Promise<{ deletedIds: string[]; failedIds: string[] }>;
   onToggleDeleteMode?: () => void;
   onHandleBulkDelete?: () => void;
-  filterConfig: FilterUIConfig | null;
-  sortingConfig: SortingConfig | null;
+  uiFilterConfig: FilterUIConfig | null;
+  uiSortingConfig: SortingConfig | null;
 }
 
 export function TableToolbar({
@@ -29,8 +29,8 @@ export function TableToolbar({
   onBulkDelete,
   onToggleDeleteMode,
   onHandleBulkDelete,
-  filterConfig,
-  sortingConfig,
+  uiFilterConfig,
+  uiSortingConfig,
 }: TableToolbarProps) {
   return (
     <div className="flex items-center justify-between flex-shrink-0 gap-2 pt-2">
@@ -85,14 +85,14 @@ export function TableToolbar({
       </div>
 
       {/* Right side: Sort and Filter controls */}
-      {!isDeleteMode && sortingConfig && filterConfig && (
+      {!isDeleteMode && uiSortingConfig && uiFilterConfig && (
         <div className="flex items-center gap-2 flex-shrink-0">
           <ConsultationSorting
-            sorting={sortingConfig}
+            sortingConfig={uiSortingConfig}
             isLoading={isLoading || isEmpty}
           />
           <ConsultationFilters
-            config={filterConfig}
+            config={uiFilterConfig}
             isLoading={isLoading || isEmpty}
           />
         </div>

@@ -4,10 +4,9 @@ import type {
 } from "@/components/filters/types";
 import type { Specialty } from "@/lib/api/specialties";
 import type { ConsultationsFilters } from "@/lib/api/consultations";
-import { 
-  TAB_CONSTANTS, 
-  COMMON_CONSULTATION_FIELDS, 
-  MGF_FIELDS, 
+import {
+  COMMON_CONSULTATION_FIELDS,
+  MGF_FIELDS,
 } from "@/constants";
 import type { SpecialtyFieldOption } from "@/constants";
 
@@ -26,11 +25,14 @@ export type FilterSetters = Record<string, FilterSetter>;
 
 /**
  * Options for creating filter setters using setFilter function (unified API)
+ * Specialized to ConsultationsFilters for simplicity.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-interface CreateFilterSettersFromSetFilterOptions<T extends Record<string, any> = any> {
-  setFilter: <K extends keyof T>(key: K, value: T[K]) => void;
-  fields?: Array<keyof T>;
+interface CreateFilterSettersFromSetFilterOptions {
+  setFilter: <K extends keyof ConsultationsFilters>(
+    key: K,
+    value: ConsultationsFilters[K]
+  ) => void;
+  fields?: Array<keyof ConsultationsFilters>;
 }
 
 /**
@@ -93,9 +95,8 @@ function mapEnabledFieldsToSetterFields(
  * @param options - setFilter function and optional fields
  * @returns A record of filter setter functions, or undefined if no handler provided
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createFilterSetters<T extends Record<string, any>>(
-  options: CreateFilterSettersFromSetFilterOptions<T>
+export function createFilterSetters(
+  options: CreateFilterSettersFromSetFilterOptions
 ): FilterSetters | undefined {
   const { setFilter, fields } = options;
   if (!setFilter || !fields || fields.length === 0) {
@@ -125,7 +126,7 @@ export function createFilterSetters<T extends Record<string, any>>(
           : String(value);
       }
       
-      setFilter(field, coercedValue as T[keyof T]);
+      setFilter(field as keyof ConsultationsFilters, coercedValue as never);
     };
   }
   return setters;
@@ -133,17 +134,20 @@ export function createFilterSetters<T extends Record<string, any>>(
 
 /**
  * Options for creating filter config using setFilter function (unified API)
+ * Specialized to ConsultationsFilters.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-interface CreateFilterConfigFromSetFilterOptions<T extends Record<string, any> = any> {
+interface CreateFilterConfigOptions {
   enabledFields: FilterFieldType[];
   badgeLocation: "inside" | "outside";
-  filterValues: Record<string, unknown>;
-  setFilter: <K extends keyof T>(key: K, value: T[K]) => void;
+  filterValues: ConsultationsFilters;
+  setFilter: <K extends keyof ConsultationsFilters>(
+    key: K,
+    value: ConsultationsFilters[K]
+  ) => void;
   // Metrics-specific options
   specialty?: Specialty | null;
   // Optional: override auto-derived setterFields
-  setterFields?: Array<keyof T>;
+  setterFields?: Array<keyof ConsultationsFilters>;
 }
 
 /**
@@ -156,9 +160,8 @@ interface CreateFilterConfigFromSetFilterOptions<T extends Record<string, any> =
  * @param options - Configuration options for creating the filter config
  * @returns A complete FilterUIConfig object, or null if required handlers are missing
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createFilterConfig<T extends Record<string, any> = ConsultationsFilters>(
-  options: CreateFilterConfigFromSetFilterOptions<T>
+export function createFilterConfig(
+  options: CreateFilterConfigOptions
 ): FilterUIConfig | null {
   const {
     enabledFields,
@@ -176,9 +179,11 @@ export function createFilterConfig<T extends Record<string, any> = Consultations
   // Auto-derive setterFields from enabledFields if not provided
   const derivedSetterFields = mapEnabledFieldsToSetterFields(enabledFields);
   // Cast is safe because enabledFields should only include fields valid for the filter type
-  const setterFields: Array<keyof T> = (providedSetterFields ?? derivedSetterFields) as Array<keyof T>;
+  const setterFields: Array<keyof ConsultationsFilters> = (
+    providedSetterFields ?? derivedSetterFields
+  ) as Array<keyof ConsultationsFilters>;
 
-  const filterSetters = createFilterSetters<T>({
+  const filterSetters = createFilterSetters({
     setFilter,
     fields: setterFields,
   });
@@ -194,28 +199,6 @@ export function createFilterConfig<T extends Record<string, any> = Consultations
     filterValues,
     filterSetters,
   };
-}
-
-/**
- * Generates the localStorage key for persisting consultations filters.
- * Uses a consistent pattern: consultations-filters-{specialtyYear}
- * 
- * specialtyYear should always be set for Consultas tabs (parsed from tab string like "Consultas.1").
- * If somehow it's undefined, uses 1 as a fallback (shouldn't happen in practice).
- */
-export function getConsultationsFiltersKey(
-  specialtyYear: number | undefined,
-  mainTab: string
-): string {
-  // For Consultas tab, use specialty year (or 1 as fallback)
-  if (mainTab === TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS) {
-    const year = specialtyYear ?? 1;
-    return `consultations-filters-${year}`;
-  }
-  
-  // For other tabs, return a key that won't interfere
-  // (Filters won't be used anyway when not on Consultas tab)
-  return `consultations-filters-other`;
 }
 
 // Helper functions for labels
@@ -289,7 +272,7 @@ export function getTypeOptions(): SpecialtyFieldOption[] {
 }
 
 // Unified display label helper
-export function getFilterDisplayLabel(
+export function generatePrettyFilterLabel(
   key: string,
   value: unknown,
   specialty?: Specialty | null,

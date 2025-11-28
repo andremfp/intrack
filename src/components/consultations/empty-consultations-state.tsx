@@ -1,6 +1,6 @@
 import { TableToolbar } from "./table-toolbar";
 import type { FilterUIConfig } from "@/components/filters/types";
-import type { SortingConfig } from "@/components/filters/consultation-sorting";
+import type { SortingConfig } from "@/components/filters/types";
 
 interface EmptyConsultationsStateProps {
   specialtyCode: string;
@@ -14,8 +14,8 @@ interface EmptyConsultationsStateProps {
   ) => Promise<{ deletedIds: string[]; failedIds: string[] }>;
   onToggleDeleteMode?: () => void;
   onHandleBulkDelete?: () => void;
-  filterConfig: FilterUIConfig | null;
-  sortingConfig: SortingConfig | null;
+  uiFilterConfig: FilterUIConfig | null;
+  uiSortingConfig: SortingConfig | null;
 }
 
 export function EmptyConsultationsState({
@@ -28,8 +28,8 @@ export function EmptyConsultationsState({
   onBulkDelete,
   onToggleDeleteMode,
   onHandleBulkDelete,
-  filterConfig,
-  sortingConfig,
+  uiFilterConfig,
+  uiSortingConfig,
 }: EmptyConsultationsStateProps) {
   const yearText = specialtyYear
     ? ` em ${specialtyCode.toUpperCase()}.${specialtyYear}`
@@ -46,8 +46,8 @@ export function EmptyConsultationsState({
         onBulkDelete={onBulkDelete}
         onToggleDeleteMode={onToggleDeleteMode}
         onHandleBulkDelete={onHandleBulkDelete}
-        filterConfig={filterConfig}
-        sortingConfig={sortingConfig}
+        uiFilterConfig={uiFilterConfig}
+        uiSortingConfig={uiSortingConfig}
       />
 
       {/* Empty state */}
