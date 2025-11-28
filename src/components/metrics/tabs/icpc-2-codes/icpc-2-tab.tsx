@@ -10,12 +10,14 @@ import type { FilterUIConfig } from "@/components/filters/types";
 import { createFilterConfig } from "@/components/filters/helpers";
 import { METRICS_ICPC2_ENABLED_FIELDS } from "@/constants";
 import type { MetricsTabProps } from "../../helpers";
+import { EmptyMetricsState } from "../../empty-metrics-state";
 
 export function ICPC2Tab({
   specialty,
   filters,
   setFilter,
   metrics,
+  hasActiveFilters,
 }: MetricsTabProps) {
   // Memoize filterValues to prevent unnecessary re-renders and resets
   const filterValues = useMemo(
@@ -62,10 +64,30 @@ export function ICPC2Tab({
     filterSetters: {},
   }) as FilterUIConfig;
 
+  // If there are no consultations in the metrics data, show a single
+  // empty state instead of rendering multiple empty tables.
+  if (metrics.totalConsultations === 0) {
+    const disableFilters =
+      !hasActiveFilters && metrics.totalConsultations === 0;
+
+    return (
+      <EmptyMetricsState
+        filterConfig={filterConfig}
+        disableFilters={disableFilters}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col h-full min-h-0 gap-3 pt-4 px-1">
       {/* Filters - badges on left, button on right */}
-      <ConsultationFilters config={filterConfig} />
+      <ConsultationFilters
+        config={filterConfig}
+        // Disable filters only when there is no data in the database (no metrics)
+        // and there are no active filters. If filters are active but metrics are
+        // empty due to them, keep the filters enabled so the user can clear them.
+        isLoading={!hasActiveFilters && metrics.totalConsultations === 0}
+      />
 
       <div className="flex flex-col gap-3 lg:px-6">
         <Collapsible defaultOpen>

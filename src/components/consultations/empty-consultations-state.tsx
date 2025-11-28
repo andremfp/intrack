@@ -5,6 +5,7 @@ import type { SortingConfig } from "@/components/filters/types";
 interface EmptyConsultationsStateProps {
   specialtyCode: string;
   specialtyYear?: number;
+  hasActiveFilters: boolean;
   isDeleteMode: boolean;
   selectedIds: Set<string>;
   isLoading?: boolean;
@@ -21,6 +22,7 @@ interface EmptyConsultationsStateProps {
 export function EmptyConsultationsState({
   specialtyCode,
   specialtyYear,
+  hasActiveFilters,
   isDeleteMode,
   selectedIds,
   isLoading,
@@ -32,7 +34,7 @@ export function EmptyConsultationsState({
   uiSortingConfig,
 }: EmptyConsultationsStateProps) {
   const yearText = specialtyYear
-    ? ` em ${specialtyCode.toUpperCase()}.${specialtyYear}`
+    ? ` ${specialtyCode.toUpperCase()}.${specialtyYear}`
     : "";
 
   return (
@@ -42,6 +44,7 @@ export function EmptyConsultationsState({
         selectedIds={selectedIds}
         isLoading={isLoading}
         isEmpty={true}
+        hasActiveFilters={hasActiveFilters}
         onAddConsultation={onAddConsultation}
         onBulkDelete={onBulkDelete}
         onToggleDeleteMode={onToggleDeleteMode}
@@ -54,10 +57,10 @@ export function EmptyConsultationsState({
       <div className="flex flex-1 items-center justify-center py-12 px-4">
         <div className="text-center">
           <p className="text-muted-foreground">
-            Ainda não tem consultas registadas{yearText}.
+            Sem dados disponíveis para{yearText}.
           </p>
           <p className="text-muted-foreground text-sm mt-2">
-            Clique em "Nova Consulta" para adicionar a sua primeira consulta.
+            Ajuste os filtros ou adicione novas consultas para ver as métricas.
           </p>
         </div>
       </div>

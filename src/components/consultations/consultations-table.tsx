@@ -19,7 +19,7 @@ import { CommonFieldCell } from "./cells/common-field-cell";
 import { SpecialtyFieldCell } from "./cells/specialty-field-cell";
 import { useFavorites } from "@/hooks/consultations/use-consultation-favorites";
 import { useDeleteMode } from "@/hooks/consultations/use-consultation-delete-mode";
-import { createFilterConfig } from "@/components/filters/helpers";
+import { createFilterConfig, hasValue } from "@/components/filters/helpers";
 import { TablePagination } from "@/components/ui/table-pagination";
 import { TableToolbar } from "./table-toolbar";
 import { TableHeader } from "./table-header";
@@ -91,6 +91,12 @@ export function ConsultationsTable({
     });
   }, [filters, setFilter]);
 
+  // Determine if there are any active filters applied
+  const hasActiveFilters = useMemo(
+    () => Object.values(filters).some((value) => hasValue(value)),
+    [filters]
+  );
+
   // Helper function to create sorting config
   const uiSortingConfig = useMemo((): SortingConfig | null => {
     if (!onSortingChange) {
@@ -135,6 +141,7 @@ export function ConsultationsTable({
       <EmptyConsultationsState
         specialtyCode={specialtyCode}
         specialtyYear={specialtyYear}
+        hasActiveFilters={hasActiveFilters}
         isDeleteMode={isDeleteMode}
         selectedIds={selectedIds}
         isLoading={isLoading}
@@ -155,6 +162,7 @@ export function ConsultationsTable({
         selectedIds={selectedIds}
         isLoading={isLoading}
         isEmpty={false}
+        hasActiveFilters={hasActiveFilters}
         onAddConsultation={onAddConsultation}
         onBulkDelete={onBulkDelete}
         onToggleDeleteMode={toggleDeleteMode}
