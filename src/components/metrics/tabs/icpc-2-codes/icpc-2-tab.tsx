@@ -63,11 +63,9 @@ export function ICPC2Tab({
   }) as FilterUIConfig;
 
   return (
-    <div className="flex flex-col gap-3 px-1">
-      {/* Filters button */}
-      <div className="flex justify-end lg:px-6 pt-4">
-        <ConsultationFilters config={filterConfig} />
-      </div>
+    <div className="flex flex-col h-full min-h-0 gap-3 pt-4 px-1">
+      {/* Filters - badges on left, button on right */}
+      <ConsultationFilters config={filterConfig} />
 
       <div className="flex flex-col gap-3 lg:px-6">
         <Collapsible defaultOpen>
