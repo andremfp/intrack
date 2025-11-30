@@ -13,7 +13,9 @@ export type FilterFieldType =
   | "processNumber"
   | "type"
   | "presential"
-  | "smoker";
+  | "smoker"
+  | "contraceptive"
+  | "new_contraceptive";
 
 // UI configuration for filter display - specifies which filters to show and how
 export interface FilterUIConfig {

@@ -86,6 +86,8 @@ function mapEnabledFieldsToSetterFields(
       case "type":
       case "presential":
       case "smoker":
+      case "contraceptive":
+      case "new_contraceptive":
         setterFields.push(field);
         break;
     }
@@ -229,6 +231,23 @@ export function getLocationLabel(value: string): string {
   return option?.label || value;
 }
 
+export function getContraceptiveLabel(value: string): string {
+  const contraceptiveField = MGF_FIELDS.find(
+    (field) => field.key === "contraceptive"
+  );
+  if (!contraceptiveField?.options) return value;
+  const option = contraceptiveField.options.find((opt) => opt.value === value);
+  return option?.label || value;
+}
+
+export function getNewContraceptiveLabel(value: string): string {
+  const newContraceptiveField = MGF_FIELDS.find(
+    (field) => field.key === "new_contraceptive"
+  );
+  if (!newContraceptiveField?.options) return value;
+  const option = newContraceptiveField.options.find((opt) => opt.value === value);
+  return option?.label || value;
+}
 export function formatDate(dateString: string): string {
   const date = new Date(dateString);
   return date.toLocaleDateString("pt-PT", {
@@ -347,6 +366,14 @@ export function getTypeOptions(): SpecialtyFieldOption[] {
   return MGF_FIELDS.find((field) => field.key === "type")?.options || [];
 }
 
+export function getContraceptiveOptions(): SpecialtyFieldOption[] {
+  return MGF_FIELDS.find((field) => field.key === "contraceptive")?.options || [];
+}
+
+export function getNewContraceptiveOptions(): SpecialtyFieldOption[] {
+  return MGF_FIELDS.find((field) => field.key === "new_contraceptive")?.options || [];
+}
+
 // Unified display label helper
 export function generatePrettyFilterLabel(
   key: string,
@@ -397,6 +424,10 @@ export function generatePrettyFilterLabel(
       return `Presencial: ${value ? "Sim" : "Não"}`;
     case "smoker":
       return `Fumador: ${value ? "Sim" : "Não"}`;
+    case "contraceptive":
+      return `Contraceptivo: ${getContraceptiveLabel(value as string)}`;
+    case "new_contraceptive":
+      return `Novo Contraceptivo: ${getNewContraceptiveLabel(value as string)}`;
     default:
       return "";
   }

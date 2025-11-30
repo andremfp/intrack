@@ -36,6 +36,8 @@ export type ConsultationsFilters = {
   type?: string;
   presential?: boolean;
   smoker?: boolean;
+  contraceptive?: string;
+  new_contraceptive?: string;
 };
 
 /**
@@ -235,6 +237,12 @@ export async function getMGFConsultations(
     }
     if (filters.internship) {
       query = query.eq("details->>internship", filters.internship);
+    }
+    if (filters.contraceptive) {
+      query = query.eq("details->>contraceptive", filters.contraceptive);
+    }
+    if (filters.new_contraceptive) {
+      query = query.eq("details->>new_contraceptive", filters.new_contraceptive);
     }
   }
 

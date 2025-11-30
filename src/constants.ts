@@ -516,13 +516,15 @@ export const CONSULTATIONS_ENABLED_FIELDS: FilterFieldType[] = [
   "processNumber",
   "location",
   "internship",
-  "autonomy",
   "sex",
+  "autonomy",
   "ageRange",
+  "dateRange",
   "type",
   "presential",
   "smoker",
-  "dateRange",
+  "contraceptive",
+  "new_contraceptive",
 ];
 
 /**
@@ -536,6 +538,11 @@ export const METRICS_GENERAL_ENABLED_FIELDS: FilterFieldType[] = [
   "autonomy",
   "ageRange",
   "dateRange",
+  "type",
+  "presential",
+  "smoker",
+  "contraceptive",
+  "new_contraceptive",
 ];
 
 /**
@@ -549,6 +556,11 @@ export const METRICS_CONSULTATIONS_ENABLED_FIELDS: FilterFieldType[] = [
   "autonomy",
   "ageRange",
   "dateRange",
+  "type",
+  "presential",
+  "smoker",
+  "contraceptive",
+  "new_contraceptive",
 ];
 
 /**
@@ -562,6 +574,11 @@ export const METRICS_ICPC2_ENABLED_FIELDS: FilterFieldType[] = [
   "autonomy",
   "ageRange",
   "dateRange",
+  "type",
+  "presential",
+  "smoker",
+  "contraceptive",
+  "new_contraceptive",
 ];
 
 /**
