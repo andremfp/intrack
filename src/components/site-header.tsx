@@ -1,4 +1,3 @@
-
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ModeToggle } from "@/components/theme/mode-toggle";
 import type { Specialty } from "@/lib/api/specialties";
@@ -21,9 +20,9 @@ export function SiteHeader({ specialty, activeTab }: SiteHeaderProps) {
         const year = yearMatch[1];
         return `${specialty.name} - ${specialty.code.toUpperCase()}.${year}`;
       }
+    } else {
+      return `${specialty.name} - ${activeTab?.split(".")[1]}`;
     }
-
-    return specialty.name;
   };
 
   const specialtyDisplay = getSpecialtyDisplay();
