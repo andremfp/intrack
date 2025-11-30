@@ -3,6 +3,20 @@ import type { ApiResponse } from "@/errors";
 import type { Tables } from "@/schema";
 import { success, failure, AppError, ErrorMessages } from "@/errors";
 
+function isAuthSessionMissingError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+
+  const typedError = error as { name?: string; message?: unknown };
+  const nameMatch = typedError.name === "AuthSessionMissingError";
+  const message =
+    typeof typedError.message === "string"
+      ? typedError.message
+      : String(typedError.message ?? "");
+  const messageMatch = message.toLowerCase().includes("auth session missing");
+
+  return nameMatch || messageMatch;
+}
+
 export type User = Tables<"users">;
 
 export type UserData = {
@@ -44,7 +58,16 @@ export async function checkUserExists(): Promise<ApiResponse<boolean>> {
     data: { user },
     error: authError,
   } = await supabase.auth.getUser();
-  if (authError) return failure(authError, "checkUserExists");
+  if (authError) {
+    if (isAuthSessionMissingError(authError)) {
+      // Treat missing auth session as an authentication failure with a clear message
+      return {
+        success: false,
+        error: new AppError(ErrorMessages.AUTH_FAILED, authError),
+      };
+    }
+    return failure(authError, "checkUserExists");
+  }
   if (!user) {
     return failure(new AppError(ErrorMessages.AUTH_FAILED), "checkUserExists");
   }

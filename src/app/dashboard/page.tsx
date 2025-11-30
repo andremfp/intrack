@@ -16,6 +16,8 @@ import { parseTab } from "@/utils/tab-parsing";
 import { DashboardContentRouter } from "@/components/dashboard/dashboard-content-router";
 import { useDashboardModals } from "@/hooks/modals/use-dashboard-modals";
 import { useUserInitialization } from "@/hooks/user/use-user-initialization";
+import { getSpecialty } from "@/lib/api/specialties";
+import { toast } from "sonner";
 
 function DashboardContent() {
   const { setOpenMobile } = useSidebar();
@@ -63,6 +65,26 @@ function DashboardContent() {
   useEffect(() => {
     updateInitShowSpecialtyModal(initShowSpecialtyModal);
   }, [initShowSpecialtyModal, updateInitShowSpecialtyModal]);
+
+  // Recover specialty details if the ID exists in the user profile but the cached specialty is missing
+  useEffect(() => {
+    const specialtyId = userProfile?.data.specialty_id;
+
+    if (!specialtyId || userSpecialty) {
+      return;
+    }
+
+    (async () => {
+      const result = await getSpecialty(specialtyId);
+      if (result.success) {
+        updateUserSpecialty(result.data);
+      } else {
+        toast.error("Erro ao carregar especialidade", {
+          description: result.error.userMessage,
+        });
+      }
+    })();
+  }, [userProfile?.data.specialty_id, userSpecialty, updateUserSpecialty]);
 
   // Enhanced handlers that include parent component logic
   const handleSpecialtySelected = (specialty: Specialty) => {

@@ -1,11 +1,14 @@
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { checkUserExists, getCurrentUser, upsertUser } from "@/lib/api/users";
 import { getSpecialty } from "@/lib/api/specialties";
 import type { UserData } from "@/lib/api/users";
 import type { Specialty } from "@/lib/api/specialties";
 import { useIsMounted } from "../ui/use-is-mounted";
 import type { UseUserInitializationResult } from "./types";
+import { ErrorMessages } from "@/errors";
+import { userCache } from "@/utils/user-cache";
 
 /**
  * Hook to handle user initialization logic
@@ -17,6 +20,7 @@ export function useUserInitialization(
   updateUserSpecialty: (specialty: Specialty) => void,
   initialUserProfile: UserData | null
 ): UseUserInitializationResult {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(!initialUserProfile);
   const [showSpecialtyModal, setShowSpecialtyModal] = useState(false);
   const hasInitialized = useRef(false);
@@ -44,6 +48,13 @@ export function useUserInitialization(
         if (!isMounted()) return;
 
         if (!userExistsResult.success) {
+          // If the auth session is missing/invalid, treat it as a logout and redirect to login
+          if (userExistsResult.error.userMessage === ErrorMessages.AUTH_FAILED) {
+            userCache.clearAllCache();
+            navigate("/", { replace: true });
+            return;
+          }
+
           setIsLoading(false);
           hasInitialized.current = true;
           toast.error("Erro", {
