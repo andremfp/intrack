@@ -396,6 +396,12 @@ export function ConsultationModal({
                       const typeSpecificSections =
                         typeSpecificSectionsBySection[sectionKey] || [];
 
+                      // Determine current location (from basic information section)
+                      const currentLocation =
+                        typeof formValues.location === "string"
+                          ? formValues.location
+                          : "";
+
                       // Skip if no fields and no type-specific sections
                       if (
                         sectionFields.length === 0 &&
@@ -404,7 +410,16 @@ export function ConsultationModal({
                         return null;
                       }
 
-                      const visibleFields = sectionFields;
+                      // Hide internship combobox when location is "health_unit".
+                      const visibleFields = sectionFields.filter((field) => {
+                        if (
+                          field.key === "internship" &&
+                          currentLocation === "health_unit"
+                        ) {
+                          return false;
+                        }
+                        return true;
+                      });
 
                       // Skip if no visible fields and no type-specific sections
                       if (
