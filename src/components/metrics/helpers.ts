@@ -41,6 +41,8 @@ export interface MetricsTabProps {
   ) => void;
   metrics: ConsultationMetrics;
   hasActiveFilters?: boolean;
+  onExportExcel?: () => void;
+  isExportingExcel?: boolean;
 }
 
 /**

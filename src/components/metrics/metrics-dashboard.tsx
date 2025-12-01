@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Specialty } from "@/lib/api/specialties";
 import { useMetricsData } from "@/hooks/metrics/use-metrics-data";
 import { useFilters } from "@/hooks/filters/use-filters";
@@ -10,6 +10,9 @@ import { GeneralTab } from "./tabs/general/general-tab";
 import { ConsultationsTab } from "./tabs/consultations/consultations-tab";
 import { ICPC2Tab } from "./tabs/icpc-2-codes/icpc-2-tab";
 import { MetricsErrorDisplay } from "./metrics-error-display";
+import { buildConsultationsExportMetadataRows } from "@/components/consultations/helpers";
+import { buildMetricsExportSheets, downloadXlsx } from "@/exports/helpers";
+import { errorToast } from "@/utils/error-toast";
 
 interface MetricsDashboardProps {
   userId: string;
@@ -30,6 +33,8 @@ export function MetricsDashboard({
     filtersKey: "metrics-filters",
     defaultFilters: defaultConsultationsFilters,
   });
+
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
 
   // Use custom hook for metrics data fetching
   const { metrics, isLoading, error, retryLoadMetrics, loadMetrics } =
@@ -54,6 +59,44 @@ export function MetricsDashboard({
     if (!onRefreshReady) return;
     onRefreshReady(() => loadMetrics());
   }, [onRefreshReady, loadMetrics]);
+
+  const handleExportExcel = async () => {
+    if (!metrics) return;
+
+    setIsExportingExcel(true);
+    try {
+      const metadataRows = buildConsultationsExportMetadataRows({
+        filters,
+        specialty,
+        specialtyYear: filters.year,
+        activeTab: activeSubTab,
+      });
+
+      const sheets = buildMetricsExportSheets({
+        metrics,
+        metadataRows,
+        activeTab: activeSubTab,
+      });
+
+      console.log("sheets", sheets);
+
+      if (!sheets || sheets.length === 0) {
+        errorToast.show(
+          "Sem dados para exportar",
+          "Não existem métricas para exportar neste separador com os filtros atuais."
+        );
+        return;
+      }
+
+      const today = new Date();
+      const datePart = today.toISOString().split("T")[0];
+      const filename = `metricas_${datePart}.xlsx`;
+
+      await downloadXlsx(sheets, filename);
+    } finally {
+      setIsExportingExcel(false);
+    }
+  };
 
   if (isLoading && !metrics) {
     return (
@@ -91,6 +134,8 @@ export function MetricsDashboard({
         metrics={metrics}
         hasActiveFilters={hasActiveFilters}
         getSexLabel={getSexLabel}
+        onExportExcel={handleExportExcel}
+        isExportingExcel={isExportingExcel}
       />
     );
   }
@@ -103,6 +148,8 @@ export function MetricsDashboard({
         setFilter={setFilter}
         metrics={metrics}
         hasActiveFilters={hasActiveFilters}
+        onExportExcel={handleExportExcel}
+        isExportingExcel={isExportingExcel}
       />
     );
   }
@@ -115,6 +162,8 @@ export function MetricsDashboard({
         setFilter={setFilter}
         metrics={metrics}
         hasActiveFilters={hasActiveFilters}
+        onExportExcel={handleExportExcel}
+        isExportingExcel={isExportingExcel}
       />
     );
   }

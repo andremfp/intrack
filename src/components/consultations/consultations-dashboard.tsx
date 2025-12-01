@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Specialty } from "@/lib/api/specialties";
 import { useConsultations } from "@/hooks/consultations/use-consultations";
-import type { ConsultationMGF } from "@/lib/api/consultations";
+import {
+  getMGFConsultationsForExport,
+  type ConsultationMGF,
+} from "@/lib/api/consultations";
 import { PAGINATION_CONSTANTS, TAB_CONSTANTS } from "@/constants";
 import { useFilters } from "@/hooks/filters/use-filters";
 import {
@@ -12,6 +15,11 @@ import {
 } from "@/hooks/filters/helpers";
 import { ConsultationsTable } from "./consultations-table";
 import { DataErrorDisplay } from "@/components/ui/data-error-display";
+import { mapConsultationsToExportTable } from "@/exports/helpers";
+import { downloadCsv, downloadXlsx } from "@/exports/helpers";
+import type { ExportSheet } from "@/exports/types";
+import { errorToast } from "@/utils/error-toast";
+import { buildConsultationsExportMetadataRows } from "@/components/consultations/helpers";
 
 interface ConsultationsDashboardProps {
   userId: string | undefined;
@@ -46,6 +54,9 @@ export function ConsultationsDashboard({
     defaultFilters: defaultConsultationsFilters,
   });
 
+  const [isExportingCsv, setIsExportingCsv] = useState(false);
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
+
   const {
     consultations,
     totalCount,
@@ -65,6 +76,74 @@ export function ConsultationsDashboard({
     mainTab: "Consultas",
     filters,
   });
+
+  const handleExport = async (format: "csv" | "xlsx") => {
+    if (!userId || specialtyYear === undefined) return;
+
+    if (format === "csv") {
+      setIsExportingCsv(true);
+    } else {
+      setIsExportingExcel(true);
+    }
+
+    try {
+      const result = await getMGFConsultationsForExport(
+        userId,
+        specialtyYear,
+        filters,
+        sorting
+      );
+
+      if (!result.success) {
+        errorToast.fromApiError(
+          result.error,
+          "Erro ao exportar consultas para ficheiro"
+        );
+        return;
+      }
+
+      const consultationsForExport: ConsultationMGF[] = result.data;
+      const { headers, rows } = mapConsultationsToExportTable(
+        consultationsForExport
+      );
+      const metadataRows = buildConsultationsExportMetadataRows({
+        filters,
+        specialty,
+        specialtyYear,
+      });
+
+      const today = new Date();
+      const datePart = today.toISOString().split("T")[0];
+      const baseFilename = `consultas_${datePart}`;
+
+      if (format === "csv") {
+        downloadCsv(
+          {
+            headers,
+            rows,
+            metadataRows,
+          },
+          `${baseFilename}.csv`
+        );
+      } else {
+        const sheets: ExportSheet[] = [
+          {
+            sheetName: "Consultas",
+            headers,
+            rows,
+            metadataRows,
+          },
+        ];
+        await downloadXlsx(sheets, `${baseFilename}.xlsx`);
+      }
+    } finally {
+      if (format === "csv") {
+        setIsExportingCsv(false);
+      } else {
+        setIsExportingExcel(false);
+      }
+    }
+  };
 
   // Expose refresh function to parent
   useEffect(() => {
@@ -120,6 +199,10 @@ export function ConsultationsDashboard({
           onRowClick,
           onAddConsultation,
           onBulkDelete: handleBulkDelete,
+          onExportCsv: () => handleExport("csv"),
+          onExportExcel: () => handleExport("xlsx"),
+          isExportingCsv,
+          isExportingExcel,
         }}
         isLoading={isLoading}
       />

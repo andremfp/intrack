@@ -1,9 +1,115 @@
+import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { IconTrash, IconPlus } from "@tabler/icons-react";
 import { ConsultationFilters } from "@/components/filters/consultation-filters";
 import { ConsultationSorting } from "@/components/sorting/consultation-sorting";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Download, Loader2 } from "lucide-react";
 import type { FilterUIConfig } from "@/components/filters/types";
 import type { SortingConfig } from "@/components/filters/types";
+
+interface ExportButtonProps {
+  onExportCsv?: () => void;
+  onExportExcel?: () => void;
+  isExportingCsv?: boolean;
+  isExportingExcel?: boolean;
+  isLoading?: boolean;
+}
+
+function ExportButton({
+  onExportCsv,
+  onExportExcel,
+  isExportingCsv = false,
+  isExportingExcel = false,
+  isLoading = false,
+}: ExportButtonProps) {
+  const [open, setOpen] = React.useState(false);
+  const isExporting = isExportingCsv || isExportingExcel;
+
+  const handleExportCsv = () => {
+    if (onExportCsv) {
+      onExportCsv();
+      setOpen(false);
+    }
+  };
+
+  const handleExportExcel = () => {
+    if (onExportExcel) {
+      onExportExcel();
+      setOpen(false);
+    }
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={isLoading || isExporting}
+          className="h-8 flex-shrink-0"
+        >
+          {isExporting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="hidden sm:inline">A exportar...</span>
+            </>
+          ) : (
+            <>
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Exportar</span>
+            </>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-48" align="start">
+        <div className="space-y-1">
+          {onExportCsv && (
+            <button
+              onClick={handleExportCsv}
+              disabled={isExportingCsv || isLoading}
+              className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isExportingCsv ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />A exportar CSV...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4" />
+                  Exportar CSV
+                </>
+              )}
+            </button>
+          )}
+          {onExportExcel && (
+            <button
+              onClick={handleExportExcel}
+              disabled={isExportingExcel || isLoading}
+              className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isExportingExcel ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />A exportar
+                  Excel...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4" />
+                  Exportar Excel
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 interface TableToolbarProps {
   isDeleteMode: boolean;
@@ -19,6 +125,10 @@ interface TableToolbarProps {
   onHandleBulkDelete?: () => void;
   uiFilterConfig: FilterUIConfig | null;
   uiSortingConfig: SortingConfig | null;
+  onExportCsv?: () => void;
+  onExportExcel?: () => void;
+  isExportingCsv?: boolean;
+  isExportingExcel?: boolean;
 }
 
 export function TableToolbar({
@@ -33,6 +143,10 @@ export function TableToolbar({
   onHandleBulkDelete,
   uiFilterConfig,
   uiSortingConfig,
+  onExportCsv,
+  onExportExcel,
+  isExportingCsv,
+  isExportingExcel,
 }: TableToolbarProps) {
   return (
     <div className="flex items-center justify-between flex-shrink-0 gap-2 pt-2">
@@ -63,6 +177,16 @@ export function TableToolbar({
               {isDeleteMode ? "Cancelar" : "Eliminar"}
             </span>
           </Button>
+        )}
+
+        {!isDeleteMode && (onExportCsv || onExportExcel) && (
+          <ExportButton
+            onExportCsv={onExportCsv}
+            onExportExcel={onExportExcel}
+            isExportingCsv={isExportingCsv}
+            isExportingExcel={isExportingExcel}
+            isLoading={isLoading}
+          />
         )}
 
         {/* Delete mode actions */}

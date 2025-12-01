@@ -295,6 +295,138 @@ export async function getMGFConsultations(
   });
 }
 
+export async function getMGFConsultationsForExport(
+  userId: string,
+  specialtyYear?: number,
+  filters?: ConsultationsFilters,
+  sorting?: ConsultationsSorting,
+  maxRows: number = 10000
+): Promise<ApiResponse<ConsultationMGF[]>> {
+  if (!userId) {
+    return success([]);
+  }
+
+  let query = supabase
+    .from("consultations_mgf")
+    .select("*")
+    .eq("user_id", userId)
+    .limit(maxRows);
+
+  if (specialtyYear !== undefined) {
+    query = query.eq("specialty_year", specialtyYear);
+  }
+
+  if (filters) {
+    if (filters.sex) {
+      query = query.eq("sex", filters.sex);
+    }
+
+    if (filters.ageMin !== undefined || filters.ageMax !== undefined) {
+      const conditions: string[] = [];
+
+      let yearsCondition = "age_unit.eq.years";
+      if (filters.ageMin !== undefined) {
+        yearsCondition += `,age.gte.${filters.ageMin}`;
+      }
+      if (filters.ageMax !== undefined) {
+        yearsCondition += `,age.lte.${filters.ageMax}`;
+      }
+      conditions.push(`and(${yearsCondition})`);
+
+      let monthsCondition = "age_unit.eq.months";
+      if (filters.ageMin !== undefined) {
+        monthsCondition += `,age.gte.${filters.ageMin * 12}`;
+      }
+      if (filters.ageMax !== undefined) {
+        monthsCondition += `,age.lte.${filters.ageMax * 12}`;
+      }
+      conditions.push(`and(${monthsCondition})`);
+
+      let weeksCondition = "age_unit.eq.weeks";
+      if (filters.ageMin !== undefined) {
+        weeksCondition += `,age.gte.${filters.ageMin * 52}`;
+      }
+      if (filters.ageMax !== undefined) {
+        weeksCondition += `,age.lte.${filters.ageMax * 52}`;
+      }
+      conditions.push(`and(${weeksCondition})`);
+
+      let daysCondition = "age_unit.eq.days";
+      if (filters.ageMin !== undefined) {
+        daysCondition += `,age.gte.${Math.floor(filters.ageMin * 365)}`;
+      }
+      if (filters.ageMax !== undefined) {
+        daysCondition += `,age.lte.${Math.floor(filters.ageMax * 365)}`;
+      }
+      conditions.push(`and(${daysCondition})`);
+
+      query = query.or(conditions.join(","));
+    }
+
+    if (filters.type) {
+      query = query.eq("type", filters.type);
+    }
+    if (filters.presential !== undefined) {
+      query = query.eq("presential", filters.presential);
+    }
+    if (filters.smoker !== undefined) {
+      query = query.eq("smoker", filters.smoker);
+    }
+    if (filters.processNumber) {
+      query = query.eq("process_number", parseInt(filters.processNumber));
+    }
+    if (filters.location) {
+      query = query.eq("location", filters.location);
+    }
+    if (filters.autonomy) {
+      query = query.eq("autonomy", filters.autonomy);
+    }
+    if (filters.dateFrom) {
+      query = query.gte("date", filters.dateFrom);
+    }
+    if (filters.dateTo) {
+      query = query.lte("date", filters.dateTo);
+    }
+    if (filters.internship) {
+      query = query.eq("details->>internship", filters.internship);
+    }
+    if (filters.contraceptive) {
+      query = query.eq("details->>contraceptive", filters.contraceptive);
+    }
+    if (filters.new_contraceptive) {
+      query = query.eq("details->>new_contraceptive", filters.new_contraceptive);
+    }
+  }
+
+  const sortField = sorting?.field || "date";
+  const sortOrder = sorting?.order || "desc";
+
+  if (sortField === "age") {
+    const { data, error } = await query;
+
+    if (error) return failure(error, "getMGFConsultationsForExport");
+    if (!data) return success([]);
+
+    const sortedData = sortConsultationsWithFavorites(data, {
+      field: "age",
+      order: sortOrder,
+    });
+
+    return success(sortedData);
+  }
+
+  query = query
+    .order("favorite", { ascending: false, nullsFirst: false })
+    .order(sortField, { ascending: sortOrder === "asc" });
+
+  const { data, error } = await query;
+
+  if (error) return failure(error, "getMGFConsultationsForExport");
+  if (!data) return success([]);
+
+  return success(data);
+}
+
 // Metrics types
 export interface ConsultationMetrics {
   totalConsultations: number;

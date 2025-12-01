@@ -17,6 +17,10 @@ interface EmptyConsultationsStateProps {
   onHandleBulkDelete?: () => void;
   uiFilterConfig: FilterUIConfig | null;
   uiSortingConfig: SortingConfig | null;
+  onExportCsv?: () => void;
+  onExportExcel?: () => void;
+  isExportingCsv?: boolean;
+  isExportingExcel?: boolean;
 }
 
 export function EmptyConsultationsState({
@@ -32,6 +36,10 @@ export function EmptyConsultationsState({
   onHandleBulkDelete,
   uiFilterConfig,
   uiSortingConfig,
+  onExportCsv,
+  onExportExcel,
+  isExportingCsv,
+  isExportingExcel,
 }: EmptyConsultationsStateProps) {
   const yearText = specialtyYear
     ? ` ${specialtyCode.toUpperCase()}.${specialtyYear}`
@@ -51,6 +59,10 @@ export function EmptyConsultationsState({
         onHandleBulkDelete={onHandleBulkDelete}
         uiFilterConfig={uiFilterConfig}
         uiSortingConfig={uiSortingConfig}
+        onExportCsv={onExportCsv}
+        onExportExcel={onExportExcel}
+        isExportingCsv={isExportingCsv}
+        isExportingExcel={isExportingExcel}
       />
 
       {/* Empty state */}

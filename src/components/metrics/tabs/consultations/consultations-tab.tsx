@@ -7,12 +7,12 @@ import { CollapsibleContent } from "@radix-ui/react-collapsible";
 import { MetricCard } from "../../cards/metric-card";
 import { BreakdownTable } from "../../charts/breakdown-table";
 import { getFieldLabel } from "../../helpers";
-import { ConsultationFilters } from "@/components/filters/consultation-filters";
 import type { FilterUIConfig } from "@/components/filters/types";
 import { createFilterConfig } from "@/components/filters/helpers";
 import { METRICS_CONSULTATIONS_ENABLED_FIELDS } from "@/constants";
 import type { ConsultationsFilters, MetricsTabProps } from "../../helpers";
 import { EmptyMetricsState } from "../../empty-metrics-state";
+import { MetricsToolbar } from "../../metrics-toolbar";
 
 export function ConsultationsTab({
   specialty,
@@ -20,6 +20,8 @@ export function ConsultationsTab({
   setFilter,
   metrics,
   hasActiveFilters,
+  onExportExcel,
+  isExportingExcel,
 }: MetricsTabProps) {
   const filterConfig: FilterUIConfig = createFilterConfig({
     enabledFields: METRICS_CONSULTATIONS_ENABLED_FIELDS,
@@ -50,27 +52,33 @@ export function ConsultationsTab({
 
   return (
     <div className="flex flex-col h-full min-h-0 gap-3 pt-4 px-1">
-      {/* Filters - badges on left, button on right */}
-      <ConsultationFilters
-        config={filterConfig}
-        isLoading={!hasActiveFilters && metrics.totalConsultations === 0}
+      <MetricsToolbar
+        filterConfig={filterConfig}
+        hasActiveFilters={!!hasActiveFilters}
+        totalConsultations={metrics.totalConsultations}
+        onExportExcel={onExportExcel}
+        isExportingExcel={isExportingExcel}
       />
 
       <div className="grid gap-3 grid-cols-1 lg:grid-cols-2">
-        <BreakdownChart
-          title="Tipo de Consulta"
-          data={metrics.byType.map((item) => ({
-            label: item.label,
-            type: item.type,
-            value: item.count,
-          }))}
-        />
-        <MetricCard
-          title="Atendimento"
-          data={metrics.byPresential}
-          getKey={(item) => item.presential}
-          getLabel={(key) => (key === "true" ? "Presencial" : "Remoto")}
-        />
+        <div className="relative">
+          <BreakdownChart
+            title="Tipo de Consulta"
+            data={metrics.byType.map((item) => ({
+              label: item.label,
+              type: item.type,
+              value: item.count,
+            }))}
+          />
+        </div>
+        <div className="relative">
+          <MetricCard
+            title="Atendimento"
+            data={metrics.byPresential}
+            getKey={(item) => item.presential}
+            getLabel={(key) => (key === "true" ? "Presencial" : "Remoto")}
+          />
+        </div>
       </div>
       <div className="grid gap-3 grid-cols-1 lg:grid-cols-2">
         <Collapsible className="lg:col-span-2">

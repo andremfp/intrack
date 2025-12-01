@@ -23,13 +23,7 @@ import {
 } from "@/components/ui/sheet";
 import { X } from "lucide-react";
 import { IconFilter, IconX } from "@tabler/icons-react";
-import React, {
-  useState,
-  useCallback,
-  useEffect,
-  useRef,
-  useMemo,
-} from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useIsMobile } from "@/hooks/ui/use-mobile";
 import type { ConsultationFiltersProps } from "./types";
 import {
@@ -739,7 +733,11 @@ export function ConsultationFilters({
       )}
 
       {/* Filter button and popover/sheet on the right */}
-      <div className={config.badgeLocation === "outside" ? "ml-auto" : ""}>
+      <div
+        className={`flex items-center gap-2 ${
+          config.badgeLocation === "outside" ? "ml-auto" : ""
+        }`}
+      >
         {/* Filter trigger button */}
         {isMobile ? (
           <Sheet open={isOpen} onOpenChange={setIsOpen}>

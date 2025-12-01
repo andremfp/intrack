@@ -5,12 +5,12 @@ import { Collapsible } from "@radix-ui/react-collapsible";
 import { CollapsibleTrigger } from "@radix-ui/react-collapsible";
 import { CollapsibleContent } from "@radix-ui/react-collapsible";
 import { ICPC2CodeTable } from "../../charts/icpc2-code-table";
-import { ConsultationFilters } from "@/components/filters/consultation-filters";
 import type { FilterUIConfig } from "@/components/filters/types";
 import { createFilterConfig } from "@/components/filters/helpers";
 import { METRICS_ICPC2_ENABLED_FIELDS } from "@/constants";
 import type { MetricsTabProps } from "../../helpers";
 import { EmptyMetricsState } from "../../empty-metrics-state";
+import { MetricsToolbar } from "../../metrics-toolbar";
 
 export function ICPC2Tab({
   specialty,
@@ -18,6 +18,8 @@ export function ICPC2Tab({
   setFilter,
   metrics,
   hasActiveFilters,
+  onExportExcel,
+  isExportingExcel,
 }: MetricsTabProps) {
   // Memoize filterValues to prevent unnecessary re-renders and resets
   const filterValues = useMemo(
@@ -80,13 +82,12 @@ export function ICPC2Tab({
 
   return (
     <div className="flex flex-col h-full min-h-0 gap-3 pt-4 px-1">
-      {/* Filters - badges on left, button on right */}
-      <ConsultationFilters
-        config={filterConfig}
-        // Disable filters only when there is no data in the database (no metrics)
-        // and there are no active filters. If filters are active but metrics are
-        // empty due to them, keep the filters enabled so the user can clear them.
-        isLoading={!hasActiveFilters && metrics.totalConsultations === 0}
+      <MetricsToolbar
+        filterConfig={filterConfig}
+        hasActiveFilters={!!hasActiveFilters}
+        totalConsultations={metrics.totalConsultations}
+        onExportExcel={onExportExcel}
+        isExportingExcel={isExportingExcel}
       />
 
       <div className="flex flex-col gap-3 lg:px-6">

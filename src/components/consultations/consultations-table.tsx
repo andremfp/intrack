@@ -58,6 +58,10 @@ interface ConsultationsTableProps {
     onEdit?: (consultation: ConsultationMGF) => void;
     onDelete?: (id: string) => void;
     onFavoriteToggle?: () => void;
+    onExportCsv?: () => void;
+    onExportExcel?: () => void;
+    isExportingCsv?: boolean;
+    isExportingExcel?: boolean;
   };
   isLoading?: boolean;
 }
@@ -72,6 +76,10 @@ export function ConsultationsTable({
     onAddConsultation,
     onBulkDelete,
     onFavoriteToggle,
+    onExportCsv,
+    onExportExcel,
+    isExportingCsv,
+    isExportingExcel,
   } = {},
   isLoading = false,
 }: ConsultationsTableProps) {
@@ -151,6 +159,10 @@ export function ConsultationsTable({
         onHandleBulkDelete={handleBulkDelete}
         uiFilterConfig={uiFilterConfig}
         uiSortingConfig={uiSortingConfig}
+        onExportCsv={onExportCsv}
+        onExportExcel={onExportExcel}
+        isExportingCsv={isExportingCsv}
+        isExportingExcel={isExportingExcel}
       />
     );
   }
@@ -169,6 +181,10 @@ export function ConsultationsTable({
         onHandleBulkDelete={handleBulkDelete}
         uiFilterConfig={uiFilterConfig}
         uiSortingConfig={uiSortingConfig}
+        onExportCsv={onExportCsv}
+        onExportExcel={onExportExcel}
+        isExportingCsv={isExportingCsv}
+        isExportingExcel={isExportingExcel}
       />
 
       <div className="rounded-lg border overflow-hidden flex flex-col flex-1 min-h-0">
