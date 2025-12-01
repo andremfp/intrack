@@ -54,7 +54,7 @@ function getFieldType(field: string): "string" | "number" | "boolean" {
   ) {
     return "number";
   }
-  if (field === "presential" || field === "smoker") {
+  if (field === "presential") {
     return "boolean";
   }
   return "string";
@@ -267,6 +267,16 @@ export function getSexLabel(value: string): string {
   return sexOption?.label || value;
 }
 
+export function getSmokerLabel(value: string): string {
+  const smokerField = MGF_FIELDS.find(
+    (field) => field.key === "smoker"
+  );
+  const smokerOption = smokerField?.options?.find(
+    (opt) => opt.value === value
+  );
+  return smokerOption?.label || value;
+}
+
 export function getAutonomyLabel(value: string): string {
   const autonomyField = COMMON_CONSULTATION_FIELDS.find(
     (field) => field.key === "autonomy"
@@ -374,6 +384,10 @@ export function getNewContraceptiveOptions(): SpecialtyFieldOption[] {
   return MGF_FIELDS.find((field) => field.key === "new_contraceptive")?.options || [];
 }
 
+export function getSmokerOptions(): SpecialtyFieldOption[] {
+  return MGF_FIELDS.find((field) => field.key === "smoker")?.options || [];
+}
+
 // Unified display label helper
 export function generatePrettyFilterLabel(
   key: string,
@@ -423,7 +437,7 @@ export function generatePrettyFilterLabel(
     case "presential":
       return `Presencial: ${value ? "Sim" : "Não"}`;
     case "smoker":
-      return `Fumador: ${value ? "Sim" : "Não"}`;
+      return `Fumador: ${getSmokerLabel(value as string)}`;
     case "contraceptive":
       return `Contraceptivo: ${getContraceptiveLabel(value as string)}`;
     case "new_contraceptive":

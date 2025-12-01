@@ -35,7 +35,7 @@ export type ConsultationsFilters = {
   dateTo?: string;
   type?: string;
   presential?: boolean;
-  smoker?: boolean;
+  smoker?: string;
   contraceptive?: string;
   new_contraceptive?: string;
 };
@@ -491,7 +491,7 @@ export async function getConsultationMetrics(
       query = query.eq("presential", filters.presential);
     }
 
-    if (filters?.smoker !== undefined) {
+    if (filters?.smoker) {
       query = query.eq("smoker", filters.smoker);
     }
 
@@ -703,13 +703,13 @@ function calculateMetrics(
   const smokerCounts = new Map<string, number>();
   consultations.forEach((c) => {
     if (c.smoker !== null && c.smoker !== undefined) {
-      const key = c.smoker ? "true" : "false";
-      smokerCounts.set(key, (smokerCounts.get(key) || 0) + 1);
+      smokerCounts.set(c.smoker, (smokerCounts.get(c.smoker) || 0) + 1);
     }
   });
-  const bySmoker = Array.from(smokerCounts.entries()).map(
-    ([smoker, count]) => ({ smoker, count })
-  );
+  const bySmoker = Array.from(smokerCounts.entries()).map(([smoker, count]) => ({
+    smoker,
+    count,
+  }));
 
   // By contraceptive
   const contraceptiveCounts = new Map<string, number>();

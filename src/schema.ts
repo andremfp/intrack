@@ -154,7 +154,7 @@ export type Database = {
           presential: boolean | null
           process_number: number | null
           sex: string | null
-          smoker: boolean | null
+          smoker: string | null
           specialty_year: number | null
           type: string | null
           updated_at: string | null

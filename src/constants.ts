@@ -226,8 +226,12 @@ export const MGF_FIELDS: SpecialtyField[] = [
   {
     key: "smoker",
     label: "Fumador",
-    type: "boolean",
-    defaultValue: false,
+    type: "select",
+    options: [
+      { value: "sim", label: "Sim" },
+      { value: "nao", label: "Não" },
+      { value: "ex-fumador", label: "Ex-fumador" },
+    ],
     section: "clinical_history",
   },
   {

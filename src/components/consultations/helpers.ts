@@ -74,7 +74,7 @@ export function buildFiltersSummary(
     parts.push(`Presencial: ${currentFilters.presential ? "Sim" : "Não"}`);
   }
   if (currentFilters.smoker !== undefined) {
-    parts.push(`Fumador: ${currentFilters.smoker ? "Sim" : "Não"}`);
+    parts.push(`Fumador: ${currentFilters.smoker}`);
   }
   if (currentFilters.contraceptive) {
     parts.push(`Contraceptivo: ${currentFilters.contraceptive}`);
@@ -90,7 +90,7 @@ export function buildConsultationsExportMetadataRows(params: {
   filters: ConsultationsFilters;
   specialty: Specialty | null;
   specialtyYear: number | undefined;
-  activeTab: string;
+  activeTab?: string;
 }): (string | number | null)[][] {
   const { filters, specialty, specialtyYear, activeTab } = params;
 
@@ -104,10 +104,14 @@ export function buildConsultationsExportMetadataRows(params: {
       ? specialty.code.toUpperCase()
       : "N/A";
 
-  return [
+  // build output rows
+  const outputRows: (string | number | null)[][] = [
     ["Exportado em", exportDate],
     ["Especialidade", specialtyInfo],
     ["Filtros", filtersSummary],
-    ["Métricas", activeTab],
   ];
+  if (activeTab) {
+    outputRows.push(["Métricas", activeTab]);
+  }
+  return outputRows;
 }

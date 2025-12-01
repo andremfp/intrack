@@ -334,7 +334,7 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
     key: "smoker",
     header: "Fumador",
     source: "column",
-    formatter: (value) => formatBoolean(value),
+    formatter: (value) => formatWithOptions(mgfFieldByKey.get("smoker"), value),
   },
   {
     key: "favorite",
@@ -456,11 +456,11 @@ function formatSexForMetrics(sex: string): string {
   return labels[sex] ?? sex;
 }
 
-function formatBooleanCategory(value: string): string {
-  if (value === "true") return "Sim";
-  if (value === "false") return "Não";
-  return value;
-}
+// function formatBooleanCategory(value: string): string {
+//   if (value === "true") return "Sim";
+//   if (value === "false") return "Não";
+//   return value;
+// }
 
 function formatPresentialCategory(value: string): string {
   if (value === "true") return "Presencial";
@@ -568,7 +568,7 @@ export function buildMetricsExportSheets(params: {
         sheetName: "Fumador",
         headers: ["Categoria", "Consultas"],
         rows: metrics.bySmoker.map((item) => [
-          formatBooleanCategory(String(item.smoker)),
+          formatWithOptions(mgfFieldByKey.get("smoker"), item.smoker),
           item.count,
         ]),
       });

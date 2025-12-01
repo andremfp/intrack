@@ -26,11 +26,6 @@ const chartColors = [
   "var(--chart-5)",
 ];
 
-const smokerColorMap: Record<string, string> = {
-  true: "var(--smoker-true)",
-  false: "var(--smoker-false)",
-};
-
 export function StackedBarCard<T extends { count: number }>({
   title,
   data,
@@ -133,10 +128,7 @@ export function StackedBarCard<T extends { count: number }>({
       key,
       label: getLabel(key),
       count: item.count,
-      color:
-        getColor?.(key, index) ??
-        smokerColorMap[key] ??
-        chartColors[index % chartColors.length],
+      color: getColor?.(key, index) ?? chartColors[index % chartColors.length],
     };
   });
 

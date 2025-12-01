@@ -34,6 +34,7 @@ import {
   getTypeOptions,
   getContraceptiveOptions,
   getNewContraceptiveOptions,
+  getSmokerOptions,
   generatePrettyFilterLabel,
   buildFilterBadgeConfigs,
   hasValue,
@@ -201,6 +202,7 @@ export function ConsultationFilters({
   const typeOptions = getTypeOptions();
   const contraceptiveOptions = getContraceptiveOptions();
   const newContraceptiveOptions = getNewContraceptiveOptions();
+  const smokerOptions = getSmokerOptions();
 
   // Show internship selector when enabled and options exist
   const shouldShowInternship =
@@ -606,41 +608,35 @@ export function ConsultationFilters({
             )}
 
             {/* Smoker filter */}
-            {config.enabledFields.includes("smoker") && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">
-                  Fumador
-                </label>
-                <Select
-                  value={
-                    getFilterValue("smoker") === undefined
-                      ? "all"
-                      : getFilterValue("smoker")
-                      ? "yes"
-                      : "no"
-                  }
-                  onValueChange={(value) =>
-                    setFilterValue(
-                      "smoker",
-                      value === "all"
-                        ? undefined
-                        : value === "yes"
-                        ? true
-                        : false
-                    )
-                  }
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="yes">Sim</SelectItem>
-                    <SelectItem value="no">Não</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            {config.enabledFields.includes("smoker") &&
+              smokerOptions.length > 0 && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Fumador
+                  </label>
+                  <Select
+                    value={(getFilterValue("smoker") as string) || "all"}
+                    onValueChange={(value) =>
+                      setFilterValue(
+                        "smoker",
+                        value === "all" ? undefined : value
+                      )
+                    }
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      {smokerOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
             {/* Contraceptive filter */}
             {config.enabledFields.includes("contraceptive") &&

@@ -8,7 +8,10 @@ import { MetricCard } from "../../cards/metric-card";
 import { BreakdownTable } from "../../charts/breakdown-table";
 import { getFieldLabel } from "../../helpers";
 import type { FilterUIConfig } from "@/components/filters/types";
-import { createFilterConfig } from "@/components/filters/helpers";
+import {
+  createFilterConfig,
+  getSmokerLabel,
+} from "@/components/filters/helpers";
 import { METRICS_CONSULTATIONS_ENABLED_FIELDS } from "@/constants";
 import type { ConsultationsFilters, MetricsTabProps } from "../../helpers";
 import { EmptyMetricsState } from "../../empty-metrics-state";
@@ -97,7 +100,7 @@ export function ConsultationsTab({
               title="Fumadores"
               data={metrics.bySmoker}
               getKey={(item) => item.smoker}
-              getLabel={(key) => (key === "true" ? "Sim" : "Não")}
+              getLabel={(key) => getSmokerLabel(key)}
             />
           </CollapsibleContent>
         </Collapsible>
