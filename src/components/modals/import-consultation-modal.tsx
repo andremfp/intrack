@@ -9,10 +9,19 @@ import {
   parseXlsxFile,
   validateImportData,
 } from "@/imports/helpers";
-import { createConsultationsBatch } from "@/lib/api/consultations";
-import type { ConsultationInsert } from "@/lib/api/consultations";
+import {
+  createConsultationsBatch,
+  getUserConsultationsInDateRange,
+  updateConsultation,
+  type Consultation,
+  type ConsultationInsert,
+} from "@/lib/api/consultations";
 import type { Specialty } from "@/lib/api/specialties";
 import type { ImportPreviewData } from "@/imports/types";
+import {
+  makeConsultationKey,
+  makeConsultationKeyFromInsert,
+} from "@/components/consultations/helpers";
 import {
   Table,
   TableBody,
@@ -49,6 +58,14 @@ export function ImportConsultationModal({
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [parseError, setParseError] = useState<string | null>(null);
 
+  type DuplicateDecision = "create" | "keep-existing" | "overwrite";
+  const [duplicateDecisions, setDuplicateDecisions] = useState<
+    Record<number, DuplicateDecision>
+  >({});
+  const [duplicateExistingIds, setDuplicateExistingIds] = useState<
+    Record<number, string>
+  >({});
+
   const handleClose = () => {
     if (isParsing || isImporting) return;
     setIsClosing(true);
@@ -73,6 +90,8 @@ export function ImportConsultationModal({
       setParseError(null);
       setPreviewData(null);
       setSelectedRows(new Set());
+      setDuplicateDecisions({});
+      setDuplicateExistingIds({});
       setIsParsing(true);
 
       try {
@@ -119,6 +138,77 @@ export function ImportConsultationModal({
           }
         });
         setSelectedRows(validRowIndices);
+
+        // Detect duplicates against existing consultations for this user
+        const validConsultationsWithKeys = preview.consultations
+          .map((consultation, index) => {
+            if (consultation.errors.length > 0) return null;
+            const key = makeConsultationKeyFromInsert(
+              consultation.data as Partial<ConsultationInsert>
+            );
+            return key
+              ? {
+                  index,
+                  key,
+                  date: (consultation.data.date as string) || null,
+                }
+              : null;
+          })
+          .filter(
+            (
+              item
+            ): item is { index: number; key: string; date: string | null } =>
+              item !== null
+          );
+
+        if (validConsultationsWithKeys.length > 0) {
+          const dates = validConsultationsWithKeys
+            .map((item) => item.date)
+            .filter((date): date is string => !!date)
+            .sort();
+
+          if (dates.length > 0) {
+            const minDate = dates[0]!;
+            const maxDate = dates[dates.length - 1]!;
+
+            const existingResult = await getUserConsultationsInDateRange(
+              userId,
+              minDate,
+              maxDate
+            );
+
+            if (!existingResult.success) {
+              toast.error("Erro ao verificar duplicados", {
+                description: existingResult.error.userMessage,
+              });
+            } else {
+              const existingByKey = new Map<string, Consultation>();
+              existingResult.data.forEach((consultation) => {
+                const key = makeConsultationKey({
+                  date: consultation.date,
+                  processNumber: consultation.process_number,
+                });
+                existingByKey.set(key, consultation);
+              });
+
+              const nextDecisions: Record<number, DuplicateDecision> = {};
+              const nextExistingIds: Record<number, string> = {};
+
+              validConsultationsWithKeys.forEach(({ index, key }) => {
+                const existing = existingByKey.get(key);
+                if (existing) {
+                  nextDecisions[index] = "keep-existing";
+                  nextExistingIds[index] = existing.id;
+                } else {
+                  nextDecisions[index] = "create";
+                }
+              });
+
+              setDuplicateDecisions(nextDecisions);
+              setDuplicateExistingIds(nextExistingIds);
+            }
+          }
+        }
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Erro ao processar ficheiro";
@@ -200,42 +290,91 @@ export function ImportConsultationModal({
     setIsImporting(true);
 
     try {
-      const consultationsToImport: ConsultationInsert[] = [];
+      const toCreate: { index: number; data: ConsultationInsert }[] = [];
+      const toUpdate: {
+        index: number;
+        id: string;
+        data: ConsultationInsert;
+      }[] = [];
 
       selectedRows.forEach((index) => {
         const consultation = previewData.consultations[index];
         if (consultation.errors.length === 0) {
-          consultationsToImport.push(consultation.data as ConsultationInsert);
+          const data = consultation.data as ConsultationInsert;
+          const decision = duplicateDecisions[index] || "create";
+
+          if (decision === "keep-existing") {
+            // Skip this row entirely – keep existing consultation
+            return;
+          }
+
+          if (decision === "overwrite") {
+            const existingId = duplicateExistingIds[index];
+            if (existingId) {
+              toUpdate.push({ index, id: existingId, data });
+              return;
+            }
+          }
+
+          // Default: create new consultation
+          toCreate.push({ index, data });
         }
       });
 
-      if (consultationsToImport.length === 0) {
-        toast.error("Nenhuma consulta válida selecionada");
+      if (toCreate.length === 0 && toUpdate.length === 0) {
+        toast.error("Nenhuma consulta para importar");
         return;
       }
 
-      const result = await createConsultationsBatch(consultationsToImport);
+      let created = 0;
+      const perRowErrors: Array<{ index: number; error: string }> = [];
 
-      if (!result.success) {
-        toast.error("Erro ao importar consultas", {
-          description: result.error.userMessage,
-        });
-        return;
+      if (toCreate.length > 0) {
+        const createPayload = toCreate.map((item) => item.data);
+        const result = await createConsultationsBatch(createPayload);
+
+        if (!result.success) {
+          toast.error("Erro ao importar consultas", {
+            description: result.error.userMessage,
+          });
+          return;
+        }
+
+        created += result.data.created;
+        perRowErrors.push(...result.data.errors);
       }
 
-      const { created, errors } = result.data;
+      let updated = 0;
+      for (const { id, data, index } of toUpdate) {
+        const result = await updateConsultation(id, data);
+        if (!result.success) {
+          perRowErrors.push({
+            index,
+            error: result.error.userMessage,
+          });
+        } else {
+          updated += 1;
+        }
+      }
 
-      if (errors.length > 0) {
+      const totalRequested = toCreate.length + toUpdate.length;
+      const failedCount = perRowErrors.length;
+
+      if (failedCount > 0) {
         toast.warning(
-          `Importação parcial: ${created} de ${consultationsToImport.length} consultas importadas`,
+          `Importação parcial: ${
+            created + updated
+          } de ${totalRequested} consultas processadas`,
           {
-            description: `${errors.length} consultas falharam`,
+            description: `${failedCount} consultas falharam`,
           }
         );
       } else {
         toast.success(
-          `${created} consulta${created !== 1 ? "s" : ""} importada${
-            created !== 1 ? "s" : ""
+          `${created + updated} consulta${
+            created + updated !== 1 ? "s" : ""
+          } importada${created + updated !== 1 ? "s" : ""} / atualizada${
+            created + updated !== 1 ? "s" : ""
           } com sucesso!`
         );
       }
@@ -415,6 +554,7 @@ export function ImportConsultationModal({
                           <TableHead>Data</TableHead>
                           <TableHead>N° Processo</TableHead>
                           <TableHead>Tipologia</TableHead>
+                          <TableHead>Duplicado</TableHead>
                           <TableHead className="min-w-[200px]">Erros</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -424,6 +564,10 @@ export function ImportConsultationModal({
                             const data = consultation.data;
                             const hasErrors = consultation.errors.length > 0;
                             const isSelected = selectedRows.has(index);
+                            const decision = duplicateDecisions[index];
+                            const isDuplicate =
+                              decision === "keep-existing" ||
+                              decision === "overwrite";
 
                             return (
                               <TableRow
@@ -461,6 +605,63 @@ export function ImportConsultationModal({
                                         ).type || "-"
                                       )
                                     : "-"}
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  {hasErrors ? (
+                                    "-"
+                                  ) : isDuplicate ? (
+                                    <div className="flex flex-col gap-1">
+                                      <Badge
+                                        variant="outline"
+                                        className="text-xs border-amber-300 bg-amber-50 text-amber-800"
+                                      >
+                                        Duplicada
+                                      </Badge>
+                                      <div className="flex gap-1">
+                                        <Button
+                                          type="button"
+                                          variant={
+                                            decision === "keep-existing"
+                                              ? "default"
+                                              : "outline"
+                                          }
+                                          size="sm"
+                                          onClick={() =>
+                                            setDuplicateDecisions((prev) => ({
+                                              ...prev,
+                                              [index]: "keep-existing",
+                                            }))
+                                          }
+                                        >
+                                          Manter existente
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          variant={
+                                            decision === "overwrite"
+                                              ? "default"
+                                              : "outline"
+                                          }
+                                          size="sm"
+                                          onClick={() =>
+                                            setDuplicateDecisions((prev) => ({
+                                              ...prev,
+                                              [index]: "overwrite",
+                                            }))
+                                          }
+                                        >
+                                          Substituir
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200"
+                                    >
+                                      Nova
+                                    </Badge>
+                                  )}
                                 </TableCell>
                                 <TableCell>
                                   {hasErrors ? (

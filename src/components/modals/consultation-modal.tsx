@@ -16,6 +16,7 @@ import {
   createConsultation,
   updateConsultation,
   prepareConsultationDetails,
+  getConsultationByDateAndProcessNumber,
 } from "@/lib/api/consultations";
 import type {
   ConsultationInsert,
@@ -96,6 +97,29 @@ export function ConsultationModal({
     if (validationError) {
       showFieldError(validationError.key, validationError.message);
       return;
+    }
+
+    // Pre-submit uniqueness check for new consultations:
+    // block creation if another consultation exists with the same date + process_number.
+    if (!isEditing) {
+      const date = formValues.date as string;
+      const processNumber = parseInt(formValues.process_number as string, 10);
+
+      if (!Number.isNaN(processNumber)) {
+        const duplicateCheck = await getConsultationByDateAndProcessNumber({
+          userId,
+          date,
+          processNumber,
+        });
+
+        if (duplicateCheck.success && duplicateCheck.data) {
+          const message =
+            "Já existe uma consulta com esta data e número de processo.";
+          toast.error(message);
+          showFieldError("process_number", message);
+          return;
+        }
+      }
     }
 
     setIsSaving(true);
