@@ -62,6 +62,7 @@ interface ConsultationsTableProps {
     onExportExcel?: () => void;
     isExportingCsv?: boolean;
     isExportingExcel?: boolean;
+    onImport?: () => void;
   };
   isLoading?: boolean;
 }
@@ -71,7 +72,10 @@ export function ConsultationsTable({
   pagination: { currentPage, pageSize, onPageChange },
   specialty = { code: SPECIALTY_CODES.MGF },
   filters: { filters, sorting, setFilter, onSortingChange },
-  actions: {
+  actions = {},
+  isLoading = false,
+}: ConsultationsTableProps) {
+  const {
     onRowClick,
     onAddConsultation,
     onBulkDelete,
@@ -80,9 +84,9 @@ export function ConsultationsTable({
     onExportExcel,
     isExportingCsv,
     isExportingExcel,
-  } = {},
-  isLoading = false,
-}: ConsultationsTableProps) {
+    onImport,
+  } = actions || {};
+
   const specialtyCode = specialty.code ?? SPECIALTY_CODES.MGF;
   const specialtyYear = specialty.year;
 
@@ -163,6 +167,7 @@ export function ConsultationsTable({
         onExportExcel={onExportExcel}
         isExportingCsv={isExportingCsv}
         isExportingExcel={isExportingExcel}
+        onImport={onImport}
       />
     );
   }
@@ -185,6 +190,7 @@ export function ConsultationsTable({
         onExportExcel={onExportExcel}
         isExportingCsv={isExportingCsv}
         isExportingExcel={isExportingExcel}
+        onImport={onImport}
       />
 
       <div className="rounded-lg border overflow-hidden flex flex-col flex-1 min-h-0">

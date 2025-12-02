@@ -8,7 +8,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, Upload } from "lucide-react";
 import type { FilterUIConfig } from "@/components/filters/types";
 import type { SortingConfig } from "@/components/filters/types";
 
@@ -129,6 +129,7 @@ interface TableToolbarProps {
   onExportExcel?: () => void;
   isExportingCsv?: boolean;
   isExportingExcel?: boolean;
+  onImport?: () => void;
 }
 
 export function TableToolbar({
@@ -147,6 +148,7 @@ export function TableToolbar({
   onExportExcel,
   isExportingCsv,
   isExportingExcel,
+  onImport,
 }: TableToolbarProps) {
   return (
     <div className="flex items-center justify-between flex-shrink-0 gap-2 pt-2">
@@ -179,14 +181,30 @@ export function TableToolbar({
           </Button>
         )}
 
-        {!isDeleteMode && (onExportCsv || onExportExcel) && (
-          <ExportButton
-            onExportCsv={onExportCsv}
-            onExportExcel={onExportExcel}
-            isExportingCsv={isExportingCsv}
-            isExportingExcel={isExportingExcel}
-            isLoading={isLoading}
-          />
+        {!isDeleteMode && (
+          <div className="flex items-center gap-2">
+            {onImport && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onImport}
+                disabled={isLoading}
+                className="h-8 flex-shrink-0"
+              >
+                <Upload className="h-4 w-4" />
+                <span className="hidden sm:inline">Importar</span>
+              </Button>
+            )}
+            {onExportCsv || onExportExcel ? (
+              <ExportButton
+                onExportCsv={onExportCsv}
+                onExportExcel={onExportExcel}
+                isExportingCsv={isExportingCsv}
+                isExportingExcel={isExportingExcel}
+                isLoading={isLoading}
+              />
+            ) : null}
+          </div>
         )}
 
         {/* Delete mode actions */}

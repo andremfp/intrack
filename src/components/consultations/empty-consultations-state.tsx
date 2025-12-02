@@ -21,6 +21,7 @@ interface EmptyConsultationsStateProps {
   onExportExcel?: () => void;
   isExportingCsv?: boolean;
   isExportingExcel?: boolean;
+  onImport?: () => void;
 }
 
 export function EmptyConsultationsState({
@@ -40,6 +41,7 @@ export function EmptyConsultationsState({
   onExportExcel,
   isExportingCsv,
   isExportingExcel,
+  onImport,
 }: EmptyConsultationsStateProps) {
   const yearText = specialtyYear
     ? ` ${specialtyCode.toUpperCase()}.${specialtyYear}`
@@ -63,6 +65,7 @@ export function EmptyConsultationsState({
         onExportExcel={onExportExcel}
         isExportingCsv={isExportingCsv}
         isExportingExcel={isExportingExcel}
+        onImport={onImport}
       />
 
       {/* Empty state */}

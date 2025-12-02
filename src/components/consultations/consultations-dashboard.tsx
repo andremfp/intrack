@@ -20,6 +20,7 @@ import { downloadCsv, downloadXlsx } from "@/exports/helpers";
 import type { ExportSheet } from "@/exports/types";
 import { errorToast } from "@/utils/error-toast";
 import { buildConsultationsExportMetadataRows } from "@/components/consultations/helpers";
+import { ImportConsultationModal } from "@/components/modals/import-consultation-modal";
 
 interface ConsultationsDashboardProps {
   userId: string | undefined;
@@ -56,6 +57,7 @@ export function ConsultationsDashboard({
 
   const [isExportingCsv, setIsExportingCsv] = useState(false);
   const [isExportingExcel, setIsExportingExcel] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const {
     consultations,
@@ -174,38 +176,56 @@ export function ConsultationsDashboard({
   }
 
   return (
-    <div className="flex-1 flex flex-col relative min-h-0">
-      <ConsultationsTable
-        data={{
-          consultations,
-          totalCount,
-        }}
-        pagination={{
-          currentPage,
-          pageSize: PAGINATION_CONSTANTS.CONSULTATIONS_PAGE_SIZE,
-          onPageChange: handlePageChange,
-        }}
-        specialty={{
-          code: specialty?.code,
-          year: specialty && specialty.years > 1 ? specialtyYear : undefined,
-        }}
-        filters={{
-          filters,
-          sorting,
-          setFilter,
-          onSortingChange: handleSortingChange,
-        }}
-        actions={{
-          onRowClick,
-          onAddConsultation,
-          onBulkDelete: handleBulkDelete,
-          onExportCsv: () => handleExport("csv"),
-          onExportExcel: () => handleExport("xlsx"),
-          isExportingCsv,
-          isExportingExcel,
-        }}
-        isLoading={isLoading}
-      />
-    </div>
+    <>
+      <div className="flex-1 flex flex-col relative min-h-0">
+        <ConsultationsTable
+          data={{
+            consultations,
+            totalCount,
+          }}
+          pagination={{
+            currentPage,
+            pageSize: PAGINATION_CONSTANTS.CONSULTATIONS_PAGE_SIZE,
+            onPageChange: handlePageChange,
+          }}
+          specialty={{
+            code: specialty?.code,
+            year: specialty && specialty.years > 1 ? specialtyYear : undefined,
+          }}
+          filters={{
+            filters,
+            sorting,
+            setFilter,
+            onSortingChange: handleSortingChange,
+          }}
+          actions={{
+            onRowClick,
+            onAddConsultation,
+            onBulkDelete: handleBulkDelete,
+            onExportCsv: () => handleExport("csv"),
+            onExportExcel: () => handleExport("xlsx"),
+            isExportingCsv,
+            isExportingExcel,
+            onImport: () => setIsImportModalOpen(true),
+          }}
+          isLoading={isLoading}
+        />
+      </div>
+
+      {isImportModalOpen &&
+        userId &&
+        specialty &&
+        specialtyYear !== undefined && (
+          <ImportConsultationModal
+            userId={userId}
+            specialty={specialty}
+            specialtyYear={specialtyYear}
+            onClose={() => setIsImportModalOpen(false)}
+            onImportComplete={() => {
+              refreshConsultations();
+            }}
+          />
+        )}
+    </>
   );
 }

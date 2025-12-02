@@ -120,6 +120,62 @@ export async function deleteConsultation(
   return success();
 }
 
+export async function createConsultationsBatch(
+  consultations: ConsultationInsert[]
+): Promise<
+  ApiResponse<{ created: number; errors: Array<{ index: number; error: string }> }>
+> {
+  if (consultations.length === 0) {
+    return success({ created: 0, errors: [] });
+  }
+
+  // Supabase supports batch insert, but we need to handle errors per row
+  // We'll insert in chunks to avoid overwhelming the database
+  const CHUNK_SIZE = 100;
+  const chunks: ConsultationInsert[][] = [];
+  for (let i = 0; i < consultations.length; i += CHUNK_SIZE) {
+    chunks.push(consultations.slice(i, i + CHUNK_SIZE));
+  }
+
+  let totalCreated = 0;
+  const errors: Array<{ index: number; error: string }> = [];
+  let globalIndex = 0;
+
+  for (const chunk of chunks) {
+    const { data, error } = await supabase
+      .from("consultations")
+      .insert(chunk)
+      .select();
+
+    if (error) {
+      // If batch insert fails, try inserting one by one to identify problematic rows
+      for (let i = 0; i < chunk.length; i++) {
+        const consultation = chunk[i];
+        const { error: singleError } = await supabase
+          .from("consultations")
+          .insert(consultation)
+          .select()
+          .single();
+
+        if (singleError) {
+          errors.push({
+            index: globalIndex + i,
+            error: singleError.message || "Erro desconhecido",
+          });
+        } else {
+          totalCreated++;
+        }
+      }
+    } else {
+      totalCreated += data?.length || 0;
+    }
+
+    globalIndex += chunk.length;
+  }
+
+  return success({ created: totalCreated, errors });
+}
+
 
 // Generic sorting options for consultations (works for any specialty)
 export interface ConsultationsSorting extends Record<string, unknown> {
