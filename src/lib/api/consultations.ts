@@ -2,6 +2,7 @@ import { supabase } from "@/supabase";
 import type { ApiResponse } from "@/errors";
 import type { Tables, TablesInsert, TablesUpdate } from "@/schema";
 import { success, failure, AppError } from "@/errors";
+import { normalizeToISODate } from "@/utils/utils";
 import {
   getDefaultSpecialtyDetails,
   type SpecialtyDetails,
@@ -174,6 +175,54 @@ export async function createConsultationsBatch(
   }
 
   return success({ created: totalCreated, errors });
+}
+
+/**
+ * Fetches all consultations for a user in a given date range (inclusive).
+ * Used by the import flow to detect duplicates by (date + process_number).
+ */
+export async function getUserConsultationsInDateRange(
+  userId: string,
+  dateFrom: string,
+  dateTo: string
+): Promise<ApiResponse<Consultation[]>> {
+  const normalizedFrom = normalizeToISODate(dateFrom);
+  const normalizedTo = normalizeToISODate(dateTo);
+
+  const { data, error } = await supabase
+    .from("consultations")
+    .select("*")
+    .eq("user_id", userId)
+    .gte("date", normalizedFrom)
+    .lte("date", normalizedTo);
+
+  if (error) return failure(error, "getUserConsultationsInDateRange");
+  return success(data || []);
+}
+
+/**
+ * Fetches a single consultation by (user_id, date, process_number).
+ * Returns null when no consultation exists for that key.
+ */
+export async function getConsultationByDateAndProcessNumber(params: {
+  userId: string;
+  date: string;
+  processNumber: number;
+}): Promise<ApiResponse<Consultation | null>> {
+  const normalizedDate = normalizeToISODate(params.date);
+
+  const { data, error } = await supabase
+    .from("consultations")
+    .select("*")
+    .eq("user_id", params.userId)
+    .eq("date", normalizedDate)
+    .eq("process_number", params.processNumber)
+    .limit(1);
+
+  if (error) return failure(error, "getConsultationByDateAndProcessNumber");
+
+  const consultation = Array.isArray(data) && data.length > 0 ? data[0] : null;
+  return success(consultation);
 }
 
 

@@ -44,7 +44,22 @@ export function handleError(error: unknown, context?: string): AppError {
 
   // Supabase errors
   if (error && typeof error === "object" && "code" in error) {
-    const supaError = error as { code: string };
+    const supaError = error as { code: string; message?: string; details?: string };
+
+    // Unique constraint violation on consultations (date + process_number)
+    if (supaError.code === "23505") {
+      const details = supaError.details || supaError.message || "";
+      if (
+        typeof details === "string" &&
+        details.includes("consultations_unique_date_process")
+      ) {
+        return new AppError(
+          "Já existe uma consulta com esta data e número de processo.",
+          error
+        );
+      }
+    }
+
     if (supaError.code === "PGRST116") {
       return new AppError(ErrorMessages.USER_NOT_FOUND, error);
     }

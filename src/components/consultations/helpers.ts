@@ -1,8 +1,10 @@
 import type {
+  ConsultationInsert,
   ConsultationMGF,
   ConsultationsFilters,
 } from "@/lib/api/consultations";
 import type { Specialty } from "@/lib/api/specialties";
+import { normalizeToISODate } from "@/utils/utils";
 
 /**
  * Gets a field value from a consultation object.
@@ -114,4 +116,58 @@ export function buildConsultationsExportMetadataRows(params: {
     outputRows.push(["Métricas", activeTab]);
   }
   return outputRows;
+}
+
+/**
+ * Builds a stable uniqueness key for a consultation based on
+ * calendar-day date (YYYY-MM-DD) + process number.
+ */
+export function makeConsultationKey(params: {
+  date: string;
+  processNumber: number | string;
+}): string {
+  const normalizedDate = normalizeToISODate(params.date);
+  const normalizedProcessNumber =
+    typeof params.processNumber === "string"
+      ? params.processNumber.trim()
+      : String(params.processNumber);
+
+  return `${normalizedDate}::${normalizedProcessNumber}`;
+}
+
+/**
+ * Builds a uniqueness key from a ConsultationInsert-like object.
+ * Returns null if required fields are missing.
+ */
+export function makeConsultationKeyFromInsert(
+  consultation: Partial<ConsultationInsert>
+): string | null {
+  if (!consultation.date || consultation.process_number === undefined) {
+    return null;
+  }
+
+  return makeConsultationKey({
+    date: consultation.date,
+    processNumber: consultation.process_number,
+  });
+}
+
+/**
+ * Compares two consultations (or consultation-like objects) by identity:
+ * same calendar-day date + process number.
+ */
+export function areConsultationsSameIdentity<
+  T extends { date: string; process_number: number | string }
+>(a: T, b: T): boolean {
+  const keyA = makeConsultationKey({
+    date: a.date,
+    processNumber: a.process_number,
+  });
+
+  const keyB = makeConsultationKey({
+    date: b.date,
+    processNumber: b.process_number,
+  });
+
+  return keyA === keyB;
 }
