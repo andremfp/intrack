@@ -216,6 +216,7 @@ export function useConsultations({
       } finally {
         // Always refresh to show any partial deletions or current state
         await refreshAfterDelete();
+        setIsLoading(false);
       }
     },
     [userId, currentPage, loadConsultations]
