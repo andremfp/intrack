@@ -23,6 +23,7 @@ interface ComboboxFieldProps {
   value: string | string[];
   errorMessage?: string;
   onUpdate: (value: string | string[]) => void;
+  isRequired?: boolean; // Optional override for required status
 }
 
 export function ComboboxField({
@@ -30,11 +31,13 @@ export function ComboboxField({
   value,
   errorMessage,
   onUpdate,
+  isRequired,
 }: ComboboxFieldProps) {
   const fieldId = field.key;
   const isInvalid = Boolean(errorMessage);
   const stringValue = typeof value === "string" ? value : "";
   const [open, setOpen] = React.useState(false);
+  const required = isRequired !== undefined ? isRequired : field.required;
 
   // Sort options alphabetically
   const sortedOptions = React.useMemo(
@@ -52,7 +55,7 @@ export function ComboboxField({
     <div className="space-y-2">
       <Label htmlFor={fieldId} className="text-sm font-medium">
         {field.label}
-        {field.required && <span className="text-destructive ml-1">*</span>}
+        {required && <span className="text-destructive ml-1">*</span>}
       </Label>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>

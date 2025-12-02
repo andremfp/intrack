@@ -102,6 +102,7 @@ export const COMMON_CONSULTATION_FIELDS: SpecialtyField[] = [
       { value: "emergency_unit", label: "Serviço de Urgência" },
       { value: "complementary", label: "Formação Complementar" },
       { value: "short_course", label: "Formação Curta" },
+      { value: "other", label: "Outro" },
     ],
   },
   {
@@ -166,7 +167,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
     key: "type",
     label: "Tipologia",
     type: "select",
-    required: true,
+    required: false, // Conditionally required: only when location is 'health_unit'
     section: "consultation_type",
     options: [
       { value: "SA", label: "Saúde Adulto" },

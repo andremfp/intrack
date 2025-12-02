@@ -22,10 +22,15 @@ function getAllRequiredFields(
   const requiredFields = [
     ...COMMON_CONSULTATION_FIELDS.filter((f) => f.required),
     ...specialtyFields.filter((f) => {
-      // Internship is only required when location is not 'health_unit'
+      // Internship is only required when location is not 'health_unit' and not 'other'
       if (f.key === "internship") {
         const location = formValues?.location;
-        return location && location !== "health_unit";
+        return location && location !== "health_unit" && location !== "other";
+      }
+      // Type is only required when location is 'health_unit'
+      if (f.key === "type") {
+        const location = formValues?.location;
+        return location === "health_unit";
       }
       return f.required;
     }),

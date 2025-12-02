@@ -14,6 +14,7 @@ interface ConsultationFieldProps {
   errorMessage?: string;
   onUpdate: (value: string | string[]) => void;
   icpc2Codes?: ICPC2Code[];
+  isRequired?: boolean; // Optional override for required status
 }
 
 export function ConsultationField({
@@ -22,12 +23,14 @@ export function ConsultationField({
   errorMessage,
   onUpdate,
   icpc2Codes = [],
+  isRequired,
 }: ConsultationFieldProps) {
   const commonProps = {
     field,
     value,
     errorMessage,
     onUpdate,
+    isRequired,
   };
 
   switch (field.type) {
@@ -61,6 +64,7 @@ export function ConsultationFieldWithLayout({
   onUpdate,
   icpc2Codes,
   className,
+  isRequired,
 }: ConsultationFieldWithLayoutProps) {
   const requiresFullSpan =
     field.type === "text-list" ||
@@ -87,6 +91,7 @@ export function ConsultationFieldWithLayout({
         errorMessage={errorMessage}
         onUpdate={onUpdate}
         icpc2Codes={icpc2Codes}
+        isRequired={isRequired}
       />
     </div>
   );
