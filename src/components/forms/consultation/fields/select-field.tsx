@@ -13,6 +13,7 @@ interface SelectFieldProps {
   value: string | string[];
   errorMessage?: string;
   onUpdate: (value: string | string[]) => void;
+  isRequired?: boolean; // Optional override for required status
 }
 
 export function SelectField({
@@ -20,21 +21,23 @@ export function SelectField({
   value,
   errorMessage,
   onUpdate,
+  isRequired,
 }: SelectFieldProps) {
   const fieldId = field.key;
   const isInvalid = Boolean(errorMessage);
   const stringValue = typeof value === "string" ? value : "";
+  const required = isRequired !== undefined ? isRequired : field.required;
 
   return (
     <div className="space-y-2">
       <Label htmlFor={fieldId} className="text-sm font-medium">
         {field.label}
-        {field.required && <span className="text-destructive ml-1">*</span>}
+        {required && <span className="text-destructive ml-1">*</span>}
       </Label>
       <Select
         value={stringValue}
         onValueChange={(val) => onUpdate(val)}
-        required={field.required}
+        required={required}
       >
         <SelectTrigger
           id={fieldId}

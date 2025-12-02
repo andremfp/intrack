@@ -270,11 +270,16 @@ export function validateLocationAndInternship(
 
   const locationField = getFieldByKey("location");
   const internshipField = getFieldByKey("internship");
+  const typeField = getFieldByKey("type");
 
   const location = consultation.location;
   const internship =
     consultation.details && typeof consultation.details === "object"
       ? (consultation.details as Record<string, unknown>).internship
+      : undefined;
+  const type =
+    consultation.details && typeof consultation.details === "object"
+      ? (consultation.details as Record<string, unknown>).type
       : undefined;
 
   // Validate location value
@@ -293,6 +298,12 @@ export function validateLocationAndInternship(
     if (internshipError) errors.push(internshipError);
   }
 
+  // Validate type value (if provided)
+  if (typeField) {
+    const typeError = validateSelectValue(typeField, type, rowIndex);
+    if (typeError) errors.push(typeError);
+  }
+
   // Validate location/internship relationship (only if location is valid)
   if (
     location &&
@@ -301,6 +312,8 @@ export function validateLocationAndInternship(
   ) {
     const hasInternship =
       internship !== null && internship !== undefined && internship !== "";
+    const hasType =
+      type !== null && type !== undefined && type !== "";
 
     if (location === "health_unit") {
       if (hasInternship) {
@@ -308,15 +321,36 @@ export function validateLocationAndInternship(
           rowIndex,
           field: "internship",
           message:
-            "Estágio não é permitido para o local 'Unidade de Saúde'. Remova o estágio para este local.",
+            "Estágio não é permitido para o local 'Unidade de Saúde'. Remove o estágio para este local.",
         });
       }
+      // Type is required when location is 'health_unit'
+      if (!hasType) {
+        errors.push({
+          rowIndex,
+          field: "type",
+          message: `Campo obrigatório: ${typeField?.label || "Tipologia"}. A tipologia é obrigatória para o local 'Unidade de Saúde'.`,
+        });
+      }
+    } else if (location === "other") {
+      // Internship is optional when location is 'other'
+      // Type is optional when location is 'other'
+      // No validation needed
     } else {
+      // Internship is required for all other locations
       if (!hasInternship) {
         errors.push({
           rowIndex,
           field: "internship",
-          message: `Campo obrigatório: ${internshipField?.label || "Estágio"}. O estágio é obrigatório para locais diferentes de 'Unidade de Saúde'.`,
+          message: `Campo obrigatório: ${internshipField?.label || "Estágio"}. O estágio é obrigatório para este local.`,
+        });
+      }
+      // Type should not be present when location is not 'health_unit' or 'other'
+      if (hasType) {
+        errors.push({
+          rowIndex,
+          field: "type",
+          message: `Tipologia não é permitida para o local '${locationField?.options?.find(opt => opt.value === location)?.label || location}'. Remove a tipologia para este local.`,
         });
       }
     }

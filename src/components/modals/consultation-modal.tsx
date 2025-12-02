@@ -417,6 +417,12 @@ export function ConsultationModal({
                           currentLocation === "health_unit"
                         ) {
                           return false;
+                        } else if (
+                          field.key === "type" &&
+                          currentLocation !== "health_unit" &&
+                          currentLocation !== "other"
+                        ) {
+                          return false;
                         }
                         return true;
                       });
@@ -441,22 +447,43 @@ export function ConsultationModal({
                                 {sectionLabel}
                               </h4>
                               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                {visibleFields.map((field) => (
-                                  <ConsultationFieldWithLayout
-                                    key={field.key}
-                                    field={field}
-                                    value={formValues[field.key] || ""}
-                                    errorMessage={
-                                      fieldError?.key === field.key
-                                        ? fieldError.message
-                                        : undefined
-                                    }
-                                    onUpdate={(value) =>
-                                      updateField(field.key, value)
-                                    }
-                                    icpc2Codes={icpc2Codes}
-                                  />
-                                ))}
+                                {visibleFields.map((field) => {
+                                  // Type field is required only when location is 'health_unit'
+                                  const isTypeRequired =
+                                    field.key === "type" &&
+                                    currentLocation === "health_unit";
+                                  // Internship is required when location is not 'health_unit' and not 'other'
+                                  const isInternshipRequired =
+                                    field.key === "internship" &&
+                                    typeof currentLocation === "string" &&
+                                    currentLocation !== "" &&
+                                    currentLocation !== "health_unit" &&
+                                    currentLocation !== "other";
+                                  const isRequired =
+                                    field.key === "type"
+                                      ? isTypeRequired
+                                      : field.key === "internship"
+                                      ? isInternshipRequired
+                                      : undefined;
+
+                                  return (
+                                    <ConsultationFieldWithLayout
+                                      key={field.key}
+                                      field={field}
+                                      value={formValues[field.key] || ""}
+                                      errorMessage={
+                                        fieldError?.key === field.key
+                                          ? fieldError.message
+                                          : undefined
+                                      }
+                                      onUpdate={(value) =>
+                                        updateField(field.key, value)
+                                      }
+                                      icpc2Codes={icpc2Codes}
+                                      isRequired={isRequired}
+                                    />
+                                  );
+                                })}
                               </div>
                             </div>
                           )}

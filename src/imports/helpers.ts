@@ -431,7 +431,9 @@ function validateRequiredFields(
 
   const requiredFields = [
     ...COMMON_CONSULTATION_FIELDS.filter((f) => f.required),
-    ...specialtyFields.filter((f) => f.required && f.key !== "internship"), // Skip internship - handled separately
+    ...specialtyFields.filter(
+      (f) => f.required && f.key !== "internship" && f.key !== "type"
+    ), // Skip internship and type - handled separately
   ];
 
   for (const field of requiredFields) {
