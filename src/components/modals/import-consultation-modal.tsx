@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { IconX, IconUpload, IconFileSpreadsheet } from "@tabler/icons-react";
 import { toast } from "sonner";
-import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle2, HelpCircle } from "lucide-react";
 import {
   parseCsvFile,
   parseXlsxFile,
@@ -32,6 +32,8 @@ import {
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { ImportSchemaGuide } from "@/imports/schema-guide-component";
+import { SCROLLBAR_CLASSES } from "@/constants";
 
 interface ImportConsultationModalProps {
   userId: string;
@@ -65,6 +67,7 @@ export function ImportConsultationModal({
   const [duplicateExistingIds, setDuplicateExistingIds] = useState<
     Record<number, string>
   >({});
+  const [showSchemaGuide, setShowSchemaGuide] = useState(false);
 
   const handleClose = () => {
     if (isParsing || isImporting) return;
@@ -405,6 +408,33 @@ export function ImportConsultationModal({
         onClick={handleClose}
       />
 
+      {/* Schema Guide Modal */}
+      {showSchemaGuide && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowSchemaGuide(false)}
+          />
+          <Card className="relative max-w-4xl max-h-[90vh] overflow-hidden w-full">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Guia de Importação</CardTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowSchemaGuide(false)}
+              >
+                <IconX className="h-4 w-4" />
+              </Button>
+            </CardHeader>
+            <CardContent
+              className={`max-h-[calc(90vh-80px)] overflow-y-auto ${SCROLLBAR_CLASSES}`}
+            >
+              <ImportSchemaGuide specialtyCode={specialty?.code || "mgf"} />
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Modal Container */}
       <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center pointer-events-none sm:mx-4">
         <Card
@@ -414,10 +444,22 @@ export function ImportConsultationModal({
               : "animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95"
           }`}
         >
-          <CardHeader className="sticky top-0 z-20 pt-3 !pb-3 sm:pt-4 sm:!pb-4 px-4 sm:px-6 flex flex-row items-center justify-between flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b shadow-sm">
-            <CardTitle className="text-lg sm:text-xl font-semibold">
-              Importar Consultas
-            </CardTitle>
+          <CardHeader className="sticky top-0 z-20 pt-3 !pb-3 sm:pt-4 sm:!pb-4 px-4 sm:px-6 flex flex-row items-start sm:items-center justify-between gap-2 flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b shadow-sm">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 min-w-0 flex-1">
+              <CardTitle className="text-lg sm:text-xl font-semibold">
+                Importar Consultas
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSchemaGuide(true)}
+                className="text-primary hover:text-primary/80 h-8 px-2 sm:px-3 text-xs sm:text-sm"
+              >
+                <HelpCircle className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Guia de Importação</span>
+                <span className="sm:hidden">Guia</span>
+              </Button>
+            </div>
             <Button
               variant="ghost"
               size="icon"
@@ -463,6 +505,7 @@ export function ImportConsultationModal({
                         <p className="text-xs text-muted-foreground mb-4">
                           ou clique para selecionar
                         </p>
+
                         <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                           <IconFileSpreadsheet className="h-4 w-4" />
                           <span>CSV, XLSX, Numbers</span>
@@ -492,37 +535,43 @@ export function ImportConsultationModal({
               {previewData && (
                 <div className="space-y-4">
                   {/* Summary */}
-                  <div className="flex flex-wrap items-center gap-4 p-4 rounded-lg border bg-muted/30">
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg border bg-muted/30">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">Total:</span>
-                      <Badge variant="outline">
+                      <span className="text-xs sm:text-sm font-medium">
+                        Total:
+                      </span>
+                      <Badge variant="outline" className="text-xs">
                         {previewData.summary.total}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-green-600" />
-                      <span className="text-sm font-medium">Válidas:</span>
+                      <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600" />
+                      <span className="text-xs sm:text-sm font-medium">
+                        Válidas:
+                      </span>
                       <Badge
                         variant="outline"
-                        className="bg-green-50 text-green-700 border-green-200"
+                        className="bg-green-50 text-green-700 border-green-200 text-xs"
                       >
                         {previewData.summary.valid}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4 text-destructive" />
-                      <span className="text-sm font-medium">Inválidas:</span>
+                      <AlertCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-destructive" />
+                      <span className="text-xs sm:text-sm font-medium">
+                        Inválidas:
+                      </span>
                       <Badge
                         variant="outline"
-                        className="bg-destructive/10 text-destructive border-destructive/20"
+                        className="bg-destructive/10 text-destructive border-destructive/20 text-xs"
                       >
                         {previewData.summary.invalid}
                       </Badge>
                     </div>
                     {file && (
-                      <div className="flex items-center gap-2 ml-auto">
-                        <IconFileSpreadsheet className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2 ml-auto min-w-0">
+                        <IconFileSpreadsheet className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+                        <span className="text-xs text-muted-foreground truncate max-w-[150px] sm:max-w-none">
                           {file.name}
                         </span>
                       </div>
@@ -530,8 +579,8 @@ export function ImportConsultationModal({
                   </div>
 
                   {/* Table */}
-                  <div className="border rounded-lg overflow-hidden">
-                    <Table>
+                  <div className="border rounded-lg overflow-x-auto">
+                    <Table className="min-w-[800px]">
                       <TableHeader>
                         <TableRow>
                           <TableHead className="w-12">
@@ -551,11 +600,19 @@ export function ImportConsultationModal({
                             />
                           </TableHead>
                           <TableHead className="w-16">Linha</TableHead>
-                          <TableHead>Data</TableHead>
-                          <TableHead>N° Processo</TableHead>
-                          <TableHead>Tipologia</TableHead>
-                          <TableHead>Duplicado</TableHead>
-                          <TableHead className="min-w-[200px]">Erros</TableHead>
+                          <TableHead className="min-w-[100px]">Data</TableHead>
+                          <TableHead className="min-w-[120px]">
+                            N° Processo
+                          </TableHead>
+                          <TableHead className="hidden md:table-cell min-w-[100px]">
+                            Tipologia
+                          </TableHead>
+                          <TableHead className="min-w-[180px] sm:min-w-[220px]">
+                            Duplicado
+                          </TableHead>
+                          <TableHead className="min-w-[150px] sm:min-w-[200px]">
+                            Erros
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -593,7 +650,7 @@ export function ImportConsultationModal({
                                 <TableCell className="text-sm">
                                   {data.process_number || "-"}
                                 </TableCell>
-                                <TableCell className="text-sm">
+                                <TableCell className="hidden md:table-cell text-sm">
                                   {data.details &&
                                   typeof data.details === "object"
                                     ? String(
@@ -610,14 +667,14 @@ export function ImportConsultationModal({
                                   {hasErrors ? (
                                     "-"
                                   ) : isDuplicate ? (
-                                    <div className="flex flex-col gap-1">
+                                    <div className="flex flex-col gap-1.5">
                                       <Badge
                                         variant="outline"
-                                        className="text-xs border-amber-300 bg-amber-50 text-amber-800"
+                                        className="text-xs border-amber-300 bg-amber-50 text-amber-800 w-fit"
                                       >
                                         Duplicada
                                       </Badge>
-                                      <div className="flex gap-1">
+                                      <div className="flex flex-col sm:flex-row gap-1">
                                         <Button
                                           type="button"
                                           variant={
@@ -632,8 +689,14 @@ export function ImportConsultationModal({
                                               [index]: "keep-existing",
                                             }))
                                           }
+                                          className="text-xs px-2 h-7 whitespace-nowrap"
                                         >
-                                          Manter existente
+                                          <span className="hidden sm:inline">
+                                            Manter existente
+                                          </span>
+                                          <span className="sm:hidden">
+                                            Manter
+                                          </span>
                                         </Button>
                                         <Button
                                           type="button"
@@ -649,6 +712,7 @@ export function ImportConsultationModal({
                                               [index]: "overwrite",
                                             }))
                                           }
+                                          className="text-xs px-2 h-7 whitespace-nowrap"
                                         >
                                           Substituir
                                         </Button>
@@ -657,7 +721,7 @@ export function ImportConsultationModal({
                                   ) : (
                                     <Badge
                                       variant="outline"
-                                      className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200"
+                                      className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200 w-fit"
                                     >
                                       Nova
                                     </Badge>
@@ -681,7 +745,7 @@ export function ImportConsultationModal({
                                   ) : (
                                     <Badge
                                       variant="outline"
-                                      className="text-xs bg-green-50 text-green-700 border-green-200"
+                                      className="text-xs bg-green-50 text-green-700 border-green-200 w-fit"
                                     >
                                       Válida
                                     </Badge>
@@ -701,7 +765,7 @@ export function ImportConsultationModal({
 
           {/* Footer Actions */}
           {previewData && (
-            <div className="sticky bottom-0 z-20 px-4 sm:px-6 py-3 sm:py-4 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 flex items-center justify-between gap-4 flex-shrink-0">
+            <div className="sticky bottom-0 z-20 px-4 sm:px-6 py-3 sm:py-4 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 flex-shrink-0">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -711,14 +775,19 @@ export function ImportConsultationModal({
                   setParseError(null);
                 }}
                 disabled={isImporting}
+                className="w-full sm:w-auto"
               >
-                Selecionar outro ficheiro
+                <span className="hidden sm:inline">
+                  Selecionar outro ficheiro
+                </span>
+                <span className="sm:hidden">Outro ficheiro</span>
               </Button>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
                 <Button
                   variant="outline"
                   onClick={handleClose}
                   disabled={isImporting}
+                  className="w-full sm:w-auto"
                 >
                   Cancelar
                 </Button>
@@ -729,16 +798,24 @@ export function ImportConsultationModal({
                     validSelectedCount === 0 ||
                     previewData.summary.valid === 0
                   }
+                  className="w-full sm:w-auto"
                 >
                   {isImporting ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />A
-                      importar...
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      <span className="hidden sm:inline">A importar...</span>
+                      <span className="sm:hidden">Importar...</span>
                     </>
                   ) : (
-                    `Importar ${validSelectedCount} consulta${
-                      validSelectedCount !== 1 ? "s" : ""
-                    }`
+                    <>
+                      <span className="hidden sm:inline">
+                        Importar {validSelectedCount} consulta
+                        {validSelectedCount !== 1 ? "s" : ""}
+                      </span>
+                      <span className="sm:hidden">
+                        Importar {validSelectedCount}
+                      </span>
+                    </>
                   )}
                 </Button>
               </div>

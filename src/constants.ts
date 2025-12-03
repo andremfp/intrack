@@ -1,3 +1,6 @@
+export const SCROLLBAR_CLASSES =
+  "[&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-corner]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40";
+
 // User-related constants
 export const USER_CONSTANTS = {
   MAX_DISPLAY_NAME_LENGTH: 30,
