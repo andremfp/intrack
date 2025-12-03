@@ -13,7 +13,6 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import type { UserData } from "@/lib/api/users";
@@ -80,15 +79,12 @@ export function AppSidebar({
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
-            >
-              <a href="#">
+            <SidebarContent>
+              <div className="flex items-center gap-2">
                 <IconInnerShadowTop className="!size-5" />
                 <span className="text-base font-semibold">InTrack</span>
-              </a>
-            </SidebarMenuButton>
+              </div>
+            </SidebarContent>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
