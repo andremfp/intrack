@@ -1,4 +1,4 @@
-import { GalleryVerticalEnd } from "lucide-react";
+import { GalleryVerticalEnd, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 
 import { cn } from "@/utils/utils";
@@ -22,6 +22,7 @@ export function LoginForm({
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleGoogleLogin() {
     setError(null);
@@ -122,19 +123,34 @@ export function LoginForm({
             <div className="flex items-center">
               <FieldLabel htmlFor="password">Password</FieldLabel>
               <a
-                href="#"
+                href="/forgot-password"
                 className="ml-auto text-sm underline-offset-4 hover:underline"
               >
                 Esqueceu a sua password?
               </a>
             </div>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                required
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <EyeOff className="size-4" />
+                ) : (
+                  <Eye className="size-4" />
+                )}
+              </button>
+            </div>
           </Field>
           <Field>
             <Button type="submit" disabled={isLoading}>

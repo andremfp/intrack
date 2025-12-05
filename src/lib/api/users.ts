@@ -148,6 +148,36 @@ export async function updateUser({
   return success();
 }
 
+export async function checkUserHasEmailAuth(
+  email: string
+): Promise<ApiResponse<boolean>> {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-user-provider`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ email }),
+      }
+    );
+
+    if (!response.ok) {
+      return failure(
+        new AppError("Erro ao verificar o tipo de conta"),
+        "checkUserHasEmailAuth"
+      );
+    }
+
+    const data = await response.json();
+    return success(data.hasEmailAuth === true);
+  } catch (err) {
+    return failure(err, "checkUserHasEmailAuth");
+  }
+}
+
 export async function deleteUserAccount(): Promise<ApiResponse<void>> {
   try {
     // Get current user

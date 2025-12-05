@@ -27,3 +27,32 @@ export function normalizeToISODate(date: string): string {
 
   return parsed.toISOString().split("T")[0];
 }
+
+export interface PasswordCriteria {
+  minLength: boolean;
+  hasUppercase: boolean;
+  hasLowercase: boolean;
+  hasNumber: boolean;
+  hasSpecialChar: boolean;
+}
+
+export function validatePasswordCriteria(password: string): PasswordCriteria {
+  return {
+    minLength: password.length >= 8,
+    hasUppercase: /[A-Z]/.test(password),
+    hasLowercase: /[a-z]/.test(password),
+    hasNumber: /[0-9]/.test(password),
+    hasSpecialChar: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password),
+  };
+}
+
+export function isPasswordValid(password: string): boolean {
+  const criteria = validatePasswordCriteria(password);
+  return (
+    criteria.minLength &&
+    criteria.hasUppercase &&
+    criteria.hasLowercase &&
+    criteria.hasNumber &&
+    criteria.hasSpecialChar
+  );
+}
