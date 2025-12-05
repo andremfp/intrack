@@ -5,6 +5,8 @@ import "./index.css";
 import Login from "@/app/login/page";
 import Register from "@/app/register/page";
 import Dashboard from "@/app/dashboard/page";
+import ForgotPassword from "@/app/forgot-password/page";
+import ResetPassword from "@/app/reset-password/page";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -13,6 +15,8 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>
