@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, useRef } from "react";
-import { errorToast } from "@/utils/error-toast";
+import { toasts } from "@/utils/toasts";
 import type { AppError } from "@/errors";
 import { mergeFilters } from "./helpers";
 import type { UseDataFetchingOptions, UseDataFetchingReturn } from "./types";
@@ -57,7 +57,7 @@ export function useDataFetching<TData>({
         if (isInitialLoad) {
           setError(result.error || null);
         } else if (result.error) {
-          errorToast.fromApiError(result.error, errorMessage);
+          toasts.apiError(result.error, errorMessage);
         }
       }
 

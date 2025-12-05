@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { toast } from "sonner";
-import { errorToast } from "@/utils/error-toast";
+import { toasts } from "@/utils/toasts";
 import type { AppError } from "@/errors";
 import {
   getMGFConsultations,
@@ -108,7 +107,7 @@ export function useConsultations({
           hasLoadedConsultationsRef.current = true;
         } else {
           // Always show toast for immediate feedback
-          errorToast.fromApiError(result.error, "Erro ao carregar consultas");
+          toasts.apiError(result.error, "Erro ao carregar consultas");
 
           // Only set error state if we don't have cached data to show
           // If we have cached data, just show toast (non-blocking)
@@ -191,26 +190,26 @@ export function useConsultations({
         });
 
         if (deletedIds.length > 0 && failedIds.length === 0) {
-          toast.success(
+          toasts.success(
             `${deletedIds.length} consulta(s) eliminada(s) com sucesso`
           );
         } else if (deletedIds.length > 0 && failedIds.length > 0) {
-          toast.warning("Eliminação parcial", {
-            description: `${deletedIds.length} eliminada(s), ${failedIds.length} falharam.`,
-          });
+          toasts.warning(
+            "Eliminação parcial",
+            `${deletedIds.length} eliminada(s), ${failedIds.length} falharam.`
+          );
         } else {
-          toast.error("Erro ao eliminar consultas", {
-            description: "Nenhuma consulta foi eliminada.",
-          });
+          toasts.error(
+            "Erro ao eliminar consultas",
+            "Nenhuma consulta foi eliminada."
+          );
         }
 
         // Return results for optimistic update handling
         return { deletedIds, failedIds };
       } catch (error) {
         console.error("Unexpected error during bulk delete:", error);
-        toast.error("Erro ao eliminar consultas", {
-          description: "Ocorreu um erro inesperado.",
-        });
+        toasts.error("Erro ao eliminar consultas", "Ocorreu um erro inesperado.");
         // On unexpected error, mark all as failed
         return { deletedIds: [], failedIds: ids };
       } finally {

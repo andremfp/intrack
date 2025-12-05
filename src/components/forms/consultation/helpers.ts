@@ -1,4 +1,4 @@
-import { toast } from "sonner";
+import { toasts } from "@/utils/toasts";
 import type { SpecialtyField } from "@/constants";
 import {
   COMMON_CONSULTATION_FIELDS,
@@ -80,15 +80,16 @@ export function validateForm(
   for (const field of requiredFields) {
     if (isEmpty(formValues[field.key])) {
       const message = `Por favor preenche o campo ${field.label}.`;
-      toast.error("Campos obrigatórios em falta", { description: message });
+      toasts.error("Campos obrigatórios em falta", message);
       return { key: field.key, message };
     }
   }
 
   if (!specialtyId) {
-    toast.error("Especialidade não encontrada", {
-      description: "Por favor seleciona uma especialidade.",
-    });
+    toasts.error(
+      "Especialidade não encontrada",
+      "Por favor seleciona uma especialidade."
+    );
     return { key: "specialty", message: "Especialidade não encontrada" };
   }
 
@@ -96,9 +97,7 @@ export function validateForm(
   const ageValue = getStringValue(formValues, "age");
   const ageNum = parseIntSafe(ageValue);
   if (ageNum === null || ageNum < 0 || ageNum > 150) {
-    toast.error("Idade inválida", {
-      description: "A idade deve estar entre 0 e 150.",
-    });
+    toasts.error("Idade inválida", "A idade deve estar entre 0 e 150.");
     return { key: "age", message: "A idade deve estar entre 0 e 150." };
   }
 
@@ -106,15 +105,17 @@ export function validateForm(
   const processNumberValue = getStringValue(formValues, "process_number");
   const processNumberNum = parseIntSafe(processNumberValue);
   if (processNumberValue.length > 9) {
-    toast.error("Número de processo inválido", {
-      description: "O número de processo tem um máximo de 9 dígitos.",
-    });
+    toasts.error(
+      "Número de processo inválido",
+      "O número de processo tem um máximo de 9 dígitos."
+    );
     return { key: "process_number", message: "O número de processo deve ser um número válido." };
   }
   if (processNumberNum === null || processNumberNum < 0) {
-    toast.error("Número de processo inválido", {
-      description: "O número de processo deve ser um número válido.",
-    });
+    toasts.error(
+      "Número de processo inválido",
+      "O número de processo deve ser um número válido."
+    );
     return { key: "process_number", message: "O número de processo deve ser um número válido." };
   }
 
@@ -122,9 +123,10 @@ export function validateForm(
   const specialtyYearValue = getStringValue(formValues, "specialty_year");
   const specialtyYearNum = parseIntSafe(specialtyYearValue);
   if (specialtyYearNum === null || specialtyYearNum < 1) {
-    toast.error("Ano de especialidade inválido", {
-      description: "Por favor seleciona o ano da especialidade.",
-    });
+    toasts.error(
+      "Ano de especialidade inválido",
+      "Por favor seleciona o ano da especialidade."
+    );
     return {
       key: "specialty_year",
       message: "Por favor seleciona o ano da especialidade.",

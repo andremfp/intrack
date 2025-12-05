@@ -17,7 +17,7 @@ import { DashboardContentRouter } from "@/components/dashboard/dashboard-content
 import { useDashboardModals } from "@/hooks/modals/use-dashboard-modals";
 import { useUserInitialization } from "@/hooks/user/use-user-initialization";
 import { getSpecialty } from "@/lib/api/specialties";
-import { toast } from "sonner";
+import { toasts } from "@/utils/toasts";
 
 function DashboardContent() {
   const { setOpenMobile } = useSidebar();
@@ -79,9 +79,7 @@ function DashboardContent() {
       if (result.success) {
         updateUserSpecialty(result.data);
       } else {
-        toast.error("Erro ao carregar especialidade", {
-          description: result.error.userMessage,
-        });
+        toasts.apiError(result.error, "Erro ao carregar especialidade");
       }
     })();
   }, [userProfile?.data.specialty_id, userSpecialty, updateUserSpecialty]);

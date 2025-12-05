@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { IconStethoscope, IconNotes } from "@tabler/icons-react";
-import { toast } from "sonner";
+import { toasts } from "@/utils/toasts";
 import { getSpecialties } from "@/lib/api/specialties";
 import { updateUser } from "@/lib/api/users";
 import type { Tables } from "@/schema";
@@ -49,9 +49,7 @@ export function SpecialtySelectionModal({
       if (result.success) {
         setSpecialties(result.data);
       } else {
-        toast.error("Erro ao carregar especialidades", {
-          description: result.error.userMessage,
-        });
+        toasts.apiError(result.error, "Erro ao carregar especialidades");
       }
       setLoadingSpecialties(false);
     };
@@ -71,9 +69,7 @@ export function SpecialtySelectionModal({
     setLoading(false);
 
     if (!result.success) {
-      toast.error("Erro ao selecionar especialidade", {
-        description: result.error.userMessage,
-      });
+      toasts.apiError(result.error, "Erro ao selecionar especialidade");
       return;
     }
 
@@ -82,7 +78,7 @@ export function SpecialtySelectionModal({
       (s) => s.id === selectedSpecialty
     );
     if (selectedSpecialtyObj) {
-      toast.success("Especialidade selecionada com sucesso!");
+      toasts.success("Especialidade selecionada com sucesso!");
       onSpecialtySelected(selectedSpecialtyObj);
     }
   };

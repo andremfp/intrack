@@ -18,7 +18,7 @@ import { DataErrorDisplay } from "@/components/ui/data-error-display";
 import { mapConsultationsToExportTable } from "@/exports/helpers";
 import { downloadCsv, downloadXlsx } from "@/exports/helpers";
 import type { ExportSheet } from "@/exports/types";
-import { errorToast } from "@/utils/error-toast";
+import { toasts } from "@/utils/toasts";
 import { buildConsultationsExportMetadataRows } from "@/components/consultations/helpers";
 import { ImportConsultationModal } from "@/components/modals/import-consultation-modal";
 
@@ -97,7 +97,7 @@ export function ConsultationsDashboard({
       );
 
       if (!result.success) {
-        errorToast.fromApiError(
+        toasts.apiError(
           result.error,
           "Erro ao exportar consultas para ficheiro"
         );
