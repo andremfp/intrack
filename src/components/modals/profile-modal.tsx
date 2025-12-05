@@ -15,7 +15,7 @@ import {
   IconTrash,
   IconAlertCircle,
 } from "@tabler/icons-react";
-import { toast } from "sonner";
+import { toasts } from "@/utils/toasts";
 import { updateUser, deleteUserAccount } from "@/lib/api/users";
 import { USER_CONSTANTS } from "@/constants";
 import type { UserData } from "@/lib/api/users";
@@ -71,9 +71,10 @@ export function ProfileModal({
     }
 
     if (trimmedName.length > USER_CONSTANTS.MAX_DISPLAY_NAME_LENGTH) {
-      toast.error("Nome muito longo", {
-        description: `O nome não pode ter mais de ${USER_CONSTANTS.MAX_DISPLAY_NAME_LENGTH} caracteres.`,
-      });
+      toasts.error(
+        "Nome muito longo",
+        `O nome não pode ter mais de ${USER_CONSTANTS.MAX_DISPLAY_NAME_LENGTH} caracteres.`
+      );
       return;
     }
 
@@ -87,15 +88,13 @@ export function ProfileModal({
     setIsSaving(false);
 
     if (!result.success) {
-      toast.error("Erro ao atualizar nome", {
-        description: result.error.userMessage,
-      });
+      toasts.apiError(result.error, "Erro ao atualizar nome");
       return;
     }
 
     // Update successful
     setIsEditingName(false);
-    toast.success("Nome atualizado com sucesso!");
+    toasts.success("Nome atualizado com sucesso!");
 
     // Notify parent to refresh user data
     const updatedUser: UserData = {
@@ -121,15 +120,13 @@ export function ProfileModal({
     setIsDeleting(false);
 
     if (!result.success) {
-      toast.error("Erro ao eliminar conta", {
-        description: result.error.userMessage,
-      });
+      toasts.apiError(result.error, "Erro ao eliminar conta");
       return;
     }
 
     // Account deleted, clear cache and redirect to login
     userCache.clearAllCache();
-    toast.success("Conta eliminada com sucesso");
+    toasts.success("Conta eliminada com sucesso");
     window.location.href = "/";
   };
 

@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { IconX, IconUpload, IconFileSpreadsheet } from "@tabler/icons-react";
-import { toast } from "sonner";
+import { toasts } from "@/utils/toasts";
 import { Loader2, AlertCircle, CheckCircle2, HelpCircle } from "lucide-react";
 import {
   parseCsvFile,
@@ -181,9 +181,10 @@ export function ImportConsultationModal({
             );
 
             if (!existingResult.success) {
-              toast.error("Erro ao verificar duplicados", {
-                description: existingResult.error.userMessage,
-              });
+              toasts.apiError(
+                existingResult.error,
+                "Erro ao verificar duplicados"
+              );
             } else {
               const existingByKey = new Map<string, Consultation>();
               existingResult.data.forEach((consultation) => {
@@ -216,7 +217,7 @@ export function ImportConsultationModal({
         const message =
           error instanceof Error ? error.message : "Erro ao processar ficheiro";
         setParseError(message);
-        toast.error("Erro ao processar ficheiro", { description: message });
+        toasts.error("Erro ao processar ficheiro", message);
       } finally {
         setIsParsing(false);
       }
@@ -325,7 +326,7 @@ export function ImportConsultationModal({
       });
 
       if (toCreate.length === 0 && toUpdate.length === 0) {
-        toast.error("Nenhuma consulta para importar");
+        toasts.error("Nenhuma consulta para importar");
         return;
       }
 
@@ -337,9 +338,7 @@ export function ImportConsultationModal({
         const result = await createConsultationsBatch(createPayload);
 
         if (!result.success) {
-          toast.error("Erro ao importar consultas", {
-            description: result.error.userMessage,
-          });
+          toasts.apiError(result.error, "Erro ao importar consultas");
           return;
         }
 
@@ -364,16 +363,14 @@ export function ImportConsultationModal({
       const failedCount = perRowErrors.length;
 
       if (failedCount > 0) {
-        toast.warning(
+        toasts.warning(
           `Importação parcial: ${
             created + updated
           } de ${totalRequested} consultas processadas`,
-          {
-            description: `${failedCount} consultas falharam`,
-          }
+          `${failedCount} consultas falharam`
         );
       } else {
-        toast.success(
+        toasts.success(
           `${created + updated} consulta${
             created + updated !== 1 ? "s" : ""
           } importada${created + updated !== 1 ? "s" : ""} / atualizada${
@@ -385,10 +382,10 @@ export function ImportConsultationModal({
       onImportComplete?.();
       handleClose();
     } catch (error) {
-      toast.error("Erro ao importar consultas", {
-        description:
-          error instanceof Error ? error.message : "Erro desconhecido",
-      });
+      toasts.error(
+        "Erro ao importar consultas",
+        error instanceof Error ? error.message : "Erro desconhecido"
+      );
     } finally {
       setIsImporting(false);
     }

@@ -12,7 +12,7 @@ import { ICPC2Tab } from "./tabs/icpc-2-codes/icpc-2-tab";
 import { MetricsErrorDisplay } from "./metrics-error-display";
 import { buildConsultationsExportMetadataRows } from "@/components/consultations/helpers";
 import { buildMetricsExportSheets, downloadXlsx } from "@/exports/helpers";
-import { errorToast } from "@/utils/error-toast";
+import { toasts } from "@/utils/toasts";
 
 interface MetricsDashboardProps {
   userId: string;
@@ -81,7 +81,7 @@ export function MetricsDashboard({
       console.log("sheets", sheets);
 
       if (!sheets || sheets.length === 0) {
-        errorToast.show(
+        toasts.error(
           "Sem dados para exportar",
           "Não existem métricas para exportar neste separador com os filtros atuais."
         );

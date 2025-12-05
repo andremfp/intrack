@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { toast } from "sonner";
+import { toasts } from "@/utils/toasts";
 import { useNavigate } from "react-router-dom";
 import { checkUserExists, getCurrentUser, upsertUser } from "@/lib/api/users";
 import { getSpecialty } from "@/lib/api/specialties";
@@ -57,9 +57,7 @@ export function useUserInitialization(
 
           setIsLoading(false);
           hasInitialized.current = true;
-          toast.error("Erro", {
-            description: userExistsResult.error.userMessage,
-          });
+          toasts.apiError(userExistsResult.error, "Erro");
           return;
         }
 
@@ -73,18 +71,17 @@ export function useUserInitialization(
           if (!upsertResult.success) {
             setIsLoading(false);
             hasInitialized.current = true;
-            toast.error("Erro ao criar perfil", {
-              description: upsertResult.error.userMessage,
-            });
+            toasts.apiError(upsertResult.error, "Erro ao criar perfil");
             return;
           }
 
           if (!upsertResult.data) {
             setIsLoading(false);
             hasInitialized.current = true;
-            toast.error("Erro ao criar perfil", {
-              description: "Não foi possível obter os dados do utilizador após a criação.",
-            });
+            toasts.error(
+              "Erro ao criar perfil",
+              "Não foi possível obter os dados do utilizador após a criação."
+            );
             return;
           }
 
@@ -97,18 +94,17 @@ export function useUserInitialization(
           if (!userResult.success) {
             setIsLoading(false);
             hasInitialized.current = true;
-            toast.error("Erro ao carregar perfil", {
-              description: userResult.error.userMessage,
-            });
+            toasts.apiError(userResult.error, "Erro ao carregar perfil");
             return;
           }
 
           if (!userResult.data) {
             setIsLoading(false);
             hasInitialized.current = true;
-            toast.error("Erro ao carregar perfil", {
-              description: "Não foi possível carregar o perfil do utilizador.",
-            });
+            toasts.error(
+              "Erro ao carregar perfil",
+              "Não foi possível carregar o perfil do utilizador."
+            );
             return;
           }
 
@@ -131,9 +127,10 @@ export function useUserInitialization(
           if (specialtyResult.success) {
             updateUserSpecialty(specialtyResult.data);
           } else {
-            toast.error("Erro ao carregar especialidade", {
-              description: specialtyResult.error.userMessage,
-            });
+            toasts.apiError(
+              specialtyResult.error,
+              "Erro ao carregar especialidade"
+            );
           }
         }
 
@@ -143,9 +140,10 @@ export function useUserInitialization(
         console.error("Unexpected error during user initialization:", error);
         setIsLoading(false);
         hasInitialized.current = true;
-        toast.error("Erro inesperado", {
-          description: "Ocorreu um erro inesperado ao inicializar o utilizador.",
-        });
+        toasts.error(
+          "Erro inesperado",
+          "Ocorreu um erro inesperado ao inicializar o utilizador."
+        );
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps

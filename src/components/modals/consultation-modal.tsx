@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { IconX, IconCheck } from "@tabler/icons-react";
-import { toast } from "sonner";
+import { toasts } from "@/utils/toasts";
 import {
   createConsultation,
   updateConsultation,
@@ -115,7 +115,7 @@ export function ConsultationModal({
         if (duplicateCheck.success && duplicateCheck.data) {
           const message =
             "Já existe uma consulta com esta data e número de processo.";
-          toast.error(message);
+          toasts.error(message);
           showFieldError("process_number", message);
           return;
         }
@@ -150,13 +150,14 @@ export function ConsultationModal({
           : await createConsultation(consultation);
 
       if (!result.success) {
-        toast.error(`Erro ao ${isEditing ? "atualizar" : "criar"} consulta`, {
-          description: result.error.userMessage,
-        });
+        toasts.apiError(
+          result.error,
+          `Erro ao ${isEditing ? "atualizar" : "criar"} consulta`
+        );
         return;
       }
 
-      toast.success(
+      toasts.success(
         `Consulta ${isEditing ? "atualizada" : "criada"} com sucesso!`
       );
       onConsultationSaved?.();
