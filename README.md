@@ -20,17 +20,33 @@ InTrack helps Portuguese Medical residents track consultations and milestones, a
 ## Deploy locally
 
 1. Install dependencies:
+
    ```bash
    git clone https://github.com/andremfp/intrack.git
    cd intrack
    npm install
    ```
-2. Configure environment variables in `.env.local` to connect to your supabase account:
+
+2. Start Supabase locally and configure environment variables:
+
    ```bash
-   VITE_SUPABASE_URL=...
-   VITE_SUPABASE_ANON_KEY=...
+   npm run sb:local:start  # Starts local Supabase services
    ```
-3. Run the dev server:
+
+   Create `.env.local` with local Supabase credentials:
+
+   ```bash
+   VITE_SUPABASE_URL=http://127.0.0.1:54321
+   VITE_SUPABASE_SECRET=sb_secret_...
+   ```
+
+3. Seed the local database with users (if needed):
+
+   ```bash
+   npm run sb:local:db:seed:users
+   ```
+
+4. Run the dev server:
    ```bash
    npm run dev
    ```
