@@ -4,8 +4,8 @@ import { config } from "dotenv";
 config({ path: ".env.local" });
 
 const supabase = createClient(
-  process.env.VITE_SUPABASE_URL,
-  process.env.VITE_SUPABASE_SECRET
+  process.env.VITE_LOCAL_SUPABASE_URL,
+  process.env.VITE_LOCAL_SUPABASE_SECRET
 );
 
 async function seedUsers() {

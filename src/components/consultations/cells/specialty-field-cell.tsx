@@ -1,4 +1,3 @@
-import type { ConsultationMGF } from "@/lib/api/consultations";
 import type { SpecialtyField } from "@/constants";
 import { BooleanCell } from "./boolean-cell";
 import { SelectCell } from "./select-cell";
@@ -11,10 +10,7 @@ interface SpecialtyFieldCellProps {
   field: SpecialtyField;
 }
 
-export function SpecialtyFieldCell({
-  value,
-  field,
-}: SpecialtyFieldCellProps) {
+export function SpecialtyFieldCell({ value, field }: SpecialtyFieldCellProps) {
   if (value === null || value === undefined) {
     return <span>-</span>;
   }
@@ -24,12 +20,7 @@ export function SpecialtyFieldCell({
       return <BooleanCell value={value as boolean} />;
     case "select":
     case "combobox":
-      return (
-        <SelectCell
-          value={String(value)}
-          options={field.options}
-        />
-      );
+      return <SelectCell value={String(value)} options={field.options} />;
     case "text-list":
       return <TextListCell value={String(value)} />;
     case "icpc2-codes":
@@ -40,4 +31,3 @@ export function SpecialtyFieldCell({
       return <span>{String(value)}</span>;
   }
 }
-
