@@ -180,7 +180,7 @@ export function SignupForm({
             {password && (
               <div className="space-y-1.5 mt-2">
                 <FieldDescription className="text-xs">
-                  <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1.5">
                     {passwordCriteria.minLength ? (
                       <Check className="size-3 text-green-600" />
                     ) : (
@@ -195,10 +195,10 @@ export function SignupForm({
                     >
                       Pelo menos 8 caracteres
                     </span>
-                  </div>
+                  </span>
                 </FieldDescription>
                 <FieldDescription className="text-xs">
-                  <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1.5">
                     {passwordCriteria.hasUppercase ? (
                       <Check className="size-3 text-green-600" />
                     ) : (
@@ -213,10 +213,10 @@ export function SignupForm({
                     >
                       Uma letra maiúscula
                     </span>
-                  </div>
+                  </span>
                 </FieldDescription>
                 <FieldDescription className="text-xs">
-                  <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1.5">
                     {passwordCriteria.hasLowercase ? (
                       <Check className="size-3 text-green-600" />
                     ) : (
@@ -231,10 +231,10 @@ export function SignupForm({
                     >
                       Uma letra minúscula
                     </span>
-                  </div>
+                  </span>
                 </FieldDescription>
                 <FieldDescription className="text-xs">
-                  <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1.5">
                     {passwordCriteria.hasNumber ? (
                       <Check className="size-3 text-green-600" />
                     ) : (
@@ -249,10 +249,10 @@ export function SignupForm({
                     >
                       Um número
                     </span>
-                  </div>
+                  </span>
                 </FieldDescription>
                 <FieldDescription className="text-xs">
-                  <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1.5">
                     {passwordCriteria.hasSpecialChar ? (
                       <Check className="size-3 text-green-600" />
                     ) : (
@@ -267,7 +267,7 @@ export function SignupForm({
                     >
                       Um carácter especial (!@#$%^&*...)
                     </span>
-                  </div>
+                  </span>
                 </FieldDescription>
               </div>
             )}
