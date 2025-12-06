@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [staging, main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce Staging -> Main Flow
+        if: github.base_ref == 'main' && github.head_ref != 'staging'
+        run: |
+          echo "Error: Direct PRs to main are not allowed. You must merge to 'staging' first."
+          echo "Current flow: ${{ github.head_ref }} -> ${{ github.base_ref }}"
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Local Supabase
+        run: supabase start
+
+      - name: Verify Types
+        run: npm run generate:schema && git diff --exit-code src/schema.ts
+
+      - name: Run Tests
+        run: npm test

@@ -55,7 +55,7 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
                   variant="secondary"
                   className="text-xs font-medium px-3 py-1"
                 >
-                  Versão 1.0.0
+                  Versão {import.meta.env.PACKAGE_VERSION}
                 </Badge>
               </div>
 
