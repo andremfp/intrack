@@ -153,7 +153,7 @@ export async function checkUserHasEmailAuth(
 ): Promise<ApiResponse<boolean>> {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-user-provider`,
+      `${import.meta.env.VITE_LOCAL_SUPABASE_URL}/functions/v1/check-user-provider`,
       {
         method: "POST",
         headers: {
