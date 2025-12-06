@@ -144,6 +144,16 @@ export default function LandingPage() {
             </div>
           </section>
         </main>
+        <footer className="mt-auto">
+          <div className="flex justify-center items-center gap-2">
+            <p className="text-sm text-muted-foreground">
+              &copy; {new Date().getFullYear()} InTrack
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Versão {import.meta.env.PACKAGE_VERSION}
+            </p>
+          </div>
+        </footer>
       </div>
     </ThemeProvider>
   );
