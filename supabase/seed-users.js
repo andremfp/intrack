@@ -48,6 +48,7 @@ async function seedUsers() {
     console.log("✅ Test user created successfully");
   } catch (error) {
     console.error("❌ Error creating test user:", error);
+    process.exit(1);
   }
 }
 
