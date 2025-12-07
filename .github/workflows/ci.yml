@@ -40,6 +40,8 @@ jobs:
           npm run sb:local:db:seed:users
 
       - name: Verify Types
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: npm run generate:schema && git diff --exit-code src/schema.ts
 
       - name: Run Tests
