@@ -31,7 +31,11 @@ jobs:
           version: latest
 
       - name: Start Local Supabase
-        run: supabase start
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase start
+          npm run sb:local:db:seed:users
 
       - name: Verify Types
         run: npm run generate:schema && git diff --exit-code src/schema.ts
