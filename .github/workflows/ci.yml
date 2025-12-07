@@ -33,6 +33,8 @@ jobs:
       - name: Start Local Supabase
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          VITE_LOCAL_SUPABASE_URL: ${{ secrets.VITE_LOCAL_SUPABASE_URL }}
+          VITE_LOCAL_SUPABASE_SECRET: ${{ secrets.VITE_LOCAL_SUPABASE_SECRET }}
         run: |
           supabase start
           npm run sb:local:db:seed:users
