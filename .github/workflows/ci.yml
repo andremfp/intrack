@@ -8,6 +8,13 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      VITE_LOCAL_SUPABASE_URL: ${{ secrets.VITE_LOCAL_SUPABASE_URL }}
+      VITE_LOCAL_SUPABASE_SECRET: ${{ secrets.VITE_LOCAL_SUPABASE_SECRET }}
+      # We also map the standard VITE_ var to the local one so tests verify against local
+      VITE_SUPABASE_URL: ${{ secrets.VITE_LOCAL_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_LOCAL_SUPABASE_ANON_KEY }}
     steps:
       - name: Enforce Staging -> Main Flow
         if: github.base_ref == 'main' && github.head_ref != 'staging'
@@ -31,10 +38,27 @@ jobs:
           version: latest
 
       - name: Start Local Supabase
-        run: supabase start
+        run: |
+          npm run sb:local:start
+          npm run sb:local:db:seed:users
 
       - name: Verify Types
         run: npm run generate:schema && git diff --exit-code src/schema.ts
+
+      - name: Check Version Bump (on PR to Main)
+        if: github.base_ref == 'main'
+        run: |
+          # Fetch all tags so we can check against them
+          git fetch --tags
+
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          if git rev-parse "v$PACKAGE_VERSION" >/dev/null 2>&1; then
+            echo "❌ Error: Version v$PACKAGE_VERSION already exists as a git tag."
+            echo "Please bump the version in package.json before merging to main."
+            exit 1
+          else
+            echo "✅ Version v$PACKAGE_VERSION is unique."
+          fi
 
       - name: Run Tests
         run: npm test
