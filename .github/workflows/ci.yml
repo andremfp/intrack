@@ -36,7 +36,7 @@ jobs:
           VITE_LOCAL_SUPABASE_URL: ${{ secrets.VITE_LOCAL_SUPABASE_URL }}
           VITE_LOCAL_SUPABASE_SECRET: ${{ secrets.VITE_LOCAL_SUPABASE_SECRET }}
         run: |
-          supabase start
+          npm run sb:local:start
           npm run sb:local:db:seed:users
 
       - name: Verify Types
