@@ -48,17 +48,24 @@ export function TextField({
         {field.label}
         {field.required && <span className="text-destructive ml-1">*</span>}
       </Label>
-      <Input
-        id={fieldId}
-        type="text"
-        value={stringValue}
-        onChange={(e) => onUpdate(e.target.value)}
-        placeholder={field.placeholder}
-        required={field.required}
-        aria-invalid={isInvalid || undefined}
-        aria-describedby={isInvalid ? `${fieldId}-error` : undefined}
-        className={isInvalid ? "border-destructive" : ""}
-      />
+      <div className="flex items-center gap-2">
+        <Input
+          id={fieldId}
+          type="text"
+          value={stringValue}
+          onChange={(e) => onUpdate(e.target.value)}
+          placeholder={field.placeholder}
+          required={field.required}
+          aria-invalid={isInvalid || undefined}
+          aria-describedby={isInvalid ? `${fieldId}-error` : undefined}
+          className={isInvalid ? "border-destructive" : ""}
+        />
+        {"units" in field && (
+          <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0 min-w-[3rem] text-left">
+            {field.units}
+          </span>
+        )}
+      </div>
       {isInvalid && (
         <p id={`${fieldId}-error`} className="text-xs text-destructive mt-1">
           {errorMessage}

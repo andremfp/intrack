@@ -41,9 +41,11 @@ export function NumberField({
           aria-invalid={isInvalid || undefined}
           aria-describedby={isInvalid ? `${fieldId}-error` : undefined}
         />
-        <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0 min-w-[3rem] text-left">
-          {field.units || ""}
-        </span>
+        {"units" in field && (
+          <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0 min-w-[3rem] text-left">
+            {field.units}
+          </span>
+        )}
       </div>
       {isInvalid && (
         <p id={`${fieldId}-error`} className="text-xs text-destructive mt-1">

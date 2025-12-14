@@ -384,10 +384,10 @@ export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
         units: "mg/dL",
       },
       {
-        key: "bnp",
-        label: "BNP",
-        type: "number",
-        units: "pg/mL",
+        key: "score2",
+        label: "Score2",
+        type: "text",
+        units: "",
       },
       {
         key: "albuminuria",
@@ -427,10 +427,10 @@ export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
         units: "mg/dL",
       },
       {
-        key: "bnp",
-        label: "BNP",
-        type: "number",
-        units: "pg/mL",
+        key: "score2",
+        label: "Score2",
+        type: "text",
+        units: "",
       },
       {
         key: "albuminuria",
