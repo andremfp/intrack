@@ -105,7 +105,6 @@ export const COMMON_CONSULTATION_FIELDS: SpecialtyField[] = [
       { value: "emergency_unit", label: "Serviço de Urgência" },
       { value: "complementary", label: "Formação Complementar" },
       { value: "short_course", label: "Formação Curta" },
-      { value: "other", label: "Outro" },
     ],
   },
   {

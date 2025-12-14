@@ -69,7 +69,6 @@ const FIELD_DOCUMENTATION: Record<string, Omit<SchemaFieldGuide, keyof Specialty
     description: "Tipo de consulta realizada",
     validationRules: [
       "Obrigatório quando Local = 'Unidade de Saúde'",
-      "Opcional quando local = 'Outro'",
       "Não pode ser preenchido para outros locais"
     ],
     notes: "Campo condicional baseado no local da consulta"
@@ -91,7 +90,6 @@ const FIELD_DOCUMENTATION: Record<string, Omit<SchemaFieldGuide, keyof Specialty
     description: "Especialidade onde está a estagiar",
     validationRules: [
       "Obrigatório para Local ≠ 'Unidade de Saúde'",
-      "Opcional quando local = 'Outro'",
       "Não pode ser preenchido quando Local = 'Unidade de Saúde'"
     ],
     notes: "Campo condicional - obrigatório baseado no local"
@@ -206,12 +204,6 @@ export const VALIDATION_RULES_GUIDE = {
           "✓ Campo 'Estágio' é obrigatório"
         ]
       },
-      {
-        condition: "Local = 'Outro'",
-        requirements: [
-          "✓ Ambos 'Tipologia' e 'Estágio' são opcionais"
-        ]
-      }
     ]
   },
   dataIntegrity: {

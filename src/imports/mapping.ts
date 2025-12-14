@@ -332,10 +332,6 @@ export function validateLocationAndInternship(
           message: `Campo obrigatório: ${typeField?.label || "Tipologia"}. A tipologia é obrigatória para o local 'Unidade de Saúde'.`,
         });
       }
-    } else if (location === "other") {
-      // Internship is optional when location is 'other'
-      // Type is optional when location is 'other'
-      // No validation needed
     } else {
       // Internship is required for all other locations
       if (!hasInternship) {
@@ -345,7 +341,7 @@ export function validateLocationAndInternship(
           message: `Campo obrigatório: ${internshipField?.label || "Estágio"}. O estágio é obrigatório para este local.`,
         });
       }
-      // Type should not be present when location is not 'health_unit' or 'other'
+      // Type should not be present when location is not 'health_unit'
       if (hasType) {
         errors.push({
           rowIndex,
