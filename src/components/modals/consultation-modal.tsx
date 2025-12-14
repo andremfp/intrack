@@ -444,8 +444,7 @@ export function ConsultationModal({
                           return false;
                         } else if (
                           field.key === "type" &&
-                          currentLocation !== "health_unit" &&
-                          currentLocation !== "other"
+                          currentLocation !== "health_unit"
                         ) {
                           return false;
                         }
@@ -477,13 +476,12 @@ export function ConsultationModal({
                                   const isTypeRequired =
                                     field.key === "type" &&
                                     currentLocation === "health_unit";
-                                  // Internship is required when location is not 'health_unit' and not 'other'
+                                  // Internship is required when location is not 'health_unit'
                                   const isInternshipRequired =
                                     field.key === "internship" &&
                                     typeof currentLocation === "string" &&
                                     currentLocation !== "" &&
-                                    currentLocation !== "health_unit" &&
-                                    currentLocation !== "other";
+                                    currentLocation !== "health_unit";
                                   const isRequired =
                                     field.key === "type"
                                       ? isTypeRequired

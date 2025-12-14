@@ -94,8 +94,8 @@ export function useConsultationForm(
   // Get section order (maintain logical order)
   const sectionOrder = useMemo(() => {
     const order = [
-      "consultation_type",
-      "type_specific", // Type-specific sections appear right after consultation_type
+      "consultation_info",
+      "type_specific", // Type-specific sections appear right after consultation_info
       "clinical_history",
       "diagnosis",
       "referral",
