@@ -1,4 +1,4 @@
-import { GalleryVerticalEnd, Eye, EyeOff, Check, X } from "lucide-react";
+import { GalleryVerticalEnd, Eye, EyeOff, Check, X, Mail } from "lucide-react";
 import { useState } from "react";
 
 import { cn, validatePasswordCriteria, isPasswordValid } from "@/utils/utils";
@@ -23,6 +23,8 @@ export function SignupForm({
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailConfirmationRequired, setEmailConfirmationRequired] =
+    useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
   const passwordCriteria = validatePasswordCriteria(password);
@@ -70,7 +72,10 @@ export function SignupForm({
       const { data, error } = await supabase.auth.signUp({
         email,
         password: passwordValue,
-        options: { data: { full_name: name } },
+        options: {
+          data: { full_name: name },
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+        },
       });
 
       if (error) throw error;
@@ -95,9 +100,7 @@ export function SignupForm({
 
       // If there is a user but NO session, Supabase is asking for email confirmation.
       if (data?.user && !data.session) {
-        setError(
-          "Conta criada com sucesso. Verifica o teu email para confirmar a conta antes de iniciar sessão."
-        );
+        setEmailConfirmationRequired(true);
         return;
       }
     } catch (e: unknown) {
@@ -112,6 +115,42 @@ export function SignupForm({
       setIsLoading(false);
     }
   }
+  // Show success view when email confirmation is required
+  if (emailConfirmationRequired) {
+    return (
+      <div className={cn("flex flex-col gap-6", className)} {...props}>
+        <div className="flex flex-col items-center gap-6 text-center">
+          <div className="flex size-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+            <Mail className="size-8 text-green-600 dark:text-green-400" />
+          </div>
+          <div className="flex flex-col gap-2">
+            <h1 className="text-xl font-bold">Verifica o teu email</h1>
+            <p className="text-sm text-muted-foreground">
+              Enviámos um link de confirmação para o teu email. Clica no link
+              para ativar a tua conta e aceder ao InTrack.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 w-full">
+            <Button variant="outline" asChild>
+              <a href="/login">Ir para o Login</a>
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Não recebeste o email? Verifica a pasta de spam ou{" "}
+              <button
+                type="button"
+                onClick={() => setEmailConfirmationRequired(false)}
+                className="underline underline-offset-4 hover:text-foreground"
+              >
+                tenta novamente
+              </button>
+              .
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <form onSubmit={handleSubmit}>
