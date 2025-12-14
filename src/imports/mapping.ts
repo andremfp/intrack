@@ -258,8 +258,8 @@ export function getFieldSource(fieldKey: string): "column" | "details" {
  * Validates location and internship relationship and values
  * 
  * Rules:
- * - If location is 'health_unit', internship must not be provided
- * - If location is NOT 'health_unit', internship is required
+ * - If location is 'unidade', internship must not be provided
+ * - If location is NOT 'unidade', internship is required
  * - Location and internship values must be valid options
  */
 export function validateLocationAndInternship(
@@ -315,7 +315,7 @@ export function validateLocationAndInternship(
     const hasType =
       type !== null && type !== undefined && type !== "";
 
-    if (location === "health_unit") {
+    if (location === "unidade") {
       if (hasInternship) {
         errors.push({
           rowIndex,
@@ -324,7 +324,7 @@ export function validateLocationAndInternship(
             "Estágio não é permitido para o local 'Unidade de Saúde'. Remove o estágio para este local.",
         });
       }
-      // Type is required when location is 'health_unit'
+      // Type is required when location is 'unidade'
       if (!hasType) {
         errors.push({
           rowIndex,
@@ -341,7 +341,7 @@ export function validateLocationAndInternship(
           message: `Campo obrigatório: ${internshipField?.label || "Estágio"}. O estágio é obrigatório para este local.`,
         });
       }
-      // Type should not be present when location is not 'health_unit'
+      // Type should not be present when location is not 'unidade'
       if (hasType) {
         errors.push({
           rowIndex,

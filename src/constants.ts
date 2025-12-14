@@ -171,7 +171,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
     key: "type",
     label: "Tipologia",
     type: "select",
-    required: false, // Conditionally required: only when location is 'health_unit'
+    required: false, // Conditionally required: only when location is 'unidade'
     section: "consultation_info",
     options: [
       { value: "SA", label: "Saúde Adulto" },
@@ -236,7 +236,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
     options: [
       { value: "sim", label: "Sim" },
       { value: "nao", label: "Não" },
-      { value: "ex-fumador", label: "Ex-fumador" },
+      { value: "ex fumador", label: "Ex-fumador" },
     ],
     section: "clinical_history",
   },
@@ -323,7 +323,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
       { value: "coc", label: "COC" },
       { value: "cop", label: "COP" },
       { value: "siu", label: "SIU" },
-      { value: "preservativo", label: "Preservativo" },
+      { value: "preserv", label: "Preservativo" },
       { value: "implante", label: "Implante" },
       { value: "anel", label: "Anel Vaginal" },
       { value: "adesivo", label: "Adesivo" },
@@ -342,7 +342,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
       { value: "coc", label: "COC" },
       { value: "cop", label: "COP" },
       { value: "siu", label: "SIU" },
-      { value: "preservativo", label: "Preservativo" },
+      { value: "preserv", label: "Preservativo" },
       { value: "implant", label: "Implante" },
       { value: "anel", label: "Anel Vaginal" },
       { value: "adesivo", label: "Adesivo" },

@@ -435,16 +435,20 @@ export function ConsultationModal({
                         return null;
                       }
 
-                      // Hide internship combobox when location is "health_unit".
+                      // Hide fields as needed.
                       const visibleFields = sectionFields.filter((field) => {
                         if (
                           field.key === "internship" &&
-                          currentLocation === "health_unit"
+                          currentLocation === "unidade"
                         ) {
                           return false;
                         } else if (
-                          field.key === "type" &&
-                          currentLocation !== "health_unit"
+                          (field.key === "type" ||
+                            field.key === "contraceptive" ||
+                            field.key === "new_contraceptive" ||
+                            field.key === "referrence" ||
+                            field.key === "referrence_motive") &&
+                          currentLocation !== "unidade"
                         ) {
                           return false;
                         }
@@ -472,16 +476,16 @@ export function ConsultationModal({
                               </h4>
                               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 {visibleFields.map((field) => {
-                                  // Type field is required only when location is 'health_unit'
+                                  // Type field is required only when location is 'unidade'
                                   const isTypeRequired =
                                     field.key === "type" &&
-                                    currentLocation === "health_unit";
-                                  // Internship is required when location is not 'health_unit'
+                                    currentLocation === "unidade";
+                                  // Internship is required when location is not 'unidade'
                                   const isInternshipRequired =
                                     field.key === "internship" &&
                                     typeof currentLocation === "string" &&
                                     currentLocation !== "" &&
-                                    currentLocation !== "health_unit";
+                                    currentLocation !== "unidade";
                                   const isRequired =
                                     field.key === "type"
                                       ? isTypeRequired
