@@ -141,7 +141,7 @@ export function SignupForm({
                 onClick={() => setEmailConfirmationRequired(false)}
                 className="underline underline-offset-4 hover:text-foreground"
               >
-                volta à páginal de resgisto.
+                volta à páginal de resgisto
               </button>
               .
             </p>
