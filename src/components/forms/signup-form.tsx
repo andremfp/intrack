@@ -72,9 +72,15 @@ export function SignupForm({
         password: passwordValue,
         options: { data: { full_name: name } },
       });
+
       if (error) throw error;
-      if (data?.user) {
-        console.log("User created, attempting to upsert user profile...");
+
+      // If Supabase returns a session, the user is already logged in and we can
+      // immediately create the profile + redirect to dashboard.
+      if (data?.user && data.session) {
+        console.log(
+          "User created with active session, attempting to upsert user profile..."
+        );
         const result = await upsertUser();
 
         if (result.success) {
@@ -84,6 +90,15 @@ export function SignupForm({
           console.error("Failed to create user profile:", result.error);
           setError(result.error.userMessage);
         }
+        return;
+      }
+
+      // If there is a user but NO session, Supabase is asking for email confirmation.
+      if (data?.user && !data.session) {
+        setError(
+          "Conta criada com sucesso. Verifica o teu email para confirmar a conta antes de iniciar sessão."
+        );
+        return;
       }
     } catch (e: unknown) {
       const message =
