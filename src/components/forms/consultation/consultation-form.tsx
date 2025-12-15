@@ -7,6 +7,7 @@ import { ComboboxField } from "./fields/combobox-field";
 import { TextListField } from "./fields/text-list-field";
 import { ICPC2CodesField } from "./fields/icpc2-codes-field";
 import type { ICPC2Code } from "@/constants";
+import { MultiSelectField } from "./fields/multi-select-field";
 
 interface ConsultationFieldProps {
   field: SpecialtyField;
@@ -48,6 +49,8 @@ export function ConsultationField({
       return <TextListField {...commonProps} />;
     case "icpc2-codes":
       return <ICPC2CodesField {...commonProps} icpc2Codes={icpc2Codes} />;
+    case "multi-select":
+      return <MultiSelectField {...commonProps} value={value as string[]} />;
     default:
       return null;
   }
@@ -78,6 +81,7 @@ export function ConsultationFieldWithLayout({
 
   const wrapperClassName = [
     className,
+    "min-w-0",
     requiresFullSpan && "col-span-full sm:col-span-2",
   ]
     .filter(Boolean)

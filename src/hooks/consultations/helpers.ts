@@ -44,6 +44,13 @@ export function getFieldValue(
       : "false";
   }
 
+  // Multi-select fields: stored as array of strings in DB, need array for form
+  if (field.type === "multi-select") {
+    if (Array.isArray(databaseValue)) {
+      return databaseValue;
+    }
+  }
+
   // Other types (text, number, textarea, select, icpc2-codes): convert to string
   if (databaseValue !== undefined && databaseValue !== null) {
     return String(databaseValue);
@@ -119,6 +126,8 @@ export function initializeFormValues(
   const selectedConsultationType =
     typeof formValues.type === "string" ? formValues.type : undefined;
   const typeSpecificSections = resolveTypeSections(selectedConsultationType);
+
+  console.log("Got type specific sections", typeSpecificSections);
 
   typeSpecificSections.forEach((section) => {
     section.fields.forEach((field) => {

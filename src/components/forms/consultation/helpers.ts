@@ -158,7 +158,11 @@ function serializeFieldValue(
     return numValue !== null && Number.isFinite(numValue) ? numValue : null;
   }
 
-  return typeof value === "string" && value.length > 0 ? value : null;
+  if (field.type === "multi-select") { // array of strings
+    return Array.isArray(value) ? value : null;
+  }
+
+  return typeof value === "string" && value.length > 0 ? value : null; // string or null
 }
 
 export function serializeFormValues(
@@ -206,15 +210,26 @@ export function serializeFormValues(
     }
   });
 
-  // Add nested structures only if they have values
-  Object.entries(nestedStructures).forEach(([typeKey, sections]) => {
-    const hasValues = Object.values(sections).some((sectionFields) =>
-      Object.values(sectionFields).some((v) => v !== null)
-    );
-    if (hasValues) {
-      (details as Record<string, unknown>)[typeKey] = sections;
+  // Add nested structures only if they have values, keeping the {type}.{section}.{field} shape
+  if (consultationType) {
+    const typeKey = consultationType.toLowerCase();
+    const typeSections = nestedStructures[typeKey];
+    if (typeSections) {
+      const includedSections: Record<string, Record<string, SpecialtyDetails[string]>> =
+        {};
+
+      Object.entries(typeSections).forEach(([sectionKey, sectionData]) => {
+        const hasValues = Object.values(sectionData).some((field) => field !== null);
+        if (hasValues) {
+          includedSections[sectionKey] = sectionData;
+        }
+      });
+
+      if (Object.keys(includedSections).length > 0) {
+        (details as Record<string, unknown>)[typeKey] = includedSections;
+      }
     }
-  });
+  }
 
   return details;
 }

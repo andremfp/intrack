@@ -50,6 +50,7 @@ export function getICPC2Codes(specialtyCode: string) {
 // Field type definitions for forms
 export type FieldType =
   | "text"
+  | "multi-select"
   | "boolean"
   | "select"
   | "combobox"
@@ -414,6 +415,35 @@ export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
         units: "mL/min",
       },
     ],
+  },
+  {
+    key: "history",
+    label: "Diabetes - Historial",
+    section: "type_specific",
+    fields: [
+      {
+        key: "medicamentos",
+        label: "Medicamentos",
+        type: "multi-select",
+        options: [
+          { value: "metformina", label: "Metformina" },
+          { value: "sulfonilureia", label: "Sulfonilureia" },
+          { value: "pioglitazona", label: "Pioglitazona" },
+          { value: "glipizida", label: "Glipizida" },
+          { value: "gliclazida", label: "Gliclazida" },
+          { value: "glimepirida", label: "Glimepirida" },
+        ],
+      },
+      {
+        key: "complicacoes",
+        label: "Complicações",
+        type: "multi-select",
+        options: [
+          { value: "microvasculares", label: "Microvasculares" },
+          { value: "macrovascular", label: "Macrovasculares" },
+        ],
+      },
+    ],
   }],
   hta: [{
     key: "exams",
@@ -449,6 +479,34 @@ export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
         label: "TFG",
         type: "number",
         units: "mL/min",
+      },
+    ],
+  },
+  {
+    key: "history",
+    label: "Hipertensão Arterial - Historial",
+    section: "type_specific",
+    fields: [
+      {
+        key: "medicamentos",
+        label: "Medicamentos",
+        type: "multi-select",
+        options: [
+          { value: "beta-bloqueantes", label: "Beta-bloqueantes" },
+          { value: "diureticos", label: "Diureticos" },
+          { value: "inibidores-da-enzima-conversora", label: "Inibidores da enzima conversora" },
+          { value: "antagonistas-do-receptor-angiotensina-ii", label: "Antagonistas do receptor angiotensina II" },
+          { value: "outros", label: "Outros" },
+        ],
+      },
+      {
+        key: "complicacoes",
+        label: "Complicações",
+        type: "multi-select",
+        options: [
+          { value: "microvasculares", label: "Microvasculares" },
+          { value: "macrovascular", label: "Macrovasculares" },
+        ],
       },
     ],
   }],
