@@ -242,6 +242,16 @@ export const MGF_FIELDS: SpecialtyField[] = [
     section: "clinical_history",
   },
   {
+    key: "vaccination_plan",
+    label: "PNV Cumprido",
+    type: "select",
+    section: "clinical_history",
+    options: [
+      { value: "sim", label: "Sim" },
+      { value: "nao", label: "Não" },
+    ],
+  },
+  {
     key: "chronic_diseases",
     label: "Doenças Crónicas",
     type: "text-list",
