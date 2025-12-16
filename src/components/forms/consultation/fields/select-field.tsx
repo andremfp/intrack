@@ -3,7 +3,6 @@ import {
   Select,
   SelectContent,
   SelectItem,
-  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -24,10 +23,9 @@ export function SelectField({
   onUpdate,
   isRequired,
 }: SelectFieldProps) {
-  const CLEAR_VALUE = "__intrack_clear__";
   const fieldId = field.key;
   const isInvalid = Boolean(errorMessage);
-  const stringValue = typeof value === "string" ? value : "";
+  const stringValue = typeof value === "string" ? value.trim() : "";
   const required = isRequired !== undefined ? isRequired : field.required;
   const normalizedValue = stringValue.trim();
 
@@ -38,20 +36,8 @@ export function SelectField({
         {required && <span className="text-destructive ml-1">*</span>}
       </Label>
       <Select
-        value={normalizedValue || undefined}
-        onValueChange={(val) => {
-          if (val === CLEAR_VALUE) {
-            onUpdate("");
-            return;
-          }
-          // Defensive toggle (Radix Select may not emit the same value twice,
-          // but if it does, allow it to clear like our combobox field does).
-          if (val === normalizedValue && !required) {
-            onUpdate("");
-            return;
-          }
-          onUpdate(val);
-        }}
+        value={normalizedValue}
+        onValueChange={(val) => onUpdate(val)}
         required={required}
       >
         <SelectTrigger
@@ -64,12 +50,6 @@ export function SelectField({
           />
         </SelectTrigger>
         <SelectContent>
-          {!required && (
-            <>
-              <SelectItem value={CLEAR_VALUE}>Limpar</SelectItem>
-              <SelectSeparator />
-            </>
-          )}
           {field.options
             ?.slice()
             .sort((a, b) => a.label.localeCompare(b.label))

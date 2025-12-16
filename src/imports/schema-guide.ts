@@ -99,6 +99,11 @@ const FIELD_DOCUMENTATION: Record<string, Omit<SchemaFieldGuide, keyof Specialty
     validationRules: ["Deve corresponder a uma opção válida se preenchido"],
     notes: "Campo opcional para histórico clínico"
   },
+  vaccination_plan: {
+    description: "PNV Cumprido",
+    validationRules: ["Deve corresponder a uma opção válida se preenchido"],
+    notes: "Campo opcional para histórico clínico"
+  },
   chronic_diseases: {
     description: "Lista de doenças crónicas do paciente",
     acceptedFormats: ["Texto separado por ponto e vírgula"],

@@ -426,6 +426,10 @@ export function ConsultationModal({
                         typeof formValues.location === "string"
                           ? formValues.location
                           : "";
+                      const currentSex =
+                        typeof formValues.sex === "string"
+                          ? formValues.sex
+                          : "";
 
                       // Skip if no fields and no type-specific sections
                       if (
@@ -444,11 +448,15 @@ export function ConsultationModal({
                           return false;
                         } else if (
                           (field.key === "type" ||
-                            field.key === "contraceptive" ||
-                            field.key === "new_contraceptive" ||
                             field.key === "referrence" ||
                             field.key === "referrence_motive") &&
                           currentLocation !== "unidade"
+                        ) {
+                          return false;
+                        } else if (
+                          (field.key === "contraceptive" ||
+                            field.key === "new_contraceptive") &&
+                          !(currentLocation === "unidade" && currentSex !== "m")
                         ) {
                           return false;
                         }
