@@ -25,7 +25,8 @@ export function MultiSelectField({
 }: MultiSelectFieldProps) {
   const fieldId = field.key;
   const isInvalid = Boolean(errorMessage);
-  const required = isRequired !== undefined ? isRequired : field.required;
+  const required =
+    isRequired !== undefined ? isRequired : field.requiredWhen === "always";
 
   return (
     <div className="space-y-2">

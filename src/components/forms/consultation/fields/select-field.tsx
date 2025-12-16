@@ -26,7 +26,8 @@ export function SelectField({
   const fieldId = field.key;
   const isInvalid = Boolean(errorMessage);
   const stringValue = typeof value === "string" ? value.trim() : "";
-  const required = isRequired !== undefined ? isRequired : field.required;
+  const required =
+    isRequired !== undefined ? isRequired : field.requiredWhen === "always";
   const normalizedValue = stringValue.trim();
 
   return (

@@ -33,7 +33,15 @@ import {
   validateForm,
   serializeFormValues,
 } from "@/components/forms/consultation/helpers";
+import {
+  buildFieldRuleContext,
+  evaluateFieldRule,
+  isFieldRequired,
+  isFieldVisible,
+  resolveTypeSections,
+} from "@/components/forms/consultation/helpers";
 import { ConsultationFieldWithLayout } from "@/components/forms/consultation/consultation-form";
+import type { FormValues } from "@/hooks/consultations/types";
 
 interface ConsultationModalProps {
   userId: string;
@@ -53,6 +61,54 @@ export function ConsultationModal({
   const isEditing = !!editingConsultation;
   const [isSaving, setIsSaving] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+
+  /**
+   * For updates, clear values for fields that are hidden by the current UI conditions
+   * so they are written as null in `details` and don't linger in the DB.
+   *
+   * Note: this does NOT mutate form state; it only affects the payload we serialize.
+   */
+  const sanitizeFormValuesForUpdate = (values: FormValues): FormValues => {
+    const sanitized: FormValues = { ...values };
+    const ctx = buildFieldRuleContext(values);
+
+    // Helper: clear a key to an "empty" value that serializes to null.
+    // For array-valued fields, we use [] so serializeFieldValue returns null.
+    // For all other fields, we use "" so serializeFieldValue returns null.
+    const clearKey = (key: string, fieldType?: string) => {
+      sanitized[key] =
+        fieldType === "text-list" ||
+        fieldType === "multi-select" ||
+        fieldType === "icpc2-codes"
+          ? []
+          : "";
+    };
+
+    // Clear hidden specialty fields (driven by each field's visibleWhen)
+    specialtyFields.forEach((field) => {
+      if (!isFieldVisible(field, ctx)) {
+        clearKey(field.key, field.type);
+      }
+    });
+
+    // Clear hidden type-specific fields (driven by section.visibleWhen + field.visibleWhen)
+    const typeSections = resolveTypeSections(ctx.type);
+    typeSections.forEach((section) => {
+      const sectionVisible = evaluateFieldRule(section.visibleWhen, ctx, true);
+      if (!sectionVisible) {
+        section.fields.forEach((field) => clearKey(field.key, field.type));
+        return;
+      }
+
+      section.fields.forEach((field) => {
+        if (!isFieldVisible(field, ctx)) {
+          clearKey(field.key, field.type);
+        }
+      });
+    });
+
+    return sanitized;
+  };
 
   const handleClose = () => {
     if (isSaving) return;
@@ -74,6 +130,8 @@ export function ConsultationModal({
     typeSpecificSectionsBySection,
     specialtyFields,
   } = useConsultationForm(specialty?.code || null, editingConsultation);
+
+  const ruleCtx = buildFieldRuleContext(formValues as FormValues);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -125,9 +183,14 @@ export function ConsultationModal({
     setIsSaving(true);
 
     try {
+      const valuesForSerialization =
+        isEditing && editingConsultation
+          ? sanitizeFormValuesForUpdate(formValues as FormValues)
+          : formValues;
+
       const details = prepareConsultationDetails(
         specialty!.code,
-        serializeFormValues(formValues, specialtyFields)
+        serializeFormValues(valuesForSerialization, specialtyFields)
       );
 
       const consultation: ConsultationInsert = {
@@ -224,11 +287,15 @@ export function ConsultationModal({
                     {COMMON_CONSULTATION_FIELDS.filter(
                       (field) => field.key !== "age_unit"
                     ).map((field) => {
+                      const required = isFieldRequired(field, ruleCtx);
                       // Special handling for age field - combine with age_unit
                       if (field.key === "age") {
                         const ageUnitField = COMMON_CONSULTATION_FIELDS.find(
                           (f) => f.key === "age_unit"
                         );
+                        const ageUnitRequired = ageUnitField
+                          ? isFieldRequired(ageUnitField, ruleCtx)
+                          : false;
                         return (
                           <div key={field.key} className="space-y-2">
                             <Label
@@ -236,7 +303,7 @@ export function ConsultationModal({
                               className="text-sm font-medium"
                             >
                               {field.label}
-                              {field.required && (
+                              {required && (
                                 <span className="text-destructive ml-1">*</span>
                               )}
                             </Label>
@@ -249,7 +316,7 @@ export function ConsultationModal({
                                   e: React.ChangeEvent<HTMLInputElement>
                                 ) => updateField(field.key, e.target.value)}
                                 placeholder={field.placeholder}
-                                required={field.required}
+                                required={required}
                                 min="0"
                                 max="150"
                                 className={`flex-1 min-w-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
@@ -278,7 +345,7 @@ export function ConsultationModal({
                                   onValueChange={(val) =>
                                     updateField("age_unit", val)
                                   }
-                                  required={ageUnitField.required}
+                                  required={ageUnitRequired}
                                 >
                                   <SelectTrigger
                                     id="age_unit"
@@ -340,6 +407,7 @@ export function ConsultationModal({
                               : undefined
                           }
                           onUpdate={(value) => updateField(field.key, value)}
+                          isRequired={required}
                         />
                       );
                     })}
@@ -420,15 +488,6 @@ export function ConsultationModal({
                       const sectionFields = fieldsBySection[sectionKey] || [];
                       const typeSpecificSections =
                         typeSpecificSectionsBySection[sectionKey] || [];
-                      // Determine current location (from basic information section)
-                      const currentLocation =
-                        typeof formValues.location === "string"
-                          ? formValues.location
-                          : "";
-                      const currentSex =
-                        typeof formValues.sex === "string"
-                          ? formValues.sex
-                          : "";
 
                       // Skip if no fields and no type-specific sections
                       if (
@@ -438,29 +497,9 @@ export function ConsultationModal({
                         return null;
                       }
 
-                      // Hide fields as needed.
-                      const visibleFields = sectionFields.filter((field) => {
-                        if (
-                          field.key === "internship" &&
-                          currentLocation === "unidade"
-                        ) {
-                          return false;
-                        } else if (
-                          (field.key === "type" ||
-                            field.key === "referrence" ||
-                            field.key === "referrence_motive") &&
-                          currentLocation !== "unidade"
-                        ) {
-                          return false;
-                        } else if (
-                          (field.key === "contraceptive" ||
-                            field.key === "new_contraceptive") &&
-                          !(currentLocation === "unidade" && currentSex !== "m")
-                        ) {
-                          return false;
-                        }
-                        return true;
-                      });
+                      const visibleFields = sectionFields.filter((field) =>
+                        isFieldVisible(field, ruleCtx)
+                      );
 
                       // Skip if no visible fields and no type-specific sections
                       if (
@@ -483,22 +522,10 @@ export function ConsultationModal({
                               </h4>
                               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 {visibleFields.map((field) => {
-                                  // Type field is required only when location is 'unidade'
-                                  const isTypeRequired =
-                                    field.key === "type" &&
-                                    currentLocation === "unidade";
-                                  // Internship is required when location is not 'unidade'
-                                  const isInternshipRequired =
-                                    field.key === "internship" &&
-                                    typeof currentLocation === "string" &&
-                                    currentLocation !== "" &&
-                                    currentLocation !== "unidade";
-                                  const isRequired =
-                                    field.key === "type"
-                                      ? isTypeRequired
-                                      : field.key === "internship"
-                                      ? isInternshipRequired
-                                      : undefined;
+                                  const required = isFieldRequired(
+                                    field,
+                                    ruleCtx
+                                  );
 
                                   return (
                                     <ConsultationFieldWithLayout
@@ -514,7 +541,7 @@ export function ConsultationModal({
                                         updateField(field.key, value)
                                       }
                                       icpc2Codes={icpc2Codes}
-                                      isRequired={isRequired}
+                                      isRequired={required}
                                     />
                                   );
                                 })}
@@ -526,17 +553,12 @@ export function ConsultationModal({
                           {typeSpecificSections.length > 0 && (
                             <div className="space-y-4">
                               {typeSpecificSections.map((section) => {
-                                // Hide all SM type-specific sections when sex is male and location is not unidade
-                                if (
-                                  formValues.type === "SM" &&
-                                  !(
-                                    currentSex !== "m" &&
-                                    currentLocation === "unidade"
-                                  )
-                                ) {
-                                  console.log("Hiding section:", section.key);
-                                  return null;
-                                }
+                                const sectionVisible = evaluateFieldRule(
+                                  section.visibleWhen,
+                                  ruleCtx,
+                                  true
+                                );
+                                if (!sectionVisible) return null;
                                 return (
                                   <div
                                     key={section.label}
@@ -546,22 +568,35 @@ export function ConsultationModal({
                                       {section.label}
                                     </h4>
                                     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-                                      {section.fields.map((field) => (
-                                        <ConsultationFieldWithLayout
-                                          key={field.key}
-                                          field={field}
-                                          value={formValues[field.key] || ""}
-                                          errorMessage={
-                                            fieldError?.key === field.key
-                                              ? fieldError.message
-                                              : undefined
-                                          }
-                                          onUpdate={(value) =>
-                                            updateField(field.key, value)
-                                          }
-                                          icpc2Codes={icpc2Codes}
-                                        />
-                                      ))}
+                                      {section.fields
+                                        .filter((field) =>
+                                          isFieldVisible(field, ruleCtx)
+                                        )
+                                        .map((field) => {
+                                          const required = isFieldRequired(
+                                            field,
+                                            ruleCtx
+                                          );
+                                          return (
+                                            <ConsultationFieldWithLayout
+                                              key={field.key}
+                                              field={field}
+                                              value={
+                                                formValues[field.key] || ""
+                                              }
+                                              errorMessage={
+                                                fieldError?.key === field.key
+                                                  ? fieldError.message
+                                                  : undefined
+                                              }
+                                              onUpdate={(value) =>
+                                                updateField(field.key, value)
+                                              }
+                                              icpc2Codes={icpc2Codes}
+                                              isRequired={required}
+                                            />
+                                          );
+                                        })}
                                     </div>
                                   </div>
                                 );

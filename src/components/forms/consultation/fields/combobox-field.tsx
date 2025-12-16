@@ -37,7 +37,8 @@ export function ComboboxField({
   const isInvalid = Boolean(errorMessage);
   const stringValue = typeof value === "string" ? value : "";
   const [open, setOpen] = React.useState(false);
-  const required = isRequired !== undefined ? isRequired : field.required;
+  const required =
+    isRequired !== undefined ? isRequired : field.requiredWhen === "always";
 
   // Sort options alphabetically
   const sortedOptions = React.useMemo(

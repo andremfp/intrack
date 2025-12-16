@@ -209,7 +209,7 @@ export function parseTextList(value: unknown): string[] | null {
 export function parseIcpcCodes(
   value: unknown,
   specialtyCode: string
-): string | null {
+): string[] | null {
   if (value === null || value === undefined || value === "") return null;
 
   const str = String(value).trim();
@@ -243,7 +243,7 @@ export function parseIcpcCodes(
     }
   }
 
-  return validCodes.length > 0 ? validCodes.join("; ") : null;
+  return validCodes.length > 0 ? validCodes : null;
 }
 
 /**

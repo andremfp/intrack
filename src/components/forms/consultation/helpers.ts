@@ -1,5 +1,5 @@
 import { toasts } from "@/utils/toasts";
-import type { SpecialtyField } from "@/constants";
+import type { FieldRule, FieldRuleContext, SpecialtyField } from "@/constants";
 import {
   COMMON_CONSULTATION_FIELDS,
   MGF_CONSULTATION_TYPE_SECTIONS,
@@ -14,31 +14,59 @@ export function resolveTypeSections(typeValue: string | null | undefined) {
   return MGF_CONSULTATION_TYPE_SECTIONS[normalizedType] || [];
 }
 
+export function buildFieldRuleContext(formValues: FormValues): FieldRuleContext {
+  return {
+    location: typeof formValues.location === "string" ? formValues.location : "",
+    sex: typeof formValues.sex === "string" ? formValues.sex : "",
+    type: typeof formValues.type === "string" ? formValues.type : "",
+  };
+}
+
+export function evaluateFieldRule(
+  rule: FieldRule | undefined,
+  ctx: FieldRuleContext,
+  defaultValue: boolean
+): boolean {
+  if (rule === undefined) return defaultValue;
+  if (rule === "always") return true;
+  if (rule === "never") return false;
+  return rule(ctx);
+}
+
+export function isFieldVisible(field: SpecialtyField, ctx: FieldRuleContext): boolean {
+  return evaluateFieldRule(field.visibleWhen, ctx, true);
+}
+
+export function isFieldRequired(field: SpecialtyField, ctx: FieldRuleContext): boolean {
+  return evaluateFieldRule(field.requiredWhen, ctx, false);
+}
+
 function getAllRequiredFields(
   specialtyFields: SpecialtyField[],
   consultationType?: string,
   formValues?: FormValues
 ): SpecialtyField[] {
+  const ctx = formValues ? buildFieldRuleContext(formValues) : {};
+
   const requiredFields = [
-    ...COMMON_CONSULTATION_FIELDS.filter((f) => f.required),
-    ...specialtyFields.filter((f) => {
-      // Internship is only required when location is not 'unidade' and not 'other'
-      if (f.key === "internship") {
-        const location = formValues?.location;
-        return location && location !== "unidade" && location !== "other";
-      }
-      // Type is only required when location is 'unidade'
-      if (f.key === "type") {
-        const location = formValues?.location;
-        return location === "unidade";
-      }
-      return f.required;
-    }),
+    ...COMMON_CONSULTATION_FIELDS.filter(
+      (f) => isFieldRequired(f, ctx) && isFieldVisible(f, ctx)
+    ),
+    ...specialtyFields.filter(
+      (f) => isFieldRequired(f, ctx) && isFieldVisible(f, ctx)
+    ),
   ];
 
   resolveTypeSections(consultationType).forEach((section) => {
+    const sectionVisible = evaluateFieldRule(
+      section.visibleWhen,
+      ctx,
+      true
+    );
+    if (!sectionVisible) return;
+
     section.fields
-      .filter((field) => field.required)
+      .filter((field) => isFieldRequired(field, ctx) && isFieldVisible(field, ctx))
       .forEach((field) => requiredFields.push(field));
   });
 
@@ -141,10 +169,19 @@ function serializeFieldValue(
   value: string | string[]
 ): SpecialtyDetails[string] {
   if (field.type === "text-list") {
-    const filteredItems = (value as string[])
+    const filteredItems = (Array.isArray(value) ? value : [])
       .map((item) => item.trim())
       .filter((item) => item.length > 0);
-    return filteredItems.length > 0 ? filteredItems.join("; ") : null;
+
+    return filteredItems.length > 0 ? filteredItems : null;
+  }
+
+  if (field.type === "icpc2-codes") {
+    const filteredItems = (Array.isArray(value) ? value : [])
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
+
+    return filteredItems.length > 0 ? filteredItems : null;
   }
 
   if (field.type === "boolean") {
@@ -157,7 +194,10 @@ function serializeFieldValue(
   }
 
   if (field.type === "multi-select") { // array of strings
-    return Array.isArray(value) ? value : null;
+    const filteredItems = (Array.isArray(value) ? value : [])
+      .map((item) => String(item).trim())
+      .filter((item) => item.length > 0);
+    return filteredItems.length > 0 ? filteredItems : null;
   }
 
   return typeof value === "string" && value.length > 0 ? value : null; // string or null

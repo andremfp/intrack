@@ -8,10 +8,11 @@ import type { ICPC2Code } from "@/constants";
 
 interface ICPC2CodesFieldProps {
   field: SpecialtyField;
-  value: string | string[];
+  value: string[];
   errorMessage?: string;
-  onUpdate: (value: string | string[]) => void;
+  onUpdate: (value: string[]) => void;
   icpc2Codes: ICPC2Code[];
+  isRequired?: boolean;
 }
 
 export function ICPC2CodesField({
@@ -20,14 +21,14 @@ export function ICPC2CodesField({
   errorMessage,
   onUpdate,
   icpc2Codes,
+  isRequired,
 }: ICPC2CodesFieldProps) {
   const fieldId = field.key;
   const isInvalid = Boolean(errorMessage);
-  const stringValue = typeof value === "string" ? value : "";
+  const required = isRequired ?? field.requiredWhen === "always";
   const [searchTerm, setSearchTerm] = useState("");
 
-  const selectedCodeEntries = stringValue
-    .split(";")
+  const selectedCodeEntries = (Array.isArray(value) ? value : [])
     .map((c) => c.trim())
     .filter((c) => c.length > 0);
 
@@ -57,20 +58,17 @@ export function ICPC2CodesField({
         return entryCode !== code;
       });
     } else {
-      newCodeEntries = [
-        ...selectedCodeEntries,
-        `${code} - ${description}`,
-      ];
+      newCodeEntries = [...selectedCodeEntries, `${code} - ${description}`];
     }
 
-    onUpdate(newCodeEntries.join("; "));
+    onUpdate(newCodeEntries);
   };
 
   return (
     <div className="space-y-2">
       <Label htmlFor={fieldId} className="text-sm font-medium">
         {field.label}
-        {field.required && <span className="text-destructive ml-1">*</span>}
+        {required && <span className="text-destructive ml-1">*</span>}
       </Label>
 
       {selectedCodeEntries.length > 0 && (
@@ -173,4 +171,3 @@ export function ICPC2CodesField({
     </div>
   );
 }
-

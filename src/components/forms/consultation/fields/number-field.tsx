@@ -7,6 +7,7 @@ interface NumberFieldProps {
   value: string | string[];
   errorMessage?: string;
   onUpdate: (value: string | string[]) => void;
+  isRequired?: boolean;
 }
 
 export function NumberField({
@@ -14,16 +15,18 @@ export function NumberField({
   value,
   errorMessage,
   onUpdate,
+  isRequired,
 }: NumberFieldProps) {
   const fieldId = field.key;
   const isInvalid = Boolean(errorMessage);
   const stringValue = typeof value === "string" ? value : "";
+  const required = isRequired ?? field.requiredWhen === "always";
 
   return (
     <div className="space-y-2">
       <Label htmlFor={fieldId} className="text-sm font-medium">
         {field.label}
-        {field.required && <span className="text-destructive ml-1">*</span>}
+        {required && <span className="text-destructive ml-1">*</span>}
       </Label>
       <div className="flex items-center gap-2">
         <Input
@@ -32,7 +35,7 @@ export function NumberField({
           value={stringValue}
           onChange={(e) => onUpdate(e.target.value)}
           placeholder={field.placeholder}
-          required={field.required}
+          required={required}
           min="0"
           max={field.key === "age" ? "150" : "999999999"}
           className={`flex-1 min-w-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${

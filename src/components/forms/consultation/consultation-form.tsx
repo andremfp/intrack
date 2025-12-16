@@ -48,9 +48,22 @@ export function ConsultationField({
     case "text-list":
       return <TextListField {...commonProps} />;
     case "icpc2-codes":
-      return <ICPC2CodesField {...commonProps} icpc2Codes={icpc2Codes} />;
+      return (
+        <ICPC2CodesField
+          {...commonProps}
+          icpc2Codes={icpc2Codes}
+          value={Array.isArray(value) ? value : []}
+          onUpdate={(v) => onUpdate(v)}
+        />
+      );
     case "multi-select":
-      return <MultiSelectField {...commonProps} value={value as string[]} />;
+      return (
+        <MultiSelectField
+          {...commonProps}
+          value={Array.isArray(value) ? value : []}
+          onUpdate={(v) => onUpdate(v)}
+        />
+      );
     default:
       return null;
   }

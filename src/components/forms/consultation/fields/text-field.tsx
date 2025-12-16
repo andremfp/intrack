@@ -8,6 +8,7 @@ interface BaseFieldProps {
   value: string | string[];
   errorMessage?: string;
   onUpdate: (value: string | string[]) => void;
+  isRequired?: boolean;
 }
 
 export function TextField({
@@ -15,10 +16,12 @@ export function TextField({
   value,
   errorMessage,
   onUpdate,
+  isRequired,
 }: BaseFieldProps) {
   const fieldId = field.key;
   const isInvalid = Boolean(errorMessage);
   const stringValue = typeof value === "string" ? value : "";
+  const required = isRequired ?? field.requiredWhen === "always";
 
   if (field.key === "date") {
     return (
@@ -29,7 +32,7 @@ export function TextField({
           value={stringValue}
           onChange={(date: string) => onUpdate(date)}
           placeholder="dd/mm/aaaa"
-          required={field.required}
+          required={required}
           isInvalid={isInvalid}
           describedBy={isInvalid ? `${fieldId}-error` : undefined}
         />
@@ -46,7 +49,7 @@ export function TextField({
     <div className="space-y-2">
       <Label htmlFor={fieldId} className="text-sm font-medium">
         {field.label}
-        {field.required && <span className="text-destructive ml-1">*</span>}
+        {required && <span className="text-destructive ml-1">*</span>}
       </Label>
       <div className="flex items-center gap-2">
         <Input
@@ -55,7 +58,7 @@ export function TextField({
           value={stringValue}
           onChange={(e) => onUpdate(e.target.value)}
           placeholder={field.placeholder}
-          required={field.required}
+          required={required}
           aria-invalid={isInvalid || undefined}
           aria-describedby={isInvalid ? `${fieldId}-error` : undefined}
           className={isInvalid ? "border-destructive" : ""}

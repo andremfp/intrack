@@ -89,7 +89,7 @@ export function ImportSchemaGuide({
                   <div>
                     <CardTitle className="text-base flex items-center gap-2">
                       {field.label}
-                      {field.required && (
+                      {field.requiredWhen === "always" && (
                         <Badge variant="destructive" className="text-xs">
                           Obrigatório
                         </Badge>

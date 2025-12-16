@@ -58,11 +58,20 @@ export type FieldType =
   | "text-list"
   | "icpc2-codes";
 
+export type FieldRuleContext = {
+  location?: string;
+  sex?: string;
+  type?: string;
+};
+
+export type FieldRule = "always" | "never" | ((ctx: FieldRuleContext) => boolean);
+
 export interface SpecialtyField {
   key: string;
   label: string;
   type: FieldType;
-  required?: boolean;
+  requiredWhen?: FieldRule;
+  visibleWhen?: FieldRule;
   defaultValue?: string | number | boolean | null;
   options?: SpecialtyFieldOption[];
   placeholder?: string;
@@ -80,6 +89,7 @@ export interface ConstultationTypeSection {
   label: string;
   fields: SpecialtyField[];
   section?: string; // Optional section grouping for UI organization
+  visibleWhen?: FieldRule;
 }
 
 // Common fields present in all consultations
@@ -88,19 +98,19 @@ export const COMMON_CONSULTATION_FIELDS: SpecialtyField[] = [
     key: "date",
     label: "Data",
     type: "text",
-    required: true,
+    requiredWhen: "always",
   },
   {
     key: "process_number",
     label: "Número de Processo",
     type: "number",
-    required: true,
+    requiredWhen: "always",
   },
   {
     key: "sex",
     label: "Sexo",
     type: "select",
-    required: true,
+    requiredWhen: "always",
     options: [
       { value: "m", label: "Masculino" },
       { value: "f", label: "Feminino" },
@@ -111,13 +121,13 @@ export const COMMON_CONSULTATION_FIELDS: SpecialtyField[] = [
     key: "age",
     label: "Idade",
     type: "number",
-    required: true,
+    requiredWhen: "always",
   },
   {
     key: "age_unit",
     label: "Unidade de Idade",
     type: "select",
-    required: true,
+    requiredWhen: "always",
     defaultValue: "years",
     options: [
       { value: "days", label: "Dias" },
@@ -146,7 +156,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
     key: "location",
     label: "Local",
     type: "select",
-    required: true,
+    requiredWhen: "always",
     section: "consultation_info",
     options: [
       { value: "unidade", label: "Unidade de Saúde" },
@@ -159,7 +169,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
     key: "autonomy",
     label: "Autonomia",
     type: "select",
-    required: true,
+    requiredWhen: "always",
     section: "consultation_info",
     options: [
       { value: "parcial", label: "Parcial" },
@@ -172,7 +182,8 @@ export const MGF_FIELDS: SpecialtyField[] = [
     key: "type",
     label: "Tipologia",
     type: "select",
-    required: false, // Conditionally required: only when location is 'unidade'
+    requiredWhen: (ctx) => ctx.location === "unidade",
+    visibleWhen: (ctx) => ctx.location === "unidade",
     section: "consultation_info",
     options: [
       { value: "SA", label: "Saúde Adulto" },
@@ -197,7 +208,9 @@ export const MGF_FIELDS: SpecialtyField[] = [
     key: "internship",
     label: "Estágio",
     type: "combobox",
-    required: true,
+    requiredWhen: (ctx) =>
+      !!ctx.location && ctx.location !== "unidade" && ctx.location !== "other",
+    visibleWhen: (ctx) => ctx.location !== "unidade",
     section: "consultation_info",
     options: [
       { value: "cardio", label: "Cardiologia" },
@@ -287,6 +300,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
     type: "combobox",
     placeholder: "Referenciação",
     section: "referral",
+    visibleWhen: (ctx) => ctx.location === "unidade",
     options: [
       { value: "cardiologia", label: "Cardiologia" },
       { value: "endocrinologia", label: "Endocrinologia" },
@@ -322,6 +336,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
     type: "icpc2-codes",
     placeholder: "Motivo da referenciação",
     section: "referral",
+    visibleWhen: (ctx) => ctx.location === "unidade",
   },
   // Planeamento Familiar
   {
@@ -330,6 +345,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
     type: "combobox",
     placeholder: "Tipo de contraceptivo",
     section: "family_planning",
+    visibleWhen: (ctx) => ctx.location === "unidade" && ctx.sex !== "m",
     options: [
       { value: "coc", label: "COC" },
       { value: "cop", label: "COP" },
@@ -349,6 +365,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
     type: "combobox",
     placeholder: "Tipo de contraceptivo",
     section: "family_planning",
+    visibleWhen: (ctx) => ctx.location === "unidade" && ctx.sex !== "m",
     options: [
       { value: "coc", label: "COC" },
       { value: "cop", label: "COP" },
@@ -524,12 +541,13 @@ export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
     key: "history",
     label: "Saúde Materna - Historial",
     section: "type_specific",
+    visibleWhen: (ctx) => ctx.location === "unidade" && ctx.sex !== "m",
     fields: [
       {
         key: "trimestre",
         label: "Trimestre",
         type: "select",
-        required: true,
+        requiredWhen: "always",
         options: [
           { value: "1t", label: "1º Trimestre" },
           { value: "2t", label: "2º Trimestre" },
@@ -541,7 +559,7 @@ export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
         key: "plano-vigilancia",
         label: "Plano de Vigilância",
         type: "multi-select",
-        required: true,
+        requiredWhen: "always",
         options: [
           { value: "analises", label: "Análises" },
           { value: "eco1", label: "Ecografia 1º Trim." },
@@ -570,7 +588,11 @@ const resolveFieldDefault = (field: SpecialtyField): SpecialtyDetails[string] =>
     return field.defaultValue as SpecialtyDetails[string];
   }
 
-  if (field.type === "text-list") {
+  if (
+    field.type === "text-list" ||
+    field.type === "multi-select" ||
+    field.type === "icpc2-codes"
+  ) {
     return [] as string[];
   }
 

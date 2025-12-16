@@ -7,6 +7,7 @@ interface TextareaFieldProps {
   value: string | string[];
   errorMessage?: string;
   onUpdate: (value: string | string[]) => void;
+  isRequired?: boolean;
 }
 
 export function TextareaField({
@@ -14,23 +15,25 @@ export function TextareaField({
   value,
   errorMessage,
   onUpdate,
+  isRequired,
 }: TextareaFieldProps) {
   const fieldId = field.key;
   const isInvalid = Boolean(errorMessage);
   const stringValue = typeof value === "string" ? value : "";
+  const required = isRequired ?? field.requiredWhen === "always";
 
   return (
     <div className="space-y-2">
       <Label htmlFor={fieldId} className="text-sm font-medium">
         {field.label}
-        {field.required && <span className="text-destructive ml-1">*</span>}
+        {required && <span className="text-destructive ml-1">*</span>}
       </Label>
       <Input
         id={fieldId}
         value={stringValue}
         onChange={(e) => onUpdate(e.target.value)}
         placeholder={field.placeholder}
-        required={field.required}
+        required={required}
         aria-invalid={isInvalid || undefined}
         aria-describedby={isInvalid ? `${fieldId}-error` : undefined}
         className={isInvalid ? "border-destructive" : ""}

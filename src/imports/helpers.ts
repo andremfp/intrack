@@ -313,8 +313,7 @@ function mapFieldValue(
 
   // Handle text list fields
   if (TEXT_LIST_FIELDS.has(fieldKey)) {
-    const list = parseTextList(rawValue);
-    return list ? list.join("; ") : null;
+    return parseTextList(rawValue);
   }
 
   // Handle boolean fields
@@ -430,15 +429,20 @@ function validateRequiredFields(
   const errors: ValidationError[] = [];
 
   const requiredFields = [
-    ...COMMON_CONSULTATION_FIELDS.filter((f) => f.required),
-    ...specialtyFields.filter(
-      (f) => f.required && f.key !== "internship" && f.key !== "type"
-    ), // Skip internship and type - handled separately
+    ...COMMON_CONSULTATION_FIELDS.filter((f) => f.requiredWhen === "always"),
+    ...specialtyFields.filter((f) => f.requiredWhen === "always"),
   ];
 
   for (const field of requiredFields) {
     const value = getConsultationValue(consultation, field.key);
-    if (value === null || value === undefined || value === "") {
+    const isMissing =
+      value === null ||
+      value === undefined ||
+      (typeof value === "string" && value.trim() === "") ||
+      (Array.isArray(value) &&
+        (value.length === 0 || value.every((v) => !String(v).trim())));
+
+    if (isMissing) {
       errors.push({
         rowIndex,
         field: field.key,
