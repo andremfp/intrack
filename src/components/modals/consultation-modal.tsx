@@ -420,7 +420,6 @@ export function ConsultationModal({
                       const sectionFields = fieldsBySection[sectionKey] || [];
                       const typeSpecificSections =
                         typeSpecificSectionsBySection[sectionKey] || [];
-
                       // Determine current location (from basic information section)
                       const currentLocation =
                         typeof formValues.location === "string"
@@ -526,34 +525,47 @@ export function ConsultationModal({
                           {/* Type-specific sections in this section */}
                           {typeSpecificSections.length > 0 && (
                             <div className="space-y-4">
-                              {typeSpecificSections.map((section) => (
-                                <div
-                                  key={section.label}
-                                  className="rounded-lg border bg-card/40 p-4 sm:p-5 shadow-sm"
-                                >
-                                  <h4 className="text-sm sm:text-base font-semibold mb-4 text-foreground pb-2 border-b">
-                                    {section.label}
-                                  </h4>
-                                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-                                    {section.fields.map((field) => (
-                                      <ConsultationFieldWithLayout
-                                        key={field.key}
-                                        field={field}
-                                        value={formValues[field.key] || ""}
-                                        errorMessage={
-                                          fieldError?.key === field.key
-                                            ? fieldError.message
-                                            : undefined
-                                        }
-                                        onUpdate={(value) =>
-                                          updateField(field.key, value)
-                                        }
-                                        icpc2Codes={icpc2Codes}
-                                      />
-                                    ))}
+                              {typeSpecificSections.map((section) => {
+                                // Hide all SM type-specific sections when sex is male and location is not unidade
+                                if (
+                                  formValues.type === "SM" &&
+                                  !(
+                                    currentSex !== "m" &&
+                                    currentLocation === "unidade"
+                                  )
+                                ) {
+                                  console.log("Hiding section:", section.key);
+                                  return null;
+                                }
+                                return (
+                                  <div
+                                    key={section.label}
+                                    className="rounded-lg border bg-card/40 p-4 sm:p-5 shadow-sm"
+                                  >
+                                    <h4 className="text-sm sm:text-base font-semibold mb-4 text-foreground pb-2 border-b">
+                                      {section.label}
+                                    </h4>
+                                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                                      {section.fields.map((field) => (
+                                        <ConsultationFieldWithLayout
+                                          key={field.key}
+                                          field={field}
+                                          value={formValues[field.key] || ""}
+                                          errorMessage={
+                                            fieldError?.key === field.key
+                                              ? fieldError.message
+                                              : undefined
+                                          }
+                                          onUpdate={(value) =>
+                                            updateField(field.key, value)
+                                          }
+                                          icpc2Codes={icpc2Codes}
+                                        />
+                                      ))}
+                                    </div>
                                   </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           )}
                         </div>

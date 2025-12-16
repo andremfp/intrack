@@ -520,6 +520,43 @@ export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
       },
     ],
   }],
+  sm: [{
+    key: "history",
+    label: "Saúde Materna - Historial",
+    section: "type_specific",
+    fields: [
+      {
+        key: "trimestre",
+        label: "Trimestre",
+        type: "select",
+        required: true,
+        options: [
+          { value: "1t", label: "1º Trimestre" },
+          { value: "2t", label: "2º Trimestre" },
+          { value: "3t", label: "3º Trimestre" },
+          { value: "pos", label: "Pós-parto" },
+        ],
+      },
+      {
+        key: "plano-vigilancia",
+        label: "Plano de Vigilância",
+        type: "multi-select",
+        required: true,
+        options: [
+          { value: "analises", label: "Análises" },
+          { value: "eco1", label: "Ecografia 1º Trim." },
+          { value: "eco2", label: "Ecografia 2º Trim." },
+          { value: "eco3", label: "Ecografia 3º Trim." },
+        ],
+      },
+      {
+        key: "complicacoes",
+        label: "Complicações",
+        type: "text-list",
+        placeholder: "Digite uma complicação",
+      },
+    ],
+  }],
 };
 
 // Type for specialty details JSONB

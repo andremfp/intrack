@@ -3,7 +3,7 @@ import type { ConsultationMGF } from "@/lib/api/consultations";
 import { getSpecialtyFields, type SpecialtyField } from "@/constants";
 import { resolveTypeSections } from "@/components/forms/consultation/helpers";
 import type { FormValues, FieldError } from "./types";
-import { initializeFormValues } from "./helpers";
+import { initializeFormValues, getFieldValue } from "./helpers";
 
 
 
@@ -40,10 +40,42 @@ export function useConsultationForm(
   const [fieldError, setFieldError] = useState<FieldError | null>(null);
 
   /**
+   * Initializes type-specific fields for a given consultation type.
+   * This is called when the type field is updated to ensure all type-specific
+   * fields exist in the form values with proper defaults.
+   */
+  const initializeTypeSpecificFields = (consultationType: string, currentFormValues: FormValues) => {
+    const typeSections = resolveTypeSections(consultationType);
+    const updatedValues = { ...currentFormValues };
+
+    typeSections.forEach((section) => {
+      section.fields.forEach((field) => {
+        // Only initialize if the field doesn't already exist in form values
+        if (!(field.key in updatedValues)) {
+          updatedValues[field.key] = getFieldValue(field, undefined);
+        }
+      });
+    });
+
+    return updatedValues;
+  };
+
+  /**
    * Updates a single field value and clears any error for that field.
+   * When the 'type' field is updated, also initializes type-specific fields.
    */
   const updateField = (key: string, value: string | string[]) => {
-    setFormValues((prev) => ({ ...prev, [key]: value }));
+    setFormValues((prev) => {
+      let newFormValues = { ...prev, [key]: value };
+
+      // If the type field was updated, initialize type-specific fields for the new type
+      if (key === "type" && typeof value === "string" && value.length > 0) {
+        newFormValues = initializeTypeSpecificFields(value, newFormValues);
+      }
+
+      return newFormValues;
+    });
+
     // Clear error if this field had one
     if (fieldError?.key === key) {
       setFieldError(null);
@@ -126,7 +158,7 @@ export function useConsultationForm(
   // Organize type-specific sections by their section property
   const typeSpecificSectionsBySection = useMemo(() => {
     const sections: Record<string, typeof sectionsForSelectedType> = {};
-    
+
     sectionsForSelectedType.forEach((section) => {
       const sectionKey = section.section || "type_specific";
       if (!sections[sectionKey]) {

@@ -127,8 +127,6 @@ export function initializeFormValues(
     typeof formValues.type === "string" ? formValues.type : undefined;
   const typeSpecificSections = resolveTypeSections(selectedConsultationType);
 
-  console.log("Got type specific sections", typeSpecificSections);
-
   typeSpecificSections.forEach((section) => {
     section.fields.forEach((field) => {
       // Skip if already initialized
@@ -148,7 +146,6 @@ export function initializeFormValues(
         }
         // If nested structure not found, databaseValueFromNestedStructure remains undefined
         // getFieldValue() will handle undefined and use field defaults
-
         formValues[field.key] = getFieldValue(
           field,
           databaseValueFromNestedStructure

@@ -133,8 +133,6 @@ export function validateForm(
     };
   }
 
-  // Validate exams inputs
-
   return null;
 }
 
@@ -197,6 +195,7 @@ export function serializeFormValues(
       }
 
       section.fields.forEach((field) => {
+
         nestedStructures[typeKey][section.key][field.key] = serializeFieldValue(
           field,
           formValues[field.key] || ""
