@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { IconX, IconCheck, IconSearch } from "@tabler/icons-react";
 import type { SpecialtyField } from "@/constants";
 import type { ICPC2Code } from "@/constants";
+import { SCROLLBAR_CLASSES } from "@/constants";
 
 interface ICPC2CodesFieldProps {
   field: SpecialtyField;
@@ -119,7 +120,9 @@ export function ICPC2CodesField({
       </div>
 
       {searchTerm && (
-        <div className="border rounded-md max-h-60 overflow-y-auto">
+        <div
+          className={`border rounded-md max-h-60 overflow-y-auto ${SCROLLBAR_CLASSES}`}
+        >
           {displayedCodes.length > 0 ? (
             <div className="divide-y">
               {displayedCodes.map((icpc2Code) => {

@@ -7,6 +7,7 @@ import {
   MultiSelectItem,
 } from "@/components/ui/multi-select";
 import type { SpecialtyField } from "@/constants";
+import { SCROLLBAR_CLASSES } from "@/constants";
 
 interface MultiSelectFieldProps {
   field: SpecialtyField;
@@ -44,7 +45,7 @@ export function MultiSelectField({
             placeholder={field.placeholder || `Selecionar ${field.label}`}
           />
         </MultiSelectTrigger>
-        <MultiSelectContent>
+        <MultiSelectContent className={SCROLLBAR_CLASSES}>
           {field.options
             ?.slice()
             .sort((a, b) => a.label.localeCompare(b.label))
