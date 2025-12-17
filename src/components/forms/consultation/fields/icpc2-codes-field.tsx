@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,26 @@ export function ICPC2CodesField({
   const isInvalid = Boolean(errorMessage);
   const required = isRequired ?? field.requiredWhen === "always";
   const [searchTerm, setSearchTerm] = useState("");
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const onPointerDown = (event: PointerEvent) => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      const targetNode = event.target as Node | null;
+      if (!targetNode) return;
+
+      if (!container.contains(targetNode)) {
+        setSearchTerm("");
+      }
+    };
+
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown, true);
+    };
+  }, []);
 
   const selectedCodeEntries = (Array.isArray(value) ? value : [])
     .map((c) => c.trim())
@@ -66,7 +86,7 @@ export function ICPC2CodesField({
   };
 
   return (
-    <div className="space-y-2">
+    <div ref={containerRef} className="space-y-2">
       <Label htmlFor={fieldId} className="text-sm font-medium">
         {field.label}
         {required && <span className="text-destructive ml-1">*</span>}
