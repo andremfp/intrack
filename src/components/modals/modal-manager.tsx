@@ -51,6 +51,7 @@ export function ModalManager({
       {showSpecialtyModal && userId && (
         <SpecialtySelectionModal
           userId={userId}
+          username={userProfile?.data.display_name ?? ""}
           onSpecialtySelected={onSpecialtySelected}
         />
       )}

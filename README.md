@@ -32,12 +32,6 @@ InTrack helps Portuguese Medical residents track consultations and milestones, a
 
 This project follow a strict **Git Flow** process with two permanent environments to ensure stability.
 
-### Environments
-
-- **Local:** `localhost:5173` (Uses local Supabase DB)
-- **Staging:** `https://intrack-staging.vercel.app` (Uses Staging DB)
-- **Production:** `https://intrack-seven.vercel.app` (Uses Production DB)
-
 ### Local Development Setup
 
 1.  **Clone & Install**
@@ -61,6 +55,7 @@ This project follow a strict **Git Flow** process with two permanent environment
     ```bash
     # Connects to your local Supabase instance
     VITE_SUPABASE_URL=http://127.0.0.1:54321
+    VITE_LOCAL_SUPABASE_ANON_KEY=sb_publishable_...
     VITE_LOCAL_SUPABASE_SECRET=sb_secret_...
     ```
 

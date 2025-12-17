@@ -19,11 +19,13 @@ type Specialty = Tables<"specialties">;
 
 interface SpecialtySelectionModalProps {
   userId: string;
+  username: string;
   onSpecialtySelected: (specialty: Specialty) => void;
 }
 
 export function SpecialtySelectionModal({
   userId,
+  username,
   onSpecialtySelected,
 }: SpecialtySelectionModalProps) {
   const [specialties, setSpecialties] = useState<Specialty[]>([]);
@@ -103,7 +105,7 @@ export function SpecialtySelectionModal({
               {/* Title and Description */}
               <div className="text-center space-y-2">
                 <h2 className="text-2xl font-bold tracking-tight">
-                  Bem-vindo ao InTrack
+                  Bem-vindo ao InTrack, {username}!
                 </h2>
                 <p className="text-sm text-muted-foreground max-w-sm">
                   Para começar, seleciona a tua especialidade médica.
