@@ -13,6 +13,7 @@ interface BooleanFieldProps {
   value: string | string[];
   errorMessage?: string;
   onUpdate: (value: string | string[]) => void;
+  isRequired?: boolean;
 }
 
 export function BooleanField({
@@ -20,16 +21,18 @@ export function BooleanField({
   value,
   errorMessage,
   onUpdate,
+  isRequired,
 }: BooleanFieldProps) {
   const fieldId = field.key;
   const isInvalid = Boolean(errorMessage);
   const stringValue = typeof value === "string" ? value : "false";
+  const required = isRequired ?? field.requiredWhen === "always";
 
   return (
     <div className="space-y-2">
       <Label htmlFor={fieldId} className="text-sm font-medium">
         {field.label}
-        {field.required && <span className="text-destructive ml-1">*</span>}
+        {required && <span className="text-destructive ml-1">*</span>}
       </Label>
       <Select value={stringValue} onValueChange={(val) => onUpdate(val)}>
         <SelectTrigger

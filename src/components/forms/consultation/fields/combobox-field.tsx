@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/command";
 import { cn } from "@/utils/utils";
 import type { SpecialtyField } from "@/constants";
+import { SCROLLBAR_CLASSES } from "@/constants";
 
 interface ComboboxFieldProps {
   field: SpecialtyField;
@@ -37,7 +38,8 @@ export function ComboboxField({
   const isInvalid = Boolean(errorMessage);
   const stringValue = typeof value === "string" ? value : "";
   const [open, setOpen] = React.useState(false);
-  const required = isRequired !== undefined ? isRequired : field.required;
+  const required =
+    isRequired !== undefined ? isRequired : field.requiredWhen === "always";
 
   // Sort options alphabetically
   const sortedOptions = React.useMemo(
@@ -87,7 +89,7 @@ export function ComboboxField({
               }
               className="h-9"
             />
-            <CommandList>
+            <CommandList className={SCROLLBAR_CLASSES}>
               <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>
               <CommandGroup>
                 {sortedOptions.map((option) => (

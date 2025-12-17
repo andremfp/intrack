@@ -9,6 +9,7 @@ interface TextListFieldProps {
   value: string | string[];
   errorMessage?: string;
   onUpdate: (value: string | string[]) => void;
+  isRequired?: boolean;
 }
 
 export function TextListField({
@@ -16,16 +17,18 @@ export function TextListField({
   value,
   errorMessage,
   onUpdate,
+  isRequired,
 }: TextListFieldProps) {
   const fieldId = field.key;
   const isInvalid = Boolean(errorMessage);
   const listValue = (value || [""]) as string[];
+  const required = isRequired ?? field.requiredWhen === "always";
 
   return (
     <div className="space-y-2">
       <Label htmlFor={fieldId} className="text-sm font-medium">
         {field.label}
-        {field.required && <span className="text-destructive ml-1">*</span>}
+        {required && <span className="text-destructive ml-1">*</span>}
       </Label>
       <div className="space-y-2">
         {listValue.map((item, index) => (

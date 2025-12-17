@@ -13,14 +13,13 @@ import {
   parseTextList,
   parseIcpcCodes,
   getFieldSource,
-  validateLocationAndInternship,
 } from "./mapping";
 import {
   COMMON_CONSULTATION_FIELDS,
   MGF_FIELDS,
   getDefaultSpecialtyDetails,
 } from "@/constants";
-import type { SpecialtyField } from "@/constants";
+import type { FieldRule, FieldRuleContext, SpecialtyField } from "@/constants";
 import {
   commonFieldByKey,
   mgfFieldByKey,
@@ -47,6 +46,45 @@ export function getFieldByKey(fieldKey: string): SpecialtyField | undefined {
  */
 export function excelSerialToDate(serial: number): Date {
   return new Date(EXCEL_EPOCH.getTime() + serial * MS_PER_DAY);
+}
+
+function evaluateRule(
+  rule: FieldRule | undefined,
+  ctx: FieldRuleContext,
+  defaultValue: boolean
+): boolean {
+  if (!rule) return defaultValue;
+  if (rule === "always") return true;
+  if (rule === "never") return false;
+  try {
+    return Boolean(rule(ctx));
+  } catch {
+    return defaultValue;
+  }
+}
+
+function getRuleContext(
+  consultation: Partial<ConsultationInsert>
+): FieldRuleContext {
+  const details =
+    consultation.details && typeof consultation.details === "object"
+      ? (consultation.details as Record<string, unknown>)
+      : undefined;
+
+  return {
+    location:
+      typeof consultation.location === "string" ? consultation.location : undefined,
+    sex: typeof consultation.sex === "string" ? consultation.sex : undefined,
+    type: typeof details?.type === "string" ? (details.type as string) : undefined,
+  };
+}
+
+function isFieldVisible(field: SpecialtyField, ctx: FieldRuleContext): boolean {
+  return evaluateRule(field.visibleWhen, ctx, true);
+}
+
+function isFieldRequired(field: SpecialtyField, ctx: FieldRuleContext): boolean {
+  return evaluateRule(field.requiredWhen, ctx, false);
 }
 
 /**
@@ -111,6 +149,48 @@ function isRowEmpty(row: ImportRow): boolean {
     if (typeof value === "string") return value.trim() === "";
     return false;
   });
+}
+
+/**
+ * Validates that fields not visible for the row's context are not populated.
+ * This keeps imports aligned with UI visibility rules (visibleWhen).
+ */
+function validateVisibilityConstraints(
+  consultation: Partial<ConsultationInsert>,
+  rowIndex: number,
+  specialtyFields: SpecialtyField[]
+): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const allFields = [...COMMON_CONSULTATION_FIELDS, ...specialtyFields];
+  const ctx = getRuleContext(consultation);
+
+  for (const field of allFields) {
+    // Only enforce when a visibility rule exists (otherwise everything is visible)
+    if (!field.visibleWhen) continue;
+
+    const visible = isFieldVisible(field, ctx);
+    if (visible) continue;
+
+    const value = getConsultationValue(consultation, field.key);
+    const hasValue =
+      value !== null &&
+      value !== undefined &&
+      !(
+        (typeof value === "string" && value.trim() === "") ||
+        (Array.isArray(value) &&
+          (value.length === 0 || value.every((v) => !String(v).trim())))
+      );
+
+    if (hasValue) {
+      errors.push({
+        rowIndex,
+        field: field.key,
+        message: `Campo não permitido neste contexto: ${field.label}`,
+      });
+    }
+  }
+
+  return errors;
 }
 
 /**
@@ -313,8 +393,7 @@ function mapFieldValue(
 
   // Handle text list fields
   if (TEXT_LIST_FIELDS.has(fieldKey)) {
-    const list = parseTextList(rawValue);
-    return list ? list.join("; ") : null;
+    return parseTextList(rawValue);
   }
 
   // Handle boolean fields
@@ -429,16 +508,22 @@ function validateRequiredFields(
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 
-  const requiredFields = [
-    ...COMMON_CONSULTATION_FIELDS.filter((f) => f.required),
-    ...specialtyFields.filter(
-      (f) => f.required && f.key !== "internship" && f.key !== "type"
-    ), // Skip internship and type - handled separately
-  ];
+  const allFields = [...COMMON_CONSULTATION_FIELDS, ...specialtyFields];
+  const ctx = getRuleContext(consultation);
 
-  for (const field of requiredFields) {
+  for (const field of allFields) {
+    if (!isFieldVisible(field, ctx)) continue;
+    if (!isFieldRequired(field, ctx)) continue;
+
     const value = getConsultationValue(consultation, field.key);
-    if (value === null || value === undefined || value === "") {
+    const isMissing =
+      value === null ||
+      value === undefined ||
+      (typeof value === "string" && value.trim() === "") ||
+      (Array.isArray(value) &&
+        (value.length === 0 || value.every((v) => !String(v).trim())));
+
+    if (isMissing) {
       errors.push({
         rowIndex,
         field: field.key,
@@ -537,12 +622,12 @@ function validateSelectFields(
 ): ValidationError[] {
   const errors: ValidationError[] = [];
   const allFields = [...COMMON_CONSULTATION_FIELDS, ...specialtyFields];
-  const skipFields = new Set(["location", "internship"]); // Handled separately
+  const ctx = getRuleContext(consultation);
 
   for (const field of allFields) {
     if (field.type !== "select" && field.type !== "combobox") continue;
     if (!field.options || field.options.length === 0) continue;
-    if (skipFields.has(field.key)) continue;
+    if (!isFieldVisible(field, ctx)) continue;
 
     const value = getConsultationValue(consultation, field.key);
 
@@ -599,12 +684,12 @@ export function validateImportRow(
   const errors: ValidationError[] = [];
 
   // Run all validation checks
+  errors.push(
+    ...validateVisibilityConstraints(consultation, rowIndex, specialtyFields)
+  );
   errors.push(...validateRequiredFields(consultation, rowIndex, specialtyFields));
   errors.push(...validateNumericConstraints(consultation, rowIndex));
   errors.push(...validateDate(consultation, rowIndex));
-  errors.push(
-    ...validateLocationAndInternship(consultation, rowIndex)
-  );
   errors.push(
     ...validateSelectFields(consultation, rowIndex, specialtyFields, rawRow, headers)
   );

@@ -50,6 +50,7 @@ export function getICPC2Codes(specialtyCode: string) {
 // Field type definitions for forms
 export type FieldType =
   | "text"
+  | "multi-select"
   | "boolean"
   | "select"
   | "combobox"
@@ -57,11 +58,20 @@ export type FieldType =
   | "text-list"
   | "icpc2-codes";
 
+export type FieldRuleContext = {
+  location?: string;
+  sex?: string;
+  type?: string;
+};
+
+export type FieldRule = "always" | "never" | ((ctx: FieldRuleContext) => boolean);
+
 export interface SpecialtyField {
   key: string;
   label: string;
   type: FieldType;
-  required?: boolean;
+  requiredWhen?: FieldRule;
+  visibleWhen?: FieldRule;
   defaultValue?: string | number | boolean | null;
   options?: SpecialtyFieldOption[];
   placeholder?: string;
@@ -79,6 +89,7 @@ export interface ConstultationTypeSection {
   label: string;
   fields: SpecialtyField[];
   section?: string; // Optional section grouping for UI organization
+  visibleWhen?: FieldRule;
 }
 
 // Common fields present in all consultations
@@ -87,44 +98,19 @@ export const COMMON_CONSULTATION_FIELDS: SpecialtyField[] = [
     key: "date",
     label: "Data",
     type: "text",
-    required: true,
+    requiredWhen: "always",
   },
   {
     key: "process_number",
     label: "Número de Processo",
     type: "number",
-    required: true,
-  },
-  {
-    key: "location",
-    label: "Local",
-    type: "select",
-    required: true,
-    options: [
-      { value: "health_unit", label: "Unidade de Saúde" },
-      { value: "emergency_unit", label: "Serviço de Urgência" },
-      { value: "complementary", label: "Formação Complementar" },
-      { value: "short_course", label: "Formação Curta" },
-      { value: "other", label: "Outro" },
-    ],
-  },
-  {
-    key: "autonomy",
-    label: "Autonomia",
-    type: "select",
-    required: true,
-    options: [
-      { value: "partial", label: "Parcial" },
-      { value: "full", label: "Total" },
-      { value: "observed", label: "Observada" },
-      { value: "shoulder-to-shoulder", label: "Ombro-a-ombro" },
-    ],
+    requiredWhen: "always",
   },
   {
     key: "sex",
     label: "Sexo",
     type: "select",
-    required: true,
+    requiredWhen: "always",
     options: [
       { value: "m", label: "Masculino" },
       { value: "f", label: "Feminino" },
@@ -135,13 +121,13 @@ export const COMMON_CONSULTATION_FIELDS: SpecialtyField[] = [
     key: "age",
     label: "Idade",
     type: "number",
-    required: true,
+    requiredWhen: "always",
   },
   {
     key: "age_unit",
     label: "Unidade de Idade",
     type: "select",
-    required: true,
+    requiredWhen: "always",
     defaultValue: "years",
     options: [
       { value: "days", label: "Dias" },
@@ -154,7 +140,8 @@ export const COMMON_CONSULTATION_FIELDS: SpecialtyField[] = [
 
 // Section labels for MGF fields
 export const MGF_SECTION_LABELS: Record<string, string> = {
-  consultation_type: "Tipo de Consulta",
+  patient_info: "Caracterização do Utente",
+  consultation_info: "Informação da Consulta",
   type_specific: "Exames e Avaliações Específicas",
   clinical_history: "História Clínica",
   diagnosis: "Diagnóstico e Problemas",
@@ -167,11 +154,38 @@ export const MGF_SECTION_LABELS: Record<string, string> = {
 export const MGF_FIELDS: SpecialtyField[] = [
   // Tipo de Consulta
   {
+    key: "location",
+    label: "Local",
+    type: "select",
+    requiredWhen: "always",
+    section: "consultation_info",
+    options: [
+      { value: "unidade", label: "Unidade de Saúde" },
+      { value: "urgência", label: "Serviço de Urgência" },
+      { value: "complementar", label: "Formação Complementar" },
+      { value: "form_curta", label: "Formação Curta" },
+    ],
+  },
+  {
+    key: "autonomy",
+    label: "Autonomia",
+    type: "select",
+    requiredWhen: "always",
+    section: "consultation_info",
+    options: [
+      { value: "parcial", label: "Parcial" },
+      { value: "total", label: "Total" },
+      { value: "observada", label: "Observada" },
+      { value: "ombro-a-ombro", label: "Ombro-a-ombro" },
+    ],
+  },
+  {
     key: "type",
     label: "Tipologia",
     type: "select",
-    required: false, // Conditionally required: only when location is 'health_unit'
-    section: "consultation_type",
+    requiredWhen: (ctx) => ctx.location === "unidade",
+    visibleWhen: (ctx) => ctx.location === "unidade",
+    section: "consultation_info",
     options: [
       { value: "SA", label: "Saúde Adulto" },
       { value: "SIJ", label: "Saúde Infantil e Juvenil" },
@@ -189,42 +203,91 @@ export const MGF_FIELDS: SpecialtyField[] = [
     label: "Presencial",
     type: "boolean",
     defaultValue: true,
-    section: "consultation_type",
+    section: "consultation_info",
   },
   {
     key: "internship",
     label: "Estágio",
     type: "combobox",
-    required: true,
-    section: "consultation_type",
+    requiredWhen: (ctx) =>
+      !!ctx.location && ctx.location !== "unidade" && ctx.location !== "other",
+    visibleWhen: (ctx) => ctx.location !== "unidade",
+    section: "consultation_info",
     options: [
-      { value: "cardiologia", label: "Cardiologia" },
-      { value: "endocrinologia", label: "Endocrinologia" },
-      { value: "gastroenterologia", label: "Gastroenterologia" },
+      { value: "cardio", label: "Cardiologia" },
+      { value: "endocrino", label: "Endocrinologia" },
+      { value: "gastro", label: "Gastroenterologia" },
       { value: "geriatria", label: "Geriatria" },
-      { value: "hematologia", label: "Hematologia" },
-      { value: "neurologia", label: "Neurologia" },
-      { value: "nefrologia", label: "Nefrologia" },
-      { value: "oncologia", label: "Oncologia" },
+      { value: "hemato", label: "Hematologia" },
+      { value: "neuro", label: "Neurologia" },
+      { value: "nefro", label: "Nefrologia" },
+      { value: "onco", label: "Oncologia" },
       { value: "otorrino", label: "Otorrino" },
       { value: "pediatria", label: "Pediatria" },
       { value: "psiquiatria", label: "Psiquiatria" },
-      { value: "reumatologia", label: "Reumatologia" },
+      { value: "reumato", label: "Reumatologia" },
       { value: "urologia", label: "Urologia" },
-      { value: "ginecologia", label: "Ginecologia" },
+      { value: "gineco", label: "Ginecologia" },
       { value: "obstetricia", label: "Obstetricia" },
-      { value: "ortopedia", label: "Ortopedia" },
-      { value: "neurocirurgia", label: "Neurocirurgia" },
+      { value: "orto", label: "Ortopedia" },
+      { value: "neurocir", label: "Neurocirurgia" },
       { value: "pedopsiquiatria", label: "Pedopsiquiatria" },
-      { value: "dermatologia", label: "Dermatologia" },
+      { value: "dermato", label: "Dermatologia" },
       { value: "paliativos", label: "Paliativos" },
-      { value: "pneumologia", label: "Pneumologia" },
-      { value: "cirurgia_vascular", label: "Cirurgia Vascular" },
-      { value: "cirurgia_toracica", label: "Cirurgia Toracica" },
-      { value: "cirurgia_geral", label: "Cirurgia Geral" },
-      { value: "cirurgia_plastica", label: "Cirurgia Plástica" },
-      { value: "medicina_interna", label: "Medicina Interna" },
-      { value: "formacao_curta", label: "Formação Curta" },
+      { value: "pneumo", label: "Pneumologia" },
+      { value: "cir vascular", label: "Cirurgia Vascular" },
+      { value: "cir toracica", label: "Cirurgia Toracica" },
+      { value: "cir geral", label: "Cirurgia Geral" },
+      { value: "cir plastica", label: "Cirurgia Plástica" },
+      { value: "med interna", label: "Medicina Interna" },
+      { value: "form_curta", label: "Formação Curta" },
+    ],
+  },
+  // Caracterização do Utente
+  {
+    key: "family_type",
+    label: "Tipologia de Família",
+    type: "select",
+    visibleWhen: (ctx) => ctx.location === "unidade",
+    section: "patient_info",
+    options: [
+      { value: "tipo1", label: "Tipo 1"},
+    ],
+  },
+  {
+    key: "school_level",
+    label: "Escolaridade",
+    type: "select",
+    visibleWhen: (ctx) => ctx.location === "unidade",
+    section: "patient_info",
+    options: [
+      { value: "sem", label: "Sem Estudos"},
+      { value: "primario", label: "Ensino Primário"},
+      { value: "9ano", label: "9º Ano"},
+      { value: "secundario", label: "Ensino Secundário"},
+      { value: "superior", label: "Ensino Superior"},
+      { value: "mestrado", label: "Ensino Superior - Mestrado"},
+      { value: "doutoramento", label: "Ensino Superior - Doutoramento"},
+    ],
+  },
+  {
+    key: "professional_area",
+    label: "Sector de Actividade",
+    type: "select",
+    visibleWhen: (ctx) => ctx.location === "unidade",
+    section: "patient_info",
+    options: [
+      { value: "health", label: "Saúde"},
+    ],
+  },
+  {
+    key: "profession",
+    label: "Profissão",
+    type: "select",
+    visibleWhen: (ctx) => ctx.location === "unidade",
+    section: "patient_info",
+    options: [
+      { value: "medicine", label: "Médicina"},
     ],
   },
   // História Clínica
@@ -235,9 +298,19 @@ export const MGF_FIELDS: SpecialtyField[] = [
     options: [
       { value: "sim", label: "Sim" },
       { value: "nao", label: "Não" },
-      { value: "ex-fumador", label: "Ex-fumador" },
+      { value: "ex fumador", label: "Ex-fumador" },
     ],
     section: "clinical_history",
+  },
+  {
+    key: "vaccination_plan",
+    label: "PNV Cumprido",
+    type: "select",
+    section: "clinical_history",
+    options: [
+      { value: "sim", label: "Sim" },
+      { value: "nao", label: "Não" },
+    ],
   },
   {
     key: "chronic_diseases",
@@ -248,15 +321,15 @@ export const MGF_FIELDS: SpecialtyField[] = [
   },
   // Diagnóstico e Problemas
   {
-    key: "diagnosis",
-    label: "Diagnóstico",
+    key: "problems",
+    label: "Problemas",
     type: "icpc2-codes",
     placeholder: "Pesquisar códigos ICPC-2",
     section: "diagnosis",
   },
   {
-    key: "problems",
-    label: "Problemas",
+    key: "diagnosis",
+    label: "Diagnóstico",
     type: "icpc2-codes",
     placeholder: "Pesquisar códigos ICPC-2",
     section: "diagnosis",
@@ -275,6 +348,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
     type: "combobox",
     placeholder: "Referenciação",
     section: "referral",
+    visibleWhen: (ctx) => ctx.location === "unidade",
     options: [
       { value: "cardiologia", label: "Cardiologia" },
       { value: "endocrinologia", label: "Endocrinologia" },
@@ -310,6 +384,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
     type: "icpc2-codes",
     placeholder: "Motivo da referenciação",
     section: "referral",
+    visibleWhen: (ctx) => ctx.location === "unidade",
   },
   // Planeamento Familiar
   {
@@ -318,11 +393,12 @@ export const MGF_FIELDS: SpecialtyField[] = [
     type: "combobox",
     placeholder: "Tipo de contraceptivo",
     section: "family_planning",
+    visibleWhen: (ctx) => ctx.location === "unidade" && ctx.sex !== "m",
     options: [
       { value: "coc", label: "COC" },
       { value: "cop", label: "COP" },
       { value: "siu", label: "SIU" },
-      { value: "preservativo", label: "Preservativo" },
+      { value: "preserv", label: "Preservativo" },
       { value: "implante", label: "Implante" },
       { value: "anel", label: "Anel Vaginal" },
       { value: "adesivo", label: "Adesivo" },
@@ -337,11 +413,12 @@ export const MGF_FIELDS: SpecialtyField[] = [
     type: "combobox",
     placeholder: "Tipo de contraceptivo",
     section: "family_planning",
+    visibleWhen: (ctx) => ctx.location === "unidade" && ctx.sex !== "m",
     options: [
       { value: "coc", label: "COC" },
       { value: "cop", label: "COP" },
       { value: "siu", label: "SIU" },
-      { value: "preservativo", label: "Preservativo" },
+      { value: "preserv", label: "Preservativo" },
       { value: "implant", label: "Implante" },
       { value: "anel", label: "Anel Vaginal" },
       { value: "adesivo", label: "Adesivo" },
@@ -383,10 +460,10 @@ export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
         units: "mg/dL",
       },
       {
-        key: "bnp",
-        label: "BNP",
-        type: "number",
-        units: "pg/mL",
+        key: "score2",
+        label: "Score2",
+        type: "text",
+        units: "",
       },
       {
         key: "albuminuria",
@@ -413,6 +490,35 @@ export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
         units: "mL/min",
       },
     ],
+  },
+  {
+    key: "history",
+    label: "Diabetes - Historial",
+    section: "type_specific",
+    fields: [
+      {
+        key: "medicamentos",
+        label: "Medicamentos",
+        type: "multi-select",
+        options: [
+          { value: "metformina", label: "Metformina" },
+          { value: "sulfonilureia", label: "Sulfonilureia" },
+          { value: "pioglitazona", label: "Pioglitazona" },
+          { value: "glipizida", label: "Glipizida" },
+          { value: "gliclazida", label: "Gliclazida" },
+          { value: "glimepirida", label: "Glimepirida" },
+        ],
+      },
+      {
+        key: "complicacoes",
+        label: "Complicações",
+        type: "multi-select",
+        options: [
+          { value: "microvasculares", label: "Microvasculares" },
+          { value: "macrovascular", label: "Macrovasculares" },
+        ],
+      },
+    ],
   }],
   hta: [{
     key: "exams",
@@ -426,10 +532,10 @@ export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
         units: "mg/dL",
       },
       {
-        key: "bnp",
-        label: "BNP",
-        type: "number",
-        units: "pg/mL",
+        key: "score2",
+        label: "Score2",
+        type: "text",
+        units: "",
       },
       {
         key: "albuminuria",
@@ -450,6 +556,72 @@ export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
         units: "mL/min",
       },
     ],
+  },
+  {
+    key: "history",
+    label: "Hipertensão Arterial - Historial",
+    section: "type_specific",
+    fields: [
+      {
+        key: "medicamentos",
+        label: "Medicamentos",
+        type: "multi-select",
+        options: [
+          { value: "beta-bloqueantes", label: "Beta-bloqueantes" },
+          { value: "diureticos", label: "Diureticos" },
+          { value: "inibidores-da-enzima-conversora", label: "Inibidores da enzima conversora" },
+          { value: "antagonistas-do-receptor-angiotensina-ii", label: "Antagonistas do receptor angiotensina II" },
+          { value: "outros", label: "Outros" },
+        ],
+      },
+      {
+        key: "complicacoes",
+        label: "Complicações",
+        type: "multi-select",
+        options: [
+          { value: "microvasculares", label: "Microvasculares" },
+          { value: "macrovascular", label: "Macrovasculares" },
+        ],
+      },
+    ],
+  }],
+  sm: [{
+    key: "history",
+    label: "Saúde Materna - Historial",
+    section: "type_specific",
+    visibleWhen: (ctx) => ctx.location === "unidade" && ctx.sex !== "m",
+    fields: [
+      {
+        key: "trimestre",
+        label: "Trimestre",
+        type: "select",
+        requiredWhen: "always",
+        options: [
+          { value: "1t", label: "1º Trimestre" },
+          { value: "2t", label: "2º Trimestre" },
+          { value: "3t", label: "3º Trimestre" },
+          { value: "pos", label: "Pós-parto" },
+        ],
+      },
+      {
+        key: "plano-vigilancia",
+        label: "Plano de Vigilância",
+        type: "multi-select",
+        requiredWhen: "always",
+        options: [
+          { value: "analises", label: "Análises" },
+          { value: "eco1", label: "Ecografia 1º Trim." },
+          { value: "eco2", label: "Ecografia 2º Trim." },
+          { value: "eco3", label: "Ecografia 3º Trim." },
+        ],
+      },
+      {
+        key: "complicacoes",
+        label: "Complicações",
+        type: "text-list",
+        placeholder: "Digite uma complicação",
+      },
+    ],
   }],
 };
 
@@ -464,7 +636,11 @@ const resolveFieldDefault = (field: SpecialtyField): SpecialtyDetails[string] =>
     return field.defaultValue as SpecialtyDetails[string];
   }
 
-  if (field.type === "text-list") {
+  if (
+    field.type === "text-list" ||
+    field.type === "multi-select" ||
+    field.type === "icpc2-codes"
+  ) {
     return [] as string[];
   }
 
