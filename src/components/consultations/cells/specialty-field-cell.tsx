@@ -22,9 +22,9 @@ export function SpecialtyFieldCell({ value, field }: SpecialtyFieldCellProps) {
     case "combobox":
       return <SelectCell value={String(value)} options={field.options} />;
     case "text-list":
-      return <TextListCell value={String(value)} />;
+      return <TextListCell value={value} />;
     case "icpc2-codes":
-      return <ICPC2CodesCell value={String(value)} />;
+      return <ICPC2CodesCell value={value} />;
     case "text":
       return <TextCell value={String(value)} />;
     default:

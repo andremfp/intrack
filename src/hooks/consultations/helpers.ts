@@ -16,17 +16,21 @@ export function getFieldValue(
   field: SpecialtyField,
   databaseValue?: unknown
 ): string | string[] {
-  // Text-list fields: stored as semicolon-separated string in DB, need array for form
+  // Text-list fields: form works with string[]
   if (field.type === "text-list") {
     if (Array.isArray(databaseValue)) {
       return databaseValue; // Already an array
     }
-    if (typeof databaseValue === "string" && databaseValue.length > 0) {
-      // Split semicolon-separated string: "A; B; C" -> ["A", "B", "C"]
-      return databaseValue.split(";").map((item) => item.trim());
-    }
     // Empty: return array with one empty string for the input field
     return [""];
+  }
+
+  // ICPC-2 code fields: form works with string[]
+  if (field.type === "icpc2-codes") {
+    if (Array.isArray(databaseValue)) {
+      return databaseValue;
+    }
+    return [];
   }
 
   // Boolean fields: DB stores boolean, form needs "true" or "false" string
@@ -42,6 +46,14 @@ export function getFieldValue(
     return field.defaultValue !== undefined
       ? String(field.defaultValue)
       : "false";
+  }
+
+  // Multi-select fields: stored as array of strings in DB, need array for form
+  if (field.type === "multi-select") {
+    if (Array.isArray(databaseValue)) {
+      return databaseValue;
+    }
+    return [];
   }
 
   // Other types (text, number, textarea, select, icpc2-codes): convert to string
@@ -139,7 +151,6 @@ export function initializeFormValues(
         }
         // If nested structure not found, databaseValueFromNestedStructure remains undefined
         // getFieldValue() will handle undefined and use field defaults
-
         formValues[field.key] = getFieldValue(
           field,
           databaseValueFromNestedStructure

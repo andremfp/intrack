@@ -208,15 +208,6 @@ function formatTextList(value: unknown): ConsultationExportCell {
     return value.join("; ");
   }
 
-  if (typeof value === "string") {
-    if (!value.trim()) return null;
-    return value
-      .split(";")
-      .map((item) => item.trim())
-      .filter(Boolean)
-      .join("; ");
-  }
-
   return String(value);
 }
 

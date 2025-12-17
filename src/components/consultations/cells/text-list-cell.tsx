@@ -6,14 +6,13 @@ import {
 } from "@/components/ui/tooltip";
 
 interface TextListCellProps {
-  value: string;
+  value: unknown;
 }
 
 export function TextListCell({ value }: TextListCellProps) {
-  const items = value
-    .split(";")
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0);
+  const items = Array.isArray(value)
+    ? value.map((v) => String(v).trim()).filter(Boolean)
+    : [];
 
   if (items.length === 0) return <span>-</span>;
 
@@ -43,4 +42,3 @@ export function TextListCell({ value }: TextListCellProps) {
     </div>
   );
 }
-

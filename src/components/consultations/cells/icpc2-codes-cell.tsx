@@ -7,14 +7,13 @@ import {
 } from "@/components/ui/tooltip";
 
 interface ICPC2CodesCellProps {
-  value: string;
+  value: unknown;
 }
 
 export function ICPC2CodesCell({ value }: ICPC2CodesCellProps) {
-  const codeEntries = value
-    .split(";")
-    .map((entry) => entry.trim())
-    .filter((entry) => entry.length > 0);
+  const codeEntries = Array.isArray(value)
+    ? value.map((v) => String(v).trim()).filter(Boolean)
+    : [];
 
   if (codeEntries.length === 0) return <span>-</span>;
 
@@ -54,11 +53,7 @@ export function ICPC2CodesCell({ value }: ICPC2CodesCellProps) {
         }
         // Fallback for old format (just code)
         return (
-          <Badge
-            key={idx}
-            variant="outline"
-            className="text-xs font-mono"
-          >
+          <Badge key={idx} variant="outline" className="text-xs font-mono">
             {entry}
           </Badge>
         );
@@ -66,4 +61,3 @@ export function ICPC2CodesCell({ value }: ICPC2CodesCellProps) {
     </div>
   );
 }
-
