@@ -25,7 +25,7 @@ export function TextField({
 
   if (field.key === "date") {
     return (
-      <div className="space-y-1.5">
+      <div>
         <DatePicker
           id={fieldId}
           label={field.label}
@@ -46,7 +46,7 @@ export function TextField({
   }
 
   return (
-    <div className="space-y-2">
+    <div>
       <Label htmlFor={fieldId} className="text-sm font-medium">
         {field.label}
         {required && <span className="text-destructive ml-1">*</span>}

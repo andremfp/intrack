@@ -94,6 +94,38 @@ const FIELD_DOCUMENTATION: Record<string, Omit<SchemaFieldGuide, keyof Specialty
     ],
     notes: "Campo condicional - obrigatório baseado no local"
   },
+  family_type: {
+    description: "Tipologia de família do utente",
+    validationRules: [
+      "Deve corresponder a uma opção válida",
+      "Apenas aplicável quando Local = 'Unidade de Saúde'"
+    ],
+    notes: "Campo condicional (visível apenas para consultas na Unidade de Saúde)"
+  },
+  school_level: {
+    description: "Escolaridade do utente",
+    validationRules: [
+      "Deve corresponder a uma opção válida",
+      "Apenas aplicável quando Local = 'Unidade de Saúde'"
+    ],
+    notes: "Campo condicional (visível apenas para consultas na Unidade de Saúde)"
+  },
+  professional_area: {
+    description: "Sector/área de actividade profissional do utente",
+    validationRules: [
+      "Deve corresponder a uma opção válida",
+      "Apenas aplicável quando Local = 'Unidade de Saúde'"
+    ],
+    notes: "Campo condicional (visível apenas para consultas na Unidade de Saúde)"
+  },
+  profession: {
+    description: "Profissão do utente",
+    validationRules: [
+      "Deve corresponder a uma opção válida",
+      "Apenas aplicável quando Local = 'Unidade de Saúde'"
+    ],
+    notes: "Campo condicional (visível apenas para consultas na Unidade de Saúde)"
+  },
   smoker: {
     description: "Estado tabágico do paciente",
     validationRules: ["Deve corresponder a uma opção válida se preenchido"],
@@ -171,7 +203,12 @@ const FIELD_DOCUMENTATION: Record<string, Omit<SchemaFieldGuide, keyof Specialty
 function createSchemaFieldGuide(field: SpecialtyField): SchemaFieldGuide {
   const docs = FIELD_DOCUMENTATION[field.key];
   if (!docs) {
-    throw new Error(`Missing documentation for field: ${field.key}`);
+    // Provide default documentation for fields without explicit docs
+    console.warn(`Missing documentation for field: ${field.key}, using defaults`);
+    return {
+      ...field,
+      description: field.label || field.key,
+    };
   }
   return { ...field, ...docs };
 }

@@ -116,7 +116,7 @@ export function DatePicker({
   return (
     <div className="space-y-2">
       {label && (
-        <Label htmlFor={id} className="px-1">
+        <Label htmlFor={id} className="text-sm font-medium">
           {label}
           {required && <span className="text-destructive ml-1">*</span>}
         </Label>

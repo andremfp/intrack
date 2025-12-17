@@ -21,6 +21,13 @@ import { getFieldByKey, excelSerialToDate, validateSelectValue } from "./helpers
  */
 export function mapHeaderToKey(header: string): string | null {
   const trimmed = header.trim();
+
+  const normalize = (s: string) =>
+    s
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .toLowerCase()
+      .trim();
   
   // Try exact match first
   if (HEADER_TO_KEY_MAP[trimmed]) {
@@ -31,6 +38,14 @@ export function mapHeaderToKey(header: string): string | null {
   const lowerTrimmed = trimmed.toLowerCase();
   for (const [key, value] of Object.entries(HEADER_TO_KEY_MAP)) {
     if (key.toLowerCase() === lowerTrimmed) {
+      return value;
+    }
+  }
+
+  // Try diacritic-insensitive match (e.g. "Estagio" vs "Estágio")
+  const normalizedTrimmed = normalize(trimmed);
+  for (const [key, value] of Object.entries(HEADER_TO_KEY_MAP)) {
+    if (normalize(key) === normalizedTrimmed) {
       return value;
     }
   }
@@ -72,6 +87,13 @@ export function parseSelectValue(
     return str; // No options defined, return value as-is
   }
 
+  const normalize = (s: string) =>
+    s
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .toLowerCase()
+      .trim();
+
   // Special handling for age_unit: support single-letter abbreviations
   if (fieldKey === "age_unit" && str.length === 1) {
     const abbreviation = AGE_UNIT_ABBREVIATIONS[str.toUpperCase()];
@@ -79,6 +101,7 @@ export function parseSelectValue(
   }
 
   const lowerStr = str.toLowerCase();
+  const normalizedStr = normalize(str);
   
   // Try exact match on label (case-insensitive)
   const exactMatch = field.options.find(
@@ -92,11 +115,28 @@ export function parseSelectValue(
   );
   if (valueMatch) return valueMatch.value;
 
+  // Try diacritic-insensitive match on label/value (e.g. "urgencia" vs "urgência")
+  const normalizedLabelMatch = field.options.find(
+    (opt) => normalize(opt.label) === normalizedStr
+  );
+  if (normalizedLabelMatch) return normalizedLabelMatch.value;
+
+  const normalizedValueMatch = field.options.find(
+    (opt) => normalize(opt.value) === normalizedStr
+  );
+  if (normalizedValueMatch) return normalizedValueMatch.value;
+
   // Try partial match on label
   const partialMatch = field.options.find((opt) =>
     opt.label.toLowerCase().includes(lowerStr)
   );
   if (partialMatch) return partialMatch.value;
+
+  // Try partial match diacritic-insensitive
+  const normalizedPartialMatch = field.options.find((opt) =>
+    normalize(opt.label).includes(normalizedStr)
+  );
+  if (normalizedPartialMatch) return normalizedPartialMatch.value;
 
   return null; // No valid match found
 }

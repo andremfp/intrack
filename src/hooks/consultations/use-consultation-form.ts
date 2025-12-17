@@ -127,6 +127,7 @@ export function useConsultationForm(
   const sectionOrder = useMemo(() => {
     const order = [
       "consultation_info",
+      "patient_info",
       "type_specific", // Type-specific sections appear right after consultation_info
       "clinical_history",
       "diagnosis",

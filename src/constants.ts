@@ -140,6 +140,7 @@ export const COMMON_CONSULTATION_FIELDS: SpecialtyField[] = [
 
 // Section labels for MGF fields
 export const MGF_SECTION_LABELS: Record<string, string> = {
+  patient_info: "Caracterização do Utente",
   consultation_info: "Informação da Consulta",
   type_specific: "Exames e Avaliações Específicas",
   clinical_history: "História Clínica",
@@ -240,6 +241,53 @@ export const MGF_FIELDS: SpecialtyField[] = [
       { value: "cir plastica", label: "Cirurgia Plástica" },
       { value: "med interna", label: "Medicina Interna" },
       { value: "form_curta", label: "Formação Curta" },
+    ],
+  },
+  // Caracterização do Utente
+  {
+    key: "family_type",
+    label: "Tipologia de Família",
+    type: "select",
+    visibleWhen: (ctx) => ctx.location === "unidade",
+    section: "patient_info",
+    options: [
+      { value: "tipo1", label: "Tipo 1"},
+    ],
+  },
+  {
+    key: "school_level",
+    label: "Escolaridade",
+    type: "select",
+    visibleWhen: (ctx) => ctx.location === "unidade",
+    section: "patient_info",
+    options: [
+      { value: "sem", label: "Sem Estudos"},
+      { value: "primario", label: "Ensino Primário"},
+      { value: "9ano", label: "9º Ano"},
+      { value: "secundario", label: "Ensino Secundário"},
+      { value: "superior", label: "Ensino Superior"},
+      { value: "mestrado", label: "Ensino Superior - Mestrado"},
+      { value: "doutoramento", label: "Ensino Superior - Doutoramento"},
+    ],
+  },
+  {
+    key: "professional_area",
+    label: "Sector de Actividade",
+    type: "select",
+    visibleWhen: (ctx) => ctx.location === "unidade",
+    section: "patient_info",
+    options: [
+      { value: "health", label: "Saúde"},
+    ],
+  },
+  {
+    key: "profession",
+    label: "Profissão",
+    type: "select",
+    visibleWhen: (ctx) => ctx.location === "unidade",
+    section: "patient_info",
+    options: [
+      { value: "medicine", label: "Médicina"},
     ],
   },
   // História Clínica
