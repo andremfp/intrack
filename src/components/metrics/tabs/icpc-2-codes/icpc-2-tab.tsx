@@ -9,6 +9,7 @@ import type { FilterUIConfig } from "@/components/filters/types";
 import { createFilterConfig } from "@/components/filters/helpers";
 import { METRICS_ICPC2_ENABLED_FIELDS } from "@/constants";
 import type { MetricsTabProps } from "../../helpers";
+import { mapEnabledFieldsToDataFields } from "../../helpers";
 import { EmptyMetricsState } from "../../empty-metrics-state";
 import { MetricsToolbar } from "../../metrics-toolbar";
 
@@ -21,37 +22,20 @@ export function ICPC2Tab({
   onExportExcel,
   isExportingExcel,
 }: MetricsTabProps) {
-  // Memoize filterValues to prevent unnecessary re-renders and resets
-  const filterValues = useMemo(
-    () => ({
-      year: filters.year,
-      location: filters.location,
-      internship: filters.internship,
-      type: filters.type,
-      presential: filters.presential,
-      smoker: filters.smoker,
-      sex: filters.sex,
-      autonomy: filters.autonomy,
-      ageMin: filters.ageMin,
-      ageMax: filters.ageMax,
-      dateFrom: filters.dateFrom,
-      dateTo: filters.dateTo,
-    }),
-    [
-      filters.year,
-      filters.location,
-      filters.internship,
-      filters.type,
-      filters.presential,
-      filters.smoker,
-      filters.sex,
-      filters.autonomy,
-      filters.ageMin,
-      filters.ageMax,
-      filters.dateFrom,
-      filters.dateTo,
-    ]
+  // Get the data fields that correspond to enabled filter fields for this tab
+  const enabledDataFields = useMemo(
+    () => mapEnabledFieldsToDataFields(METRICS_ICPC2_ENABLED_FIELDS),
+    []
   );
+
+  // Create filterValues that only includes fields enabled for this tab
+  const filterValues = useMemo(() => {
+    const values: Record<string, unknown> = {};
+    for (const field of enabledDataFields) {
+      values[field] = filters[field as keyof typeof filters];
+    }
+    return values;
+  }, [enabledDataFields, filters]);
 
   const filterConfig: FilterUIConfig = (createFilterConfig({
     enabledFields: METRICS_ICPC2_ENABLED_FIELDS,

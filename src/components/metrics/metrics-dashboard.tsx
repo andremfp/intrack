@@ -13,6 +13,7 @@ import { MetricsErrorDisplay } from "./metrics-error-display";
 import { buildConsultationsExportMetadataRows } from "@/components/consultations/helpers";
 import { buildMetricsExportSheets, downloadXlsx } from "@/exports/helpers";
 import { toasts } from "@/utils/toasts";
+import { TAB_CONSTANTS } from "@/constants";
 
 interface MetricsDashboardProps {
   userId: string;
@@ -123,7 +124,7 @@ export function MetricsDashboard({
   }
 
   // Render content based on activeSubTab
-  if (activeSubTab === "Geral") {
+  if (activeSubTab === TAB_CONSTANTS.METRICS_SUB_TABS.GENERAL) {
     return (
       <GeneralTab
         specialty={specialty}
@@ -138,7 +139,7 @@ export function MetricsDashboard({
     );
   }
 
-  if (activeSubTab === "Consultas") {
+  if (activeSubTab === TAB_CONSTANTS.METRICS_SUB_TABS.CONSULTATIONS) {
     return (
       <ConsultationsTab
         specialty={specialty}
@@ -152,7 +153,7 @@ export function MetricsDashboard({
     );
   }
 
-  if (activeSubTab === "ICPC-2") {
+  if (activeSubTab === TAB_CONSTANTS.METRICS_SUB_TABS.ICPC2) {
     return (
       <ICPC2Tab
         specialty={specialty}

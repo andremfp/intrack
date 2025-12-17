@@ -39,6 +39,11 @@ export type ConsultationsFilters = {
   smoker?: string;
   contraceptive?: string;
   new_contraceptive?: string;
+  family_type?: string;
+  school_level?: string;
+  professional_area?: string;
+  profession?: string;
+  vaccination_plan?: string;
 };
 
 /**

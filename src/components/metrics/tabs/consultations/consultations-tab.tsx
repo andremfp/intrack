@@ -1,4 +1,4 @@
-import { BreakdownChart } from "../../charts/breakdown-chart";
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
 import { Collapsible } from "@radix-ui/react-collapsible";
@@ -6,7 +6,7 @@ import { CollapsibleTrigger } from "@radix-ui/react-collapsible";
 import { CollapsibleContent } from "@radix-ui/react-collapsible";
 import { MetricCard } from "../../cards/metric-card";
 import { BreakdownTable } from "../../charts/breakdown-table";
-import { getFieldLabel } from "../../helpers";
+import { getFieldLabel, mapEnabledFieldsToDataFields } from "../../helpers";
 import type { FilterUIConfig } from "@/components/filters/types";
 import {
   createFilterConfig,
@@ -26,10 +26,25 @@ export function ConsultationsTab({
   onExportExcel,
   isExportingExcel,
 }: MetricsTabProps) {
+  // Get the data fields that correspond to enabled filter fields for this tab
+  const enabledDataFields = useMemo(
+    () => mapEnabledFieldsToDataFields(METRICS_CONSULTATIONS_ENABLED_FIELDS),
+    []
+  );
+
+  // Create filterValues that only includes fields enabled for this tab
+  const filterValues = useMemo(() => {
+    const values: Record<string, unknown> = {};
+    for (const field of enabledDataFields) {
+      values[field] = filters[field as keyof typeof filters];
+    }
+    return values;
+  }, [enabledDataFields, filters]);
+
   const filterConfig: FilterUIConfig = createFilterConfig({
     enabledFields: METRICS_CONSULTATIONS_ENABLED_FIELDS,
     badgeLocation: "outside",
-    filterValues: filters,
+    filterValues,
     setFilter,
     specialty,
   }) || {
@@ -63,26 +78,6 @@ export function ConsultationsTab({
         isExportingExcel={isExportingExcel}
       />
 
-      <div className="grid gap-3 grid-cols-1 lg:grid-cols-2">
-        <div className="relative">
-          <BreakdownChart
-            title="Tipo de Consulta"
-            data={metrics.byType.map((item) => ({
-              label: item.label,
-              type: item.type,
-              value: item.count,
-            }))}
-          />
-        </div>
-        <div className="relative">
-          <MetricCard
-            title="Atendimento"
-            data={metrics.byPresential}
-            getKey={(item) => item.presential}
-            getLabel={(key) => (key === "true" ? "Presencial" : "Remoto")}
-          />
-        </div>
-      </div>
       <div className="grid gap-3 grid-cols-1 lg:grid-cols-2">
         <Collapsible className="lg:col-span-2">
           <CollapsibleTrigger asChild>

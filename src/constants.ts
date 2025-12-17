@@ -727,8 +727,11 @@ export const METRICS_GENERAL_ENABLED_FIELDS: FilterFieldType[] = [
   "type",
   "presential",
   "smoker",
-  "contraceptive",
-  "new_contraceptive",
+  "family_type",
+  "school_level",
+  "professional_area",
+  "profession",
+  "vaccination_plan",
 ];
 
 /**

@@ -88,6 +88,11 @@ function mapEnabledFieldsToSetterFields(
       case "smoker":
       case "contraceptive":
       case "new_contraceptive":
+      case "family_type":
+      case "school_level":
+      case "professional_area":
+      case "profession":
+      case "vaccination_plan":
         setterFields.push(field);
         break;
     }
@@ -212,42 +217,42 @@ export function createFilterConfig(
 }
 
 // Helper functions for labels
-
 export function getInternshipLabel(value: string): string {
-  const internshipField = MGF_FIELDS.find(
-    (field) => field.key === "internship"
-  );
-  if (!internshipField?.options) return value;
-  const option = internshipField.options.find((opt) => opt.value === value);
-  return option?.label || value;
+  return getFieldLabel("internship", value);
 }
 
 export function getLocationLabel(value: string): string {
-  const locationField = COMMON_CONSULTATION_FIELDS.find(
-    (field) => field.key === "location"
-  );
-  if (!locationField?.options) return value;
-  const option = locationField.options.find((opt) => opt.value === value);
-  return option?.label || value;
+  return getFieldLabel("location", value);
 }
 
 export function getContraceptiveLabel(value: string): string {
-  const contraceptiveField = MGF_FIELDS.find(
-    (field) => field.key === "contraceptive"
-  );
-  if (!contraceptiveField?.options) return value;
-  const option = contraceptiveField.options.find((opt) => opt.value === value);
-  return option?.label || value;
+  return getFieldLabel("contraceptive", value);
 }
 
 export function getNewContraceptiveLabel(value: string): string {
-  const newContraceptiveField = MGF_FIELDS.find(
-    (field) => field.key === "new_contraceptive"
-  );
-  if (!newContraceptiveField?.options) return value;
-  const option = newContraceptiveField.options.find((opt) => opt.value === value);
-  return option?.label || value;
+  return getFieldLabel("new_contraceptive", value);
 }
+
+export function getFamilyTypeLabel(value: string): string {
+  return getFieldLabel("family_type", value);
+}
+
+export function getSchoolLevelLabel(value: string): string {
+  return getFieldLabel("school_level", value);
+}
+
+export function getProfessionalAreaLabel(value: string): string {
+  return getFieldLabel("professional_area", value);
+}
+
+export function getProfessionLabel(value: string): string {
+  return getFieldLabel("profession", value);
+}
+
+export function getVaccinationPlanLabel(value: string): string {
+  return getFieldLabel("vaccination_plan", value);
+}
+
 export function formatDate(dateString: string): string {
   const date = new Date(dateString);
   return date.toLocaleDateString("pt-PT", {
@@ -258,33 +263,15 @@ export function formatDate(dateString: string): string {
 }
 
 export function getSexLabel(value: string): string {
-  const sexField = COMMON_CONSULTATION_FIELDS.find(
-    (field) => field.key === "sex"
-  );
-  const sexOption = sexField?.options?.find(
-    (opt) => opt.value === value
-  );
-  return sexOption?.label || value;
+  return getFieldLabel("sex", value);
 }
 
 export function getSmokerLabel(value: string): string {
-  const smokerField = MGF_FIELDS.find(
-    (field) => field.key === "smoker"
-  );
-  const smokerOption = smokerField?.options?.find(
-    (opt) => opt.value === value
-  );
-  return smokerOption?.label || value;
+  return getFieldLabel("smoker", value);
 }
 
 export function getAutonomyLabel(value: string): string {
-  const autonomyField = COMMON_CONSULTATION_FIELDS.find(
-    (field) => field.key === "autonomy"
-  );
-  const autonomyOption = autonomyField?.options?.find(
-    (opt) => opt.value === value
-  );
-  return autonomyOption?.label || value;
+  return getFieldLabel("autonomy", value);
 }
 
 // Badge helpers (logic-only, UI rendering stays in TSX)
@@ -355,37 +342,56 @@ export function buildFilterBadgeConfigs(params: {
   return badges;
 }
 
-// Field options helpers
-export function getSexOptions(): SpecialtyFieldOption[] {
-  return COMMON_CONSULTATION_FIELDS.find((field) => field.key === "sex")?.options || [];
+// Generic field helpers
+export function getFieldOptions(fieldKey: string): SpecialtyFieldOption[] {
+  // Search in COMMON_CONSULTATION_FIELDS first, then MGF_FIELDS
+  const commonField = COMMON_CONSULTATION_FIELDS.find((field) => field.key === fieldKey);
+  if (commonField?.options) {
+    return commonField.options;
+  }
+
+  const mgfField = MGF_FIELDS.find((field) => field.key === fieldKey);
+  return mgfField?.options || [];
 }
 
-export function getAutonomyOptions(): SpecialtyFieldOption[] {
-  return COMMON_CONSULTATION_FIELDS.find((field) => field.key === "autonomy")?.options || [];
+export function getFieldLabel(fieldKey: string, value: string): string {
+  // Search in COMMON_CONSULTATION_FIELDS first, then MGF_FIELDS
+  const commonField = COMMON_CONSULTATION_FIELDS.find((field) => field.key === fieldKey);
+  if (commonField?.options) {
+    const option = commonField.options.find((opt) => opt.value === value);
+    return option?.label || value;
+  }
+
+  const mgfField = MGF_FIELDS.find((field) => field.key === fieldKey);
+  if (mgfField?.options) {
+    const option = mgfField.options.find((opt) => opt.value === value);
+    return option?.label || value;
+  }
+
+  return value;
 }
 
-export function getLocationOptions(): SpecialtyFieldOption[] {
-  return COMMON_CONSULTATION_FIELDS.find((field) => field.key === "location")?.options || [];
-}
 
-export function getInternshipOptions(): SpecialtyFieldOption[] {
-  return MGF_FIELDS.find((field) => field.key === "internship")?.options || [];
-}
+// Helper to get field metadata
+function getFieldMetadata(fieldKey: string): { label: string; hasOptions: boolean } | null {
+  // Search in COMMON_CONSULTATION_FIELDS first, then MGF_FIELDS
+  const commonField = COMMON_CONSULTATION_FIELDS.find((field) => field.key === fieldKey);
+  if (commonField) {
+    return {
+      label: commonField.label,
+      hasOptions: !!commonField.options?.length,
+    };
+  }
 
-export function getTypeOptions(): SpecialtyFieldOption[] {
-  return MGF_FIELDS.find((field) => field.key === "type")?.options || [];
-}
+  const mgfField = MGF_FIELDS.find((field) => field.key === fieldKey);
+  if (mgfField) {
+    return {
+      label: mgfField.label,
+      hasOptions: !!mgfField.options?.length,
+    };
+  }
 
-export function getContraceptiveOptions(): SpecialtyFieldOption[] {
-  return MGF_FIELDS.find((field) => field.key === "contraceptive")?.options || [];
-}
-
-export function getNewContraceptiveOptions(): SpecialtyFieldOption[] {
-  return MGF_FIELDS.find((field) => field.key === "new_contraceptive")?.options || [];
-}
-
-export function getSmokerOptions(): SpecialtyFieldOption[] {
-  return MGF_FIELDS.find((field) => field.key === "smoker")?.options || [];
+  return null;
 }
 
 // Unified display label helper
@@ -397,19 +403,12 @@ export function generatePrettyFilterLabel(
 ): string {
   if (value === undefined || value === "" || value === null) return "";
 
+  // Special cases that need custom handling
   switch (key) {
     case "year": {
       const year = value as number;
       return `Ano: ${specialty?.code.toUpperCase()}.${year}`;
     }
-    case "location":
-      return `Local: ${getLocationLabel(value as string)}`;
-    case "internship":
-      return `Estágio: ${getInternshipLabel(value as string)}`;
-    case "sex":
-      return `Sexo: ${getSexLabel(value as string)}`;
-    case "autonomy":
-      return `Autonomia: ${getAutonomyLabel(value as string)}`;
     case "ageMin": {
       const ageMax = otherValues?.ageMax as number | undefined;
       return ageMax
@@ -432,17 +431,18 @@ export function generatePrettyFilterLabel(
     }
     case "processNumber":
       return `N° Processo: ${value}`;
-    case "type":
-      return `Tipo: ${value}`;
     case "presential":
       return `Presencial: ${value ? "Sim" : "Não"}`;
-    case "smoker":
-      return `Fumador: ${getSmokerLabel(value as string)}`;
-    case "contraceptive":
-      return `Contraceptivo: ${getContraceptiveLabel(value as string)}`;
-    case "new_contraceptive":
-      return `Novo Contraceptivo: ${getNewContraceptiveLabel(value as string)}`;
-    default:
+    default: {
+      // Generic case for fields with options or simple text fields
+      const metadata = getFieldMetadata(key);
+      if (metadata) {
+        const displayValue = metadata.hasOptions
+          ? getFieldLabel(key, value as string)
+          : (value as string);
+        return `${metadata.label}: ${displayValue}`;
+      }
       return "";
+    }
   }
 }
