@@ -78,8 +78,6 @@ export function MetricsDashboard({
         activeTab: activeSubTab,
       });
 
-      console.log("sheets", sheets);
-
       if (!sheets || sheets.length === 0) {
         toasts.error(
           "Sem dados para exportar",

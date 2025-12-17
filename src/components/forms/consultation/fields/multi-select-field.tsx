@@ -1,34 +1,33 @@
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  MultiSelect,
+  MultiSelectContent,
+  MultiSelectTrigger,
+  MultiSelectValue,
+  MultiSelectItem,
+} from "@/components/ui/multi-select";
 import type { SpecialtyField } from "@/constants";
+import { SCROLLBAR_CLASSES } from "@/constants";
 
-interface SelectFieldProps {
+interface MultiSelectFieldProps {
   field: SpecialtyField;
-  value: string | string[];
+  value: string[];
   errorMessage?: string;
-  onUpdate: (value: string | string[]) => void;
+  onUpdate: (value: string[]) => void;
   isRequired?: boolean; // Optional override for required status
 }
 
-export function SelectField({
+export function MultiSelectField({
   field,
   value,
   errorMessage,
   onUpdate,
   isRequired,
-}: SelectFieldProps) {
+}: MultiSelectFieldProps) {
   const fieldId = field.key;
   const isInvalid = Boolean(errorMessage);
-  const stringValue = typeof value === "string" ? value.trim() : "";
   const required =
     isRequired !== undefined ? isRequired : field.requiredWhen === "always";
-  const normalizedValue = stringValue.trim();
 
   return (
     <div className="space-y-2">
@@ -36,31 +35,27 @@ export function SelectField({
         {field.label}
         {required && <span className="text-destructive ml-1">*</span>}
       </Label>
-      <Select
-        value={normalizedValue}
-        onValueChange={(val) => onUpdate(val)}
-        required={required}
-      >
-        <SelectTrigger
+      <MultiSelect values={value} onValuesChange={onUpdate}>
+        <MultiSelectTrigger
           id={fieldId}
           aria-invalid={isInvalid || undefined}
           aria-describedby={isInvalid ? `${fieldId}-error` : undefined}
         >
-          <SelectValue
+          <MultiSelectValue
             placeholder={field.placeholder || `Selecionar ${field.label}`}
           />
-        </SelectTrigger>
-        <SelectContent>
+        </MultiSelectTrigger>
+        <MultiSelectContent className={SCROLLBAR_CLASSES}>
           {field.options
             ?.slice()
             .sort((a, b) => a.label.localeCompare(b.label))
             .map((option) => (
-              <SelectItem key={option.value} value={option.value}>
+              <MultiSelectItem key={option.value} value={option.value}>
                 {option.label}
-              </SelectItem>
+              </MultiSelectItem>
             ))}
-        </SelectContent>
-      </Select>
+        </MultiSelectContent>
+      </MultiSelect>
       {isInvalid && (
         <p id={`${fieldId}-error`} className="text-xs text-destructive mt-1">
           {errorMessage}

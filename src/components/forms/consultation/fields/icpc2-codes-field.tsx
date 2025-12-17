@@ -1,17 +1,19 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { IconX, IconCheck, IconSearch } from "@tabler/icons-react";
 import type { SpecialtyField } from "@/constants";
 import type { ICPC2Code } from "@/constants";
+import { SCROLLBAR_CLASSES } from "@/constants";
 
 interface ICPC2CodesFieldProps {
   field: SpecialtyField;
-  value: string | string[];
+  value: string[];
   errorMessage?: string;
-  onUpdate: (value: string | string[]) => void;
+  onUpdate: (value: string[]) => void;
   icpc2Codes: ICPC2Code[];
+  isRequired?: boolean;
 }
 
 export function ICPC2CodesField({
@@ -20,14 +22,34 @@ export function ICPC2CodesField({
   errorMessage,
   onUpdate,
   icpc2Codes,
+  isRequired,
 }: ICPC2CodesFieldProps) {
   const fieldId = field.key;
   const isInvalid = Boolean(errorMessage);
-  const stringValue = typeof value === "string" ? value : "";
+  const required = isRequired ?? field.requiredWhen === "always";
   const [searchTerm, setSearchTerm] = useState("");
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const selectedCodeEntries = stringValue
-    .split(";")
+  useEffect(() => {
+    const onPointerDown = (event: PointerEvent) => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      const targetNode = event.target as Node | null;
+      if (!targetNode) return;
+
+      if (!container.contains(targetNode)) {
+        setSearchTerm("");
+      }
+    };
+
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown, true);
+    };
+  }, []);
+
+  const selectedCodeEntries = (Array.isArray(value) ? value : [])
     .map((c) => c.trim())
     .filter((c) => c.length > 0);
 
@@ -57,20 +79,17 @@ export function ICPC2CodesField({
         return entryCode !== code;
       });
     } else {
-      newCodeEntries = [
-        ...selectedCodeEntries,
-        `${code} - ${description}`,
-      ];
+      newCodeEntries = [...selectedCodeEntries, `${code} - ${description}`];
     }
 
-    onUpdate(newCodeEntries.join("; "));
+    onUpdate(newCodeEntries);
   };
 
   return (
-    <div className="space-y-2">
+    <div ref={containerRef} className="space-y-2">
       <Label htmlFor={fieldId} className="text-sm font-medium">
         {field.label}
-        {field.required && <span className="text-destructive ml-1">*</span>}
+        {required && <span className="text-destructive ml-1">*</span>}
       </Label>
 
       {selectedCodeEntries.length > 0 && (
@@ -121,7 +140,9 @@ export function ICPC2CodesField({
       </div>
 
       {searchTerm && (
-        <div className="border rounded-md max-h-60 overflow-y-auto">
+        <div
+          className={`border rounded-md max-h-60 overflow-y-auto ${SCROLLBAR_CLASSES}`}
+        >
           {displayedCodes.length > 0 ? (
             <div className="divide-y">
               {displayedCodes.map((icpc2Code) => {
@@ -173,4 +194,3 @@ export function ICPC2CodesField({
     </div>
   );
 }
-

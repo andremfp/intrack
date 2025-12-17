@@ -852,14 +852,17 @@ function calculateMetrics(
   const diagnosisCounts = new Map<string, number>();
   consultations.forEach((c) => {
     const diagnosis = getDetail(c, "diagnosis");
-    if (diagnosis && typeof diagnosis === "string") {
-      const codes = diagnosis.split(";").map((code) => code.trim());
-      codes.forEach((code) => {
-        if (code) {
-          diagnosisCounts.set(code, (diagnosisCounts.get(code) || 0) + 1);
-        }
-      });
-    }
+    const codes = Array.isArray(diagnosis) ? diagnosis : [];
+
+    codes.forEach((code) => {
+      const normalized = String(code).trim();
+      if (normalized) {
+        diagnosisCounts.set(
+          normalized,
+          (diagnosisCounts.get(normalized) || 0) + 1
+        );
+      }
+    });
   });
   const byDiagnosis = Array.from(diagnosisCounts.entries())
     .map(([code, count]) => ({ code, count }))
@@ -869,14 +872,17 @@ function calculateMetrics(
   const problemsCounts = new Map<string, number>();
   consultations.forEach((c) => {
     const problems = getDetail(c, "problems");
-    if (problems && typeof problems === "string") {
-      const codes = problems.split(";").map((code) => code.trim());
-      codes.forEach((code) => {
-        if (code) {
-          problemsCounts.set(code, (problemsCounts.get(code) || 0) + 1);
-        }
-      });
-    }
+    const codes = Array.isArray(problems) ? problems : [];
+
+    codes.forEach((code) => {
+      const normalized = String(code).trim();
+      if (normalized) {
+        problemsCounts.set(
+          normalized,
+          (problemsCounts.get(normalized) || 0) + 1
+        );
+      }
+    });
   });
   const byProblems = Array.from(problemsCounts.entries())
     .map(([code, count]) => ({ code, count }))
@@ -886,14 +892,17 @@ function calculateMetrics(
   const newDiagnosisCounts = new Map<string, number>();
   consultations.forEach((c) => {
     const newDiagnosis = getDetail(c, "new_diagnosis");
-    if (newDiagnosis && typeof newDiagnosis === "string") {
-      const codes = newDiagnosis.split(";").map((code) => code.trim());
-      codes.forEach((code) => {
-        if (code) {
-          newDiagnosisCounts.set(code, (newDiagnosisCounts.get(code) || 0) + 1);
-        }
-      });
-    }
+    const codes = Array.isArray(newDiagnosis) ? newDiagnosis : [];
+
+    codes.forEach((code) => {
+      const normalized = String(code).trim();
+      if (normalized) {
+        newDiagnosisCounts.set(
+          normalized,
+          (newDiagnosisCounts.get(normalized) || 0) + 1
+        );
+      }
+    });
   });
   const byNewDiagnosis = Array.from(newDiagnosisCounts.entries())
     .map(([code, count]) => ({ code, count }))
