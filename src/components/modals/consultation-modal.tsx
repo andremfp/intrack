@@ -139,8 +139,6 @@ export function ConsultationModal({
 
   const ruleCtx = buildFieldRuleContext(formValues as FormValues);
 
-  const ruleCtx = buildFieldRuleContext(formValues as FormValues);
-
   // Prevent body scroll when modal is open
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
