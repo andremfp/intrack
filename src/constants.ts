@@ -204,6 +204,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
     label: "Presencial",
     type: "boolean",
     defaultValue: true,
+    requiredWhen: "always",
     section: "consultation_info",
   },
   {
@@ -306,12 +307,8 @@ export const MGF_FIELDS: SpecialtyField[] = [
   {
     key: "vaccination_plan",
     label: "PNV Cumprido",
-    type: "select",
+    type: "boolean",
     section: "clinical_history",
-    options: [
-      { value: "sim", label: "Sim" },
-      { value: "nao", label: "Não" },
-    ],
   },
   {
     key: "chronic_diseases",
