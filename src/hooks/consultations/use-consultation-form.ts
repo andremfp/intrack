@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { ConsultationMGF } from "@/lib/api/consultations";
 import { getSpecialtyFields, type SpecialtyField } from "@/constants";
 import { resolveTypeSections } from "@/components/forms/consultation/helpers";
@@ -9,19 +9,21 @@ import { initializeFormValues, getFieldValue } from "./helpers";
 
 /**
  * Hook for managing consultation form state and field organization.
- * 
+ *
  * Handles:
  * - Initializing form values from database (or defaults for new consultation)
  * - Organizing fields into groups for UI rendering
  * - Managing field updates and validation errors
  * - Dynamically showing/hiding type-specific sections
- * 
+ *
  * @param specialtyCode - Code of the specialty (e.g., "mgf") or null
  * @param editingConsultation - Existing consultation from database (null for new consultation)
+ * @param specialtyYear - Pre-selected specialty year (used when opening from specialty-year-specific tab)
  */
 export function useConsultationForm(
   specialtyCode: string | null,
-  editingConsultation?: ConsultationMGF | null
+  editingConsultation?: ConsultationMGF | null,
+  specialtyYear?: number | null
 ) {
   // Get all specialty-specific field definitions
   const specialtyFields = useMemo(
@@ -31,13 +33,26 @@ export function useConsultationForm(
 
   // Initialize form values from database (or use defaults for new consultation)
   const initialFormValues = useMemo(
-    () => initializeFormValues(specialtyFields, editingConsultation),
-    [specialtyFields, editingConsultation]
+    () => {
+      const values = initializeFormValues(specialtyFields, editingConsultation);
+      // Override specialty_year if provided (for specialty-year-specific tabs)
+      if (specialtyYear !== null && specialtyYear !== undefined) {
+        values.specialty_year = String(specialtyYear);
+      }
+      return values;
+    },
+    [specialtyFields, editingConsultation, specialtyYear]
   );
 
   // Form state: current values and validation errors
   const [formValues, setFormValues] = useState<FormValues>(initialFormValues);
   const [fieldError, setFieldError] = useState<FieldError | null>(null);
+
+  // Update form values when initial values change (e.g., when specialtyYear changes)
+  useEffect(() => {
+    setFormValues(initialFormValues);
+    setFieldError(null); // Clear any validation errors when form resets
+  }, [initialFormValues]);
 
   /**
    * Initializes type-specific fields for a given consultation type.

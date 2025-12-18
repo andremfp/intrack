@@ -17,10 +17,10 @@ export function useModals(): UseModalsReturn {
 
   // Action creators
   const openModal = useCallback(
-    (type: ModalType, editingConsultation?: ConsultationMGF | null) => {
+    (type: ModalType, editingConsultation?: ConsultationMGF | null, specialtyYear?: number | null) => {
       dispatch({
         type: "OPEN_MODAL",
-        payload: { type, editingConsultation },
+        payload: { type, editingConsultation, specialtyYear },
       });
     },
     []
@@ -39,8 +39,8 @@ export function useModals(): UseModalsReturn {
 
   // Convenience methods for specific modals
   const openConsultationModal = useCallback(
-    (consultation?: ConsultationMGF | null) => {
-      openModal("consultation", consultation);
+    (consultation?: ConsultationMGF | null, specialtyYear?: number | null) => {
+      openModal("consultation", consultation, specialtyYear);
     },
     [openModal]
   );
@@ -71,6 +71,7 @@ export function useModals(): UseModalsReturn {
     showConsultationModal,
     showAboutModal,
     editingConsultation: modalState.editingConsultation,
+    specialtyYear: modalState.specialtyYear,
 
     // Modal actions
     openModal,
