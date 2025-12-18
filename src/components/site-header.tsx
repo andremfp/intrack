@@ -2,6 +2,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ModeToggle } from "@/components/theme/mode-toggle";
 import type { Specialty } from "@/lib/api/specialties";
 import type { TabType } from "@/constants";
+import { TAB_CONSTANTS, getConsultationsTabDisplayName } from "@/constants";
 
 interface SiteHeaderProps {
   specialty?: Specialty | null;
@@ -20,8 +21,14 @@ export function SiteHeader({ specialty, activeTab }: SiteHeaderProps) {
         const year = yearMatch[1];
         return `${specialty.name} - ${specialty.code.toUpperCase()}.${year}`;
       }
-    } else {
-      return `${specialty.name} - ${activeTab?.split(".")[1]}`;
+    } else if (activeTab) {
+      const subTab = activeTab.split(".")[1];
+      // If the sub-tab is the Consultations metrics tab, use the dynamic display name
+      const displayName =
+        subTab === TAB_CONSTANTS.METRICS_SUB_TABS.CONSULTATIONS
+          ? getConsultationsTabDisplayName(specialty.code)
+          : subTab;
+      return `${specialty.name} - ${displayName}`;
     }
   };
 

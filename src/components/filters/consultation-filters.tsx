@@ -27,19 +27,13 @@ import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useIsMobile } from "@/hooks/ui/use-mobile";
 import type { ConsultationFiltersProps } from "./types";
 import {
-  getSexOptions,
-  getAutonomyOptions,
-  getLocationOptions,
-  getInternshipOptions,
-  getTypeOptions,
-  getContraceptiveOptions,
-  getNewContraceptiveOptions,
-  getSmokerOptions,
+  getFieldOptions,
   generatePrettyFilterLabel,
   buildFilterBadgeConfigs,
   hasValue,
   type FiltersRecord,
 } from "./helpers";
+import type { SpecialtyFieldOption } from "@/constants";
 
 /**
  * Filter component specialized to consultations filters.
@@ -194,21 +188,37 @@ export function ConsultationFilters({
     }
   }, []);
 
-  // Get field options
-  const sexOptions = getSexOptions();
-  const autonomyOptions = getAutonomyOptions();
-  const locationOptions = getLocationOptions();
-  const internshipOptions = getInternshipOptions();
-  const typeOptions = getTypeOptions();
-  const contraceptiveOptions = getContraceptiveOptions();
-  const newContraceptiveOptions = getNewContraceptiveOptions();
-  const smokerOptions = getSmokerOptions();
+  // Get field options dynamically
+  const fieldOptions = useMemo(() => {
+    const options: Record<string, SpecialtyFieldOption[]> = {};
+    const fieldKeys = [
+      "sex",
+      "autonomy",
+      "location",
+      "internship",
+      "type",
+      "contraceptive",
+      "new_contraceptive",
+      "smoker",
+      "family_type",
+      "school_level",
+      "professional_area",
+      "profession",
+      "vaccination_plan",
+    ];
+
+    fieldKeys.forEach((key) => {
+      options[key] = getFieldOptions(key);
+    });
+
+    return options;
+  }, []);
 
   // Show internship selector when enabled and options exist
   const shouldShowInternship =
     config.enabledFields.includes("internship") &&
-    internshipOptions &&
-    internshipOptions.length > 0;
+    fieldOptions.internship &&
+    fieldOptions.internship.length > 0;
 
   const appliedFilterBadges = useMemo(
     () =>
@@ -398,7 +408,7 @@ export function ConsultationFilters({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos os locais</SelectItem>
-                    {locationOptions.map((option) => (
+                    {fieldOptions.location.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>
@@ -428,7 +438,7 @@ export function ConsultationFilters({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos os estágios</SelectItem>
-                    {internshipOptions.map((option) => (
+                    {fieldOptions.internship.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>
@@ -439,35 +449,36 @@ export function ConsultationFilters({
             )}
 
             {/* Sex selector */}
-            {config.enabledFields.includes("sex") && sexOptions.length > 0 && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">
-                  Sexo
-                </label>
-                <Select
-                  value={(getFilterValue("sex") as string) || "all"}
-                  onValueChange={(value) =>
-                    setFilterValue("sex", value === "all" ? undefined : value)
-                  }
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    {sexOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            {config.enabledFields.includes("sex") &&
+              fieldOptions.sex.length > 0 && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Sexo
+                  </label>
+                  <Select
+                    value={(getFilterValue("sex") as string) || "all"}
+                    onValueChange={(value) =>
+                      setFilterValue("sex", value === "all" ? undefined : value)
+                    }
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      {fieldOptions.sex.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
             {/* Autonomy selector */}
             {config.enabledFields.includes("autonomy") &&
-              autonomyOptions.length > 0 && (
+              fieldOptions.autonomy.length > 0 && (
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">
                     Autonomia
@@ -486,7 +497,7 @@ export function ConsultationFilters({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todas</SelectItem>
-                      {autonomyOptions.map((option) => (
+                      {fieldOptions.autonomy.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
@@ -541,7 +552,7 @@ export function ConsultationFilters({
 
             {/* Type filter */}
             {config.enabledFields.includes("type") &&
-              typeOptions.length > 0 && (
+              fieldOptions.type.length > 0 && (
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">
                     Tipo de Consulta
@@ -560,7 +571,7 @@ export function ConsultationFilters({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
-                      {typeOptions.map((option) => (
+                      {fieldOptions.type.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
@@ -609,7 +620,7 @@ export function ConsultationFilters({
 
             {/* Smoker filter */}
             {config.enabledFields.includes("smoker") &&
-              smokerOptions.length > 0 && (
+              fieldOptions.smoker.length > 0 && (
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">
                     Fumador
@@ -628,7 +639,7 @@ export function ConsultationFilters({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
-                      {smokerOptions.map((option) => (
+                      {fieldOptions.smoker.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
@@ -640,7 +651,7 @@ export function ConsultationFilters({
 
             {/* Contraceptive filter */}
             {config.enabledFields.includes("contraceptive") &&
-              contraceptiveOptions.length > 0 && (
+              fieldOptions.contraceptive.length > 0 && (
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">
                     Contraceptivo
@@ -659,7 +670,7 @@ export function ConsultationFilters({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
-                      {contraceptiveOptions.map((option) => (
+                      {fieldOptions.contraceptive.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
@@ -670,7 +681,7 @@ export function ConsultationFilters({
               )}
             {/* New contraceptive filter */}
             {config.enabledFields.includes("new_contraceptive") &&
-              newContraceptiveOptions.length > 0 && (
+              fieldOptions.new_contraceptive.length > 0 && (
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">
                     Novo Contraceptivo
@@ -691,7 +702,166 @@ export function ConsultationFilters({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
-                      {newContraceptiveOptions.map((option) => (
+                      {fieldOptions.new_contraceptive.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+            {/* Family type filter */}
+            {config.enabledFields.includes("family_type") &&
+              fieldOptions.family_type.length > 0 && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Tipologia de Família
+                  </label>
+                  <Select
+                    value={(getFilterValue("family_type") as string) || "all"}
+                    onValueChange={(value) =>
+                      setFilterValue(
+                        "family_type",
+                        value === "all" ? undefined : value
+                      )
+                    }
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      {fieldOptions.family_type.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+            {/* School level filter */}
+            {config.enabledFields.includes("school_level") &&
+              fieldOptions.school_level.length > 0 && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Escolaridade
+                  </label>
+                  <Select
+                    value={(getFilterValue("school_level") as string) || "all"}
+                    onValueChange={(value) =>
+                      setFilterValue(
+                        "school_level",
+                        value === "all" ? undefined : value
+                      )
+                    }
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      {fieldOptions.school_level.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+            {/* Professional area filter */}
+            {config.enabledFields.includes("professional_area") &&
+              fieldOptions.professional_area.length > 0 && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Sector de Actividade
+                  </label>
+                  <Select
+                    value={
+                      (getFilterValue("professional_area") as string) || "all"
+                    }
+                    onValueChange={(value) =>
+                      setFilterValue(
+                        "professional_area",
+                        value === "all" ? undefined : value
+                      )
+                    }
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      {fieldOptions.professional_area.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+            {/* Profession filter */}
+            {config.enabledFields.includes("profession") &&
+              fieldOptions.profession.length > 0 && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Profissão
+                  </label>
+                  <Select
+                    value={(getFilterValue("profession") as string) || "all"}
+                    onValueChange={(value) =>
+                      setFilterValue(
+                        "profession",
+                        value === "all" ? undefined : value
+                      )
+                    }
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      {fieldOptions.profession.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+            {/* Vaccination plan filter */}
+            {config.enabledFields.includes("vaccination_plan") &&
+              fieldOptions.vaccination_plan.length > 0 && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    PNV Cumprido
+                  </label>
+                  <Select
+                    value={
+                      (getFilterValue("vaccination_plan") as string) || "all"
+                    }
+                    onValueChange={(value) =>
+                      setFilterValue(
+                        "vaccination_plan",
+                        value === "all" ? undefined : value
+                      )
+                    }
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      {fieldOptions.vaccination_plan.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>

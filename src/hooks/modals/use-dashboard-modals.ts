@@ -36,9 +36,7 @@ export function useDashboardModals(
   }, [
     initShowSpecialtyModal,
     userSpecialty,
-    modals.showSpecialtyModal,
-    modals.openSpecialtyModal,
-    modals.closeModal,
+    modals,
   ]);
 
   // Enhanced handlers that include parent component logic
@@ -46,10 +44,11 @@ export function useDashboardModals(
     // This will be handled by the parent component since it needs access to updateUserSpecialty
     // We just close the modal here
     modals.closeModal();
-  }, [modals.closeModal]);
+  }, [modals]);
 
   const handleRowClick = modals.openConsultationModal;
-  const handleAddConsultation = useCallback(() => modals.openConsultationModal(null), [modals.openConsultationModal]);
+  const handleAddConsultation = useCallback((specialtyYear?: number) =>
+    modals.openConsultationModal(null, specialtyYear), [modals]);
 
   // Mobile-aware action wrapper
   const withMobileClose = useCallback(<T extends unknown[]>(
@@ -75,7 +74,8 @@ export function useDashboardModals(
     showProfileModal: modals.showProfileModal,
     showConsultationModal: modals.showConsultationModal,
     showAboutModal: modals.showAboutModal,
-    editingConsultation: modals.editingConsultation,  
+    editingConsultation: modals.editingConsultation,
+    specialtyYear: modals.specialtyYear,  
 
     // Modal handlers
     handleSpecialtySelected,

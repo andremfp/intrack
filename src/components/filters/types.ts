@@ -15,7 +15,12 @@ export type FilterFieldType =
   | "presential"
   | "smoker"
   | "contraceptive"
-  | "new_contraceptive";
+  | "new_contraceptive"
+  | "family_type"
+  | "school_level"
+  | "professional_area"
+  | "profession"
+  | "vaccination_plan";
 
 // UI configuration for filter display - specifies which filters to show and how
 export interface FilterUIConfig {
