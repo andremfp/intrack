@@ -860,7 +860,8 @@ function calculateMetrics(
   const vaccinationPlanCounts = new Map<string, number>();
   consultations.forEach((c) => {
     if (c.vaccination_plan !== null && c.vaccination_plan !== undefined) {
-      vaccinationPlanCounts.set(c.vaccination_plan, (vaccinationPlanCounts.get(c.vaccination_plan) || 0) + 1);
+      const key = c.vaccination_plan ? "true" : "false";
+      vaccinationPlanCounts.set(key, (vaccinationPlanCounts.get(key) || 0) + 1);
     }
   });
   const byVaccinationPlan = Array.from(vaccinationPlanCounts.entries()).map(([vaccinationPlan, count]) => ({ vaccinationPlan, count }));
