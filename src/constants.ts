@@ -733,6 +733,11 @@ export const CONSULTATIONS_ENABLED_FIELDS: FilterFieldType[] = [
   "smoker",
   "contraceptive",
   "new_contraceptive",
+  "family_type",
+  "school_level",
+  "professional_area",
+  "profession",
+  "vaccination_plan",
 ];
 
 /**
