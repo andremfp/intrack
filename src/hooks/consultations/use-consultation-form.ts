@@ -76,6 +76,27 @@ export function useConsultationForm(
   };
 
   /**
+   * Initializes type-specific fields for a given consultation type.
+   * This is called when the type field is updated to ensure all type-specific
+   * fields exist in the form values with proper defaults.
+   */
+  const initializeTypeSpecificFields = (consultationType: string, currentFormValues: FormValues) => {
+    const typeSections = resolveTypeSections(consultationType);
+    const updatedValues = { ...currentFormValues };
+
+    typeSections.forEach((section) => {
+      section.fields.forEach((field) => {
+        // Only initialize if the field doesn't already exist in form values
+        if (!(field.key in updatedValues)) {
+          updatedValues[field.key] = getFieldValue(field, undefined);
+        }
+      });
+    });
+
+    return updatedValues;
+  };
+
+  /**
    * Updates a single field value and clears any error for that field.
    * When the 'type' field is updated, also initializes type-specific fields.
    */
