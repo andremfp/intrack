@@ -33,7 +33,7 @@ export function getFieldValue(
     return [];
   }
 
-  // Boolean fields: DB stores boolean, form needs "true" or "false" string
+  // Boolean fields: DB stores boolean, form needs "true" or "false" string (or "" for null/optional)
   if (field.type === "boolean") {
     if (typeof databaseValue === "boolean") {
       return databaseValue ? "true" : "false";
@@ -42,10 +42,10 @@ export function getFieldValue(
     if (databaseValue === "true" || databaseValue === "false") {
       return databaseValue;
     }
-    // No value: use default or "false"
+    // No value: use default if provided, otherwise empty string for optional fields
     return field.defaultValue !== undefined
       ? String(field.defaultValue)
-      : "false";
+      : "";
   }
 
   // Multi-select fields: stored as array of strings in DB, need array for form
