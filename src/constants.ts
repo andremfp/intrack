@@ -20,7 +20,6 @@ export const TAB_CONSTANTS = {
   METRICS_SUB_TABS: {
     GENERAL: "Geral",
     CONSULTATIONS: "Consultas",
-    ICPC2: "ICPC-2",
   },
 } as const;
 
@@ -77,6 +76,7 @@ export interface SpecialtyField {
   placeholder?: string;
   units?: string;
   section?: string; // Optional section grouping for UI organization
+  mainLocation?: string; // Main location for specialty (used for general metrics tab)
 }
 
 export interface SpecialtyFieldOption {
@@ -159,6 +159,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
     type: "select",
     requiredWhen: "always",
     section: "consultation_info",
+    mainLocation: "unidade",
     options: [
       { value: "unidade", label: "Unidade de Saúde" },
       { value: "urgência", label: "Serviço de Urgência" },
@@ -676,6 +677,27 @@ export function getSpecialtyFields(specialtyCode: string): SpecialtyField[] {
   }
 }
 
+// Get main location for specialty (returns both value and label)
+export function getSpecialtyMainLocation(specialtyCode: string): {
+  value: string | undefined;
+  label: string | undefined;
+} {
+  const fields = getSpecialtyFields(specialtyCode);
+  const locationField = fields.find(field => field.key === "location");
+  const value = locationField?.mainLocation;
+  const label = locationField?.options?.find(option => option.value === value)?.label;
+  return { value, label };
+}
+
+// Get display name for Consultations metrics tab (returns main location or default)
+export function getConsultationsTabDisplayName(specialtyCode?: string | null): string {
+  if (!specialtyCode) {
+    return TAB_CONSTANTS.METRICS_SUB_TABS.CONSULTATIONS;
+  }
+  const { label } = getSpecialtyMainLocation(specialtyCode);
+  return label || TAB_CONSTANTS.METRICS_SUB_TABS.CONSULTATIONS;
+}
+
 // Convert age to years based on unit
 export function ageToYears(age: number, unit: string): number {
   switch (unit) {
@@ -721,17 +743,8 @@ export const METRICS_GENERAL_ENABLED_FIELDS: FilterFieldType[] = [
   "location",
   "internship",
   "sex",
-  "autonomy",
   "ageRange",
   "dateRange",
-  "type",
-  "presential",
-  "smoker",
-  "family_type",
-  "school_level",
-  "professional_area",
-  "profession",
-  "vaccination_plan",
 ];
 
 /**
@@ -739,14 +752,17 @@ export const METRICS_GENERAL_ENABLED_FIELDS: FilterFieldType[] = [
  */
 export const METRICS_CONSULTATIONS_ENABLED_FIELDS: FilterFieldType[] = [
   "year",
-  "location",
-  "internship",
   "sex",
   "autonomy",
   "ageRange",
   "dateRange",
   "type",
   "presential",
+  "family_type",
+  "school_level",
+  "professional_area",
+  "profession",
+  "vaccination_plan",
   "smoker",
   "contraceptive",
   "new_contraceptive",

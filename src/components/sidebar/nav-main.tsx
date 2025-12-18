@@ -33,6 +33,7 @@ export function NavMain({
     icon?: Icon;
     items?: {
       title: string;
+      displayName?: string;
       url: string;
     }[];
   }[];
@@ -101,13 +102,15 @@ export function NavMain({
                             ? `${item.title}.${yearMatch[1]}`
                             : `${item.title}.${subItem.title}`;
                           const isSubActive = activeTab === subItemTab;
+                          const displayLabel =
+                            subItem.displayName || subItem.title;
                           return (
                             <SidebarMenuSubItem key={subItem.title}>
                               <SidebarMenuSubButton
                                 isActive={isSubActive}
                                 onClick={() => onTabChange(subItemTab)}
                               >
-                                <span>{subItem.title}</span>
+                                <span>{displayLabel}</span>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>
                           );

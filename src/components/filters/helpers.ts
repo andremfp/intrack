@@ -262,18 +262,6 @@ export function formatDate(dateString: string): string {
   });
 }
 
-export function getSexLabel(value: string): string {
-  return getFieldLabel("sex", value);
-}
-
-export function getSmokerLabel(value: string): string {
-  return getFieldLabel("smoker", value);
-}
-
-export function getAutonomyLabel(value: string): string {
-  return getFieldLabel("autonomy", value);
-}
-
 // Badge helpers (logic-only, UI rendering stays in TSX)
 
 export function buildFilterBadgeConfigs(params: {

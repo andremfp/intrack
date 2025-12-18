@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/sidebar";
 import type { UserData } from "@/lib/api/users";
 import type { Specialty } from "@/lib/api/specialties";
+import { TAB_CONSTANTS, getConsultationsTabDisplayName } from "@/constants";
 import type { TabType } from "@/constants";
 
 export function AppSidebar({
@@ -42,26 +43,24 @@ export function AppSidebar({
   // Build nav items dynamically based on specialty
   const navMain = [
     {
-      title: "Métricas",
+      title: TAB_CONSTANTS.MAIN_TABS.METRICS,
       url: "#",
       icon: IconDashboard,
       items: [
         {
-          title: "Geral",
+          title: TAB_CONSTANTS.METRICS_SUB_TABS.GENERAL,
+          displayName: TAB_CONSTANTS.METRICS_SUB_TABS.GENERAL,
           url: "#",
         },
         {
-          title: "Consultas",
-          url: "#",
-        },
-        {
-          title: "ICPC-2",
+          title: TAB_CONSTANTS.METRICS_SUB_TABS.CONSULTATIONS,
+          displayName: getConsultationsTabDisplayName(specialty?.code),
           url: "#",
         },
       ],
     },
     {
-      title: "Consultas",
+      title: TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS,
       url: "#",
       icon: IconTable,
       items:
@@ -70,7 +69,12 @@ export function AppSidebar({
               title: `${specialty.code.toUpperCase()}.${i + 1}`,
               url: "#",
             }))
-          : undefined,
+          : [
+              {
+                title: TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS,
+                url: "#",
+              },
+            ],
     },
   ];
 

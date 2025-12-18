@@ -6,19 +6,19 @@ import { useMetricsData } from "@/hooks/metrics/use-metrics-data";
 import { useFilters } from "@/hooks/filters/use-filters";
 import { defaultConsultationsFilters } from "@/hooks/filters/helpers";
 import { getSexLabel } from "./helpers";
-import { GeneralTab } from "./tabs/general/general-tab";
-import { ConsultationsTab } from "./tabs/consultations/consultations-tab";
-import { ICPC2Tab } from "./tabs/icpc-2-codes/icpc-2-tab";
+import { GeneralTab } from "./tabs/general-tab";
+import { ConsultationsTab } from "./tabs/consultations-tab";
 import { MetricsErrorDisplay } from "./metrics-error-display";
 import { buildConsultationsExportMetadataRows } from "@/components/consultations/helpers";
 import { buildMetricsExportSheets, downloadXlsx } from "@/exports/helpers";
 import { toasts } from "@/utils/toasts";
-import { TAB_CONSTANTS } from "@/constants";
+import { TAB_CONSTANTS, getSpecialtyMainLocation } from "@/constants";
+import type { MetricsSubTab } from "@/utils/tab-parsing";
 
 interface MetricsDashboardProps {
   userId: string;
   specialty: Specialty | null;
-  activeSubTab: "Geral" | "Consultas" | "ICPC-2";
+  activeSubTab: MetricsSubTab;
   onRefreshReady?: (refresh: () => Promise<void>) => void;
 }
 
@@ -37,12 +37,30 @@ export function MetricsDashboard({
 
   const [isExportingExcel, setIsExportingExcel] = useState(false);
 
+  // For the consultations tab, automatically filter by the main location
+  // without showing it as an active filter
+  const implicitFilters = useMemo(() => {
+    if (
+      activeSubTab === TAB_CONSTANTS.METRICS_SUB_TABS.CONSULTATIONS &&
+      specialty?.code
+    ) {
+      const { value: mainLocationValue } = getSpecialtyMainLocation(
+        specialty.code
+      );
+      if (mainLocationValue) {
+        return { location: mainLocationValue };
+      }
+    }
+    return {};
+  }, [activeSubTab, specialty?.code]);
+
   // Use custom hook for metrics data fetching
   const { metrics, isLoading, error, retryLoadMetrics, loadMetrics } =
     useMetricsData({
       userId,
       specialty,
       filters,
+      implicitFilters,
     });
 
   // Track whether any filters are currently active
@@ -142,20 +160,6 @@ export function MetricsDashboard({
   if (activeSubTab === TAB_CONSTANTS.METRICS_SUB_TABS.CONSULTATIONS) {
     return (
       <ConsultationsTab
-        specialty={specialty}
-        filters={filters}
-        setFilter={setFilter}
-        metrics={metrics}
-        hasActiveFilters={hasActiveFilters}
-        onExportExcel={handleExportExcel}
-        isExportingExcel={isExportingExcel}
-      />
-    );
-  }
-
-  if (activeSubTab === TAB_CONSTANTS.METRICS_SUB_TABS.ICPC2) {
-    return (
-      <ICPC2Tab
         specialty={specialty}
         filters={filters}
         setFilter={setFilter}

@@ -1,16 +1,14 @@
 import { useRef } from "react";
-import { DonutCenterChart } from "../../charts/donut-center-chart";
-import { TimeSeriesChart } from "../../charts/time-series-chart";
+import { DonutCenterChart } from "../charts/donut-center-chart";
+import { TimeSeriesChart } from "../charts/time-series-chart";
 import type { FilterUIConfig } from "@/components/filters/types";
 import { createFilterConfig } from "@/components/filters/helpers";
 import { useMemo } from "react";
 import { METRICS_GENERAL_ENABLED_FIELDS } from "@/constants";
-import type { GeneralTabProps } from "../../helpers";
-import { mapEnabledFieldsToDataFields } from "../../helpers";
-import { EmptyMetricsState } from "../../empty-metrics-state";
-import { MetricsToolbar } from "../../metrics-toolbar";
-import { BreakdownChart } from "../../charts/breakdown-chart";
-import { MetricCard } from "../../cards/metric-card";
+import type { GeneralTabProps } from "../helpers";
+import { mapEnabledFieldsToDataFields } from "../helpers";
+import { EmptyMetricsState } from "../empty-metrics-state";
+import { MetricsToolbar } from "../metrics-toolbar";
 
 export function GeneralTab({
   specialty,
@@ -29,6 +27,7 @@ export function GeneralTab({
   );
 
   // Create filterValues that only includes fields enabled for this tab
+  // For general tab, also set location to the main location for the specialty
   const filterValues = useMemo(() => {
     const values: Record<string, unknown> = {};
     for (const field of enabledDataFields) {
@@ -101,27 +100,6 @@ export function GeneralTab({
             getLabel={(key) => key}
             centerValue={`${metrics.averageAge.toFixed(1)}`}
             centerLabel="Idade média"
-          />
-        </div>
-      </div>
-
-      <div className="grid gap-3 grid-cols-1 lg:grid-cols-2">
-        <div className="relative">
-          <BreakdownChart
-            title="Tipo de Consulta"
-            data={metrics.byType.map((item) => ({
-              label: item.label,
-              type: item.type,
-              value: item.count,
-            }))}
-          />
-        </div>
-        <div className="relative">
-          <MetricCard
-            title="Atendimento"
-            data={metrics.byPresential}
-            getKey={(item) => item.presential}
-            getLabel={(key) => (key === "true" ? "Presencial" : "Remoto")}
           />
         </div>
       </div>
