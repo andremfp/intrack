@@ -13,12 +13,16 @@ export function useMetricsData({
   userId,
   specialty,
   filters,
+  implicitFilters = {},
 }: UseMetricsDataParams): UseMetricsDataReturn {
   const { data: metrics, isLoading, error, loadData: loadMetrics, retryLoadData: retryLoadMetrics } =
     useDataFetching<ConsultationMetrics>({
       filters,
       fetchFunction: async (filtersToUse) => {
-        const result = await getConsultationMetrics(userId, filtersToUse);
+        // Merge implicit filters with regular filters
+        // Implicit filters take precedence if there's a conflict
+        const mergedFilters = { ...filtersToUse, ...implicitFilters };
+        const result = await getConsultationMetrics(userId, mergedFilters, specialty?.code);
         return {
           success: result.success,
           data: result.success ? result.data : undefined,
@@ -29,7 +33,8 @@ export function useMetricsData({
       // This ensures that when filters are restored from localStorage for a metrics tab,
       // metrics are (re)loaded with the correct filters instead of any stale state
       // from a previous tab.
-      loadDependencies: [userId, specialty?.id, JSON.stringify(filters)],
+      // Also include implicitFilters in dependencies to reload when they change.
+      loadDependencies: [userId, specialty?.id, JSON.stringify(filters), JSON.stringify(implicitFilters)],
       errorMessage: "Erro ao carregar métricas",
     });
 

@@ -1,8 +1,8 @@
 import type { TabType } from "@/constants";
 import { TAB_CONSTANTS } from "@/constants";
 
-export type MainTab = "Consultas" | "Métricas";
-export type MetricsSubTab = "Geral" | "Consultas" | "ICPC-2";
+export type MainTab = typeof TAB_CONSTANTS.MAIN_TABS[keyof typeof TAB_CONSTANTS.MAIN_TABS];
+export type MetricsSubTab = typeof TAB_CONSTANTS.METRICS_SUB_TABS[keyof typeof TAB_CONSTANTS.METRICS_SUB_TABS];
 
 export interface ParsedTab {
   mainTab: MainTab;

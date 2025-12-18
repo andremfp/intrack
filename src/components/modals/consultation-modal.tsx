@@ -47,6 +47,7 @@ interface ConsultationModalProps {
   userId: string;
   specialty: Specialty | null;
   editingConsultation?: ConsultationMGF | null;
+  specialtyYear?: number | null;
   onClose: () => void;
   onConsultationSaved?: () => void;
 }
@@ -55,6 +56,7 @@ export function ConsultationModal({
   userId,
   specialty,
   editingConsultation,
+  specialtyYear,
   onClose,
   onConsultationSaved,
 }: ConsultationModalProps) {
@@ -129,7 +131,11 @@ export function ConsultationModal({
     sectionOrder,
     typeSpecificSectionsBySection,
     specialtyFields,
-  } = useConsultationForm(specialty?.code || null, editingConsultation);
+  } = useConsultationForm(
+    specialty?.code || null,
+    editingConsultation,
+    specialtyYear
+  );
 
   const ruleCtx = buildFieldRuleContext(formValues as FormValues);
 
@@ -423,15 +429,15 @@ export function ConsultationModal({
                           <span className="text-destructive ml-1">*</span>
                         </Label>
                         <Select
-                          value={
-                            typeof formValues.specialty_year === "string"
-                              ? formValues.specialty_year
-                              : "1"
-                          }
+                          value={String(formValues.specialty_year || "1")}
                           onValueChange={(val) =>
                             updateField("specialty_year", val)
                           }
                           required
+                          disabled={
+                            typeof specialtyYear === "number" &&
+                            specialtyYear > 0
+                          }
                         >
                           <SelectTrigger
                             id="specialty_year"

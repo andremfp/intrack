@@ -39,6 +39,11 @@ export type ConsultationsFilters = {
   smoker?: string;
   contraceptive?: string;
   new_contraceptive?: string;
+  family_type?: string;
+  school_level?: string;
+  professional_area?: string;
+  profession?: string;
+  vaccination_plan?: string;
 };
 
 /**
@@ -542,6 +547,9 @@ export interface ConsultationMetrics {
   byType: Array<{ type: string; label: string; count: number }>;
   byPresential: Array<{ presential: string; count: number }>;
   bySmoker: Array<{ smoker: string; count: number }>;
+  byVaccinationPlan: Array<{ vaccinationPlan: string; count: number }>;
+  byFamilyType: Array<{ familyType: string; count: number }>;
+  bySchoolLevel: Array<{ schoolLevel: string; count: number }>;
   byContraceptive: Array<{ contraceptive: string; count: number }>;
   byNewContraceptive: Array<{ newContraceptive: string; count: number }>;
   byDiagnosis: Array<{ code: string; count: number }>;
@@ -549,18 +557,27 @@ export interface ConsultationMetrics {
   byNewDiagnosis: Array<{ code: string; count: number }>;
 }
 
-
+// Type for Supabase client that allows dynamic table/view names
+type SupabaseWithDynamicFrom = typeof supabase & {
+  from: (relation: string) => ReturnType<typeof supabase.from>;
+};
 
 // Fetch aggregated metrics for consultations
 // Accepts ConsultationsFilters and converts year to specialtyYear internally
 export async function getConsultationMetrics(
   userId: string,
-  filters?: ConsultationsFilters
+  filters?: ConsultationsFilters,
+  specialtyCode?: string
 ): Promise<ApiResponse<ConsultationMetrics>> {
   try {
     // Build query with database-level filtering
-    let query = supabase
-      .from("consultations_mgf")
+    const viewName = specialtyCode ? `consultations_${specialtyCode}` : "consultations_mgf";
+
+    // Use typed client that allows dynamic view names
+    // Supabase types are strict but these views exist in the database
+    const typedSupabase = supabase as SupabaseWithDynamicFrom;
+    let query = typedSupabase
+      .from(viewName)
       .select("*")
       .eq("user_id", userId);
 
@@ -578,6 +595,26 @@ export async function getConsultationMetrics(
     // This is more efficient than fetching all data and filtering in JavaScript
     if (filters?.internship) {
       query = query.ilike("details->>internship", filters.internship);
+    }
+
+    if (filters?.family_type) {
+      query = query.eq("details->>family_type", filters.family_type);
+    }
+
+    if (filters?.school_level) {
+      query = query.eq("details->>school_level", filters.school_level);
+    }
+
+    if (filters?.professional_area) {
+      query = query.eq("details->>professional_area", filters.professional_area);
+    }
+
+    if (filters?.profession) {
+      query = query.eq("details->>profession", filters.profession);
+    }
+
+    if (filters?.vaccination_plan) {
+      query = query.eq("details->>vaccination_plan", filters.vaccination_plan);
     }
 
     if (filters?.sex) {
@@ -662,7 +699,7 @@ export async function getConsultationMetrics(
     if (!data) return success(getEmptyMetrics());
 
     // Calculate metrics (data is already filtered at database level)
-    const metrics = calculateMetrics(data);
+    const metrics = calculateMetrics(data as unknown as ConsultationMGF[]);
     return success(metrics);
   } catch (error) {
     return failure(error as Error, "getConsultationMetrics");
@@ -679,6 +716,9 @@ function getEmptyMetrics(): ConsultationMetrics {
     byType: [],
     byPresential: [],
     bySmoker: [],
+    byVaccinationPlan: [],
+    byFamilyType: [],
+    bySchoolLevel: [],
     byContraceptive: [],
     byNewContraceptive: [],
     byDiagnosis: [],
@@ -816,6 +856,33 @@ function calculateMetrics(
     count,
   }));
 
+  // By vaccination plan
+  const vaccinationPlanCounts = new Map<string, number>();
+  consultations.forEach((c) => {
+    if (c.vaccination_plan !== null && c.vaccination_plan !== undefined) {
+      vaccinationPlanCounts.set(c.vaccination_plan, (vaccinationPlanCounts.get(c.vaccination_plan) || 0) + 1);
+    }
+  });
+  const byVaccinationPlan = Array.from(vaccinationPlanCounts.entries()).map(([vaccinationPlan, count]) => ({ vaccinationPlan, count }));
+
+  // By family type
+  const familyTypeCounts = new Map<string, number>();
+  consultations.forEach((c) => {
+    if (c.family_type !== null && c.family_type !== undefined) {
+      familyTypeCounts.set(c.family_type, (familyTypeCounts.get(c.family_type) || 0) + 1);
+    }
+  });
+  const byFamilyType = Array.from(familyTypeCounts.entries()).map(([familyType, count]) => ({ familyType, count }));
+
+  // By school level
+  const schoolLevelCounts = new Map<string, number>();
+  consultations.forEach((c) => {
+    if (c.school_level !== null && c.school_level !== undefined) {
+      schoolLevelCounts.set(c.school_level, (schoolLevelCounts.get(c.school_level) || 0) + 1);
+    }
+  });
+  const bySchoolLevel = Array.from(schoolLevelCounts.entries()).map(([schoolLevel, count]) => ({ schoolLevel, count }));
+
   // By contraceptive
   const contraceptiveCounts = new Map<string, number>();
   consultations.forEach((c) => {
@@ -917,6 +984,9 @@ function calculateMetrics(
     byType,
     byPresential,
     bySmoker,
+    byVaccinationPlan,
+    byFamilyType,
+    bySchoolLevel,
     byContraceptive,
     byNewContraceptive,
     byDiagnosis,

@@ -6,6 +6,7 @@ import type { ModalState, ModalAction } from "./types";
 export const initialModalState: ModalState = {
   type: null,
   editingConsultation: null,
+  specialtyYear: null,
 };
 
 /**
@@ -14,10 +15,11 @@ export const initialModalState: ModalState = {
 export function modalsReducer(state: ModalState, action: ModalAction): ModalState {
   switch (action.type) {
     case "OPEN_MODAL": {
-      const { type, editingConsultation } = action.payload;
+      const { type, editingConsultation, specialtyYear } = action.payload;
       return {
         type,
         editingConsultation: editingConsultation ?? null,
+        specialtyYear: specialtyYear ?? null,
       };
     }
 
@@ -25,6 +27,7 @@ export function modalsReducer(state: ModalState, action: ModalAction): ModalStat
       return {
         type: null,
         editingConsultation: null,
+        specialtyYear: null,
       };
     }
 

@@ -58,7 +58,7 @@ jobs:
           npm run sb:local:db:seed:users
 
       - name: Verify Types
-        run: npm run generate:schema && git diff --exit-code src/schema.ts
+        run: npm run sb:local:generate:schema && git diff --exit-code src/schema.ts
 
       - name: Run Tests
         run: npm test

@@ -11,13 +11,14 @@ export type ModalType = "specialty" | "profile" | "consultation" | "about" | nul
 export interface ModalState {
   type: ModalType;
   editingConsultation: ConsultationMGF | null;
+  specialtyYear?: number | null;
 }
 
 /**
  * Action types for modal reducer
  */
 export type ModalAction =
-  | { type: "OPEN_MODAL"; payload: { type: ModalType; editingConsultation?: ConsultationMGF | null } }
+  | { type: "OPEN_MODAL"; payload: { type: ModalType; editingConsultation?: ConsultationMGF | null; specialtyYear?: number | null } }
   | { type: "CLOSE_MODAL" }
   | { type: "SET_EDITING_CONSULTATION"; payload: ConsultationMGF | null }
   | { type: "RESET" };
@@ -33,11 +34,12 @@ export interface UseModalsReturn {
   showConsultationModal: boolean;
   showAboutModal: boolean;
   editingConsultation: ConsultationMGF | null;
+  specialtyYear?: number | null;
 
   // Modal actions
-  openModal: (type: ModalType, editingConsultation?: ConsultationMGF | null) => void;
+  openModal: (type: ModalType, editingConsultation?: ConsultationMGF | null, specialtyYear?: number | null) => void;
   closeModal: () => void;
-  openConsultationModal: (consultation?: ConsultationMGF | null) => void;
+  openConsultationModal: (consultation?: ConsultationMGF | null, specialtyYear?: number | null) => void;
   openProfileModal: () => void;
   openSpecialtyModal: () => void;
   openAboutModal: () => void;
