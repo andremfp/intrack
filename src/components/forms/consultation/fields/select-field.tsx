@@ -1,4 +1,5 @@
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -6,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { IconX } from "@tabler/icons-react";
 import type { SpecialtyField } from "@/constants";
 
 interface SelectFieldProps {
@@ -28,7 +30,9 @@ export function SelectField({
   const stringValue = typeof value === "string" ? value.trim() : "";
   const required =
     isRequired !== undefined ? isRequired : field.requiredWhen === "always";
-  const normalizedValue = stringValue.trim();
+  const normalizedValue = stringValue || undefined; // Use undefined for empty to show placeholder
+  const hasValue = Boolean(stringValue);
+  const showClearButton = !required && hasValue;
 
   return (
     <div className="space-y-2">
@@ -36,31 +40,54 @@ export function SelectField({
         {field.label}
         {required && <span className="text-destructive ml-1">*</span>}
       </Label>
-      <Select
-        value={normalizedValue}
-        onValueChange={(val) => onUpdate(val)}
-        required={required}
-      >
-        <SelectTrigger
-          id={fieldId}
-          aria-invalid={isInvalid || undefined}
-          aria-describedby={isInvalid ? `${fieldId}-error` : undefined}
+      <div className="relative">
+        <Select
+          value={normalizedValue}
+          onValueChange={(val) => onUpdate(val)}
+          required={required}
         >
-          <SelectValue
-            placeholder={field.placeholder || `Selecionar ${field.label}`}
-          />
-        </SelectTrigger>
-        <SelectContent>
-          {field.options
-            ?.slice()
-            .sort((a, b) => a.label.localeCompare(b.label))
-            .map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-        </SelectContent>
-      </Select>
+          <SelectTrigger
+            id={fieldId}
+            aria-invalid={isInvalid || undefined}
+            aria-describedby={isInvalid ? `${fieldId}-error` : undefined}
+            className={showClearButton ? "w-full pr-10" : "w-full"}
+          >
+            <SelectValue
+              placeholder={field.placeholder || `Selecionar ${field.label}`}
+            />
+          </SelectTrigger>
+          <SelectContent>
+            {field.options
+              ?.slice()
+              .sort((a, b) => a.label.localeCompare(b.label))
+              .map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+        {showClearButton && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              onUpdate("");
+            }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 z-10 hover:bg-destructive/10 hover:text-destructive"
+            aria-label={`Limpar ${field.label}`}
+            onMouseDown={(e) => {
+              // Prevent the select from opening when clicking the clear button
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <IconX className="h-3.5 w-3.5" />
+          </Button>
+        )}
+      </div>
       {isInvalid && (
         <p id={`${fieldId}-error`} className="text-xs text-destructive mt-1">
           {errorMessage}

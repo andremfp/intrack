@@ -185,6 +185,14 @@ function serializeFieldValue(
   }
 
   if (field.type === "boolean") {
+    // Empty string or empty array means null (optional field not selected)
+    if (typeof value === "string" && value === "") {
+      return null;
+    }
+    if (Array.isArray(value) && value.length === 0) {
+      return null;
+    }
+    // Convert "true" string to boolean true, anything else to false
     return typeof value === "string" ? value === "true" : null;
   }
 
