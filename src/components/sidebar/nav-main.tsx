@@ -33,6 +33,7 @@ export function NavMain({
     icon?: Icon;
     items?: {
       title: string;
+      displayName?: string;
       url: string;
     }[];
   }[];
@@ -47,7 +48,7 @@ export function NavMain({
           <SidebarMenuItem className="flex items-center gap-2">
             <SidebarMenuButton
               tooltip="Nova Consulta"
-              onClick={onNewConsultation}
+              onClick={() => onNewConsultation?.()}
               className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
             >
               <IconCirclePlusFilled />
@@ -101,13 +102,15 @@ export function NavMain({
                             ? `${item.title}.${yearMatch[1]}`
                             : `${item.title}.${subItem.title}`;
                           const isSubActive = activeTab === subItemTab;
+                          const displayLabel =
+                            subItem.displayName || subItem.title;
                           return (
                             <SidebarMenuSubItem key={subItem.title}>
                               <SidebarMenuSubButton
                                 isActive={isSubActive}
                                 onClick={() => onTabChange(subItemTab)}
                               >
-                                <span>{subItem.title}</span>
+                                <span>{displayLabel}</span>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>
                           );

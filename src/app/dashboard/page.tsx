@@ -48,6 +48,7 @@ function DashboardContent() {
     showConsultationModal,
     showAboutModal,
     editingConsultation,
+    specialtyYear,
     handleSpecialtySelected: baseHandleSpecialtySelected,
     handleRowClick,
     handleAddConsultation,
@@ -135,7 +136,7 @@ function DashboardContent() {
           activeSpecialtyYear={activeSpecialtyYear}
           metricsSubTab={metricsSubTab}
           onRowClick={handleRowClick}
-          onAddConsultation={handleAddConsultation}
+          onAddConsultation={() => handleAddConsultation(activeSpecialtyYear)}
           onConsultationsRefreshReady={(refresh) => {
             refreshConsultationsRef.current = refresh;
           }}
@@ -152,6 +153,7 @@ function DashboardContent() {
         showConsultationModal={showConsultationModal}
         showAboutModal={showAboutModal}
         editingConsultation={editingConsultation}
+        specialtyYear={specialtyYear}
         userId={userId!}
         onSpecialtySelected={handleSpecialtySelected}
         onProfileClose={closeModal}

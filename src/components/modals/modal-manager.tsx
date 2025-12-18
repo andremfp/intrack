@@ -17,6 +17,7 @@ interface ModalManagerProps {
   showConsultationModal: boolean;
   showAboutModal: boolean;
   editingConsultation: ConsultationMGF | null;
+  specialtyYear?: number | null;
   userId: string;
   onSpecialtySelected: (specialty: Specialty) => void;
   onProfileClose: () => void;
@@ -38,6 +39,7 @@ export function ModalManager({
   showConsultationModal,
   showAboutModal,
   editingConsultation,
+  specialtyYear,
   userId,
   onSpecialtySelected,
   onProfileClose,
@@ -68,6 +70,7 @@ export function ModalManager({
           userId={userId}
           specialty={userSpecialty}
           editingConsultation={editingConsultation}
+          specialtyYear={specialtyYear}
           onClose={onConsultationClose}
           onConsultationSaved={onConsultationSaved}
         />
