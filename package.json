@@ -1,7 +1,7 @@
 {
   "name": "intrack",
   "private": true,
-  "version": "0.0.2",
+  "version": "0.0.3",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,17 +9,15 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "echo 'Running tests...' && exit 0",
-    "generate:schema": "npx supabase gen types typescript --project-id \"einkdwyogketttcvhmli\" --schema public > src/schema.ts",
+    "sb:local:generate:schema": "npx supabase gen types typescript --local > src/schema.ts",
     "sb:local:start": "npx supabase start",
     "sb:local:db:seed:users": "node supabase/seed-users.js",
     "sb:local:stop": "npx supabase stop",
     "sb:local:status": "npx supabase status",
-    "sb:local:db:reset": "npx supabase db reset",
-    "sb:local:db:push": "npx supabase db push",
+    "sb:local:db:redeploy": "npx supabase db reset",
     "sb:local:db:pull": "npx supabase db pull",
     "sb:local:db:diff": "npx supabase db diff",
-    "sb:local:db:migration:new": "npx supabase migration new",
-    "sb:local:db:migration:up": "npx supabase db push"
+    "sb:local:db:migration:new": "npx supabase migration new"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

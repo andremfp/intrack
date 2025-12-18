@@ -27,15 +27,7 @@ export function DashboardContentRouter({
           {mainTab === TAB_CONSTANTS.MAIN_TABS.METRICS &&
             userId &&
             metricsSubTab && (
-              <div
-                className={cn(
-                  "flex-1",
-                  metricsSubTab === TAB_CONSTANTS.METRICS_SUB_TABS.GENERAL
-                    ? "flex flex-col min-h-0 overflow-hidden"
-                    : "overflow-y-auto",
-                  SCROLLBAR_CLASSES
-                )}
-              >
+              <div className={cn("flex-1", SCROLLBAR_CLASSES)}>
                 <MetricsDashboard
                   userId={userId}
                   specialty={userSpecialty}

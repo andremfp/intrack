@@ -1,12 +1,14 @@
-import { useMemo, useRef } from "react";
-import { DonutCenterChart } from "../../charts/donut-center-chart";
-import { TimeSeriesChart } from "../../charts/time-series-chart";
+import { useRef } from "react";
+import { DonutCenterChart } from "../charts/donut-center-chart";
+import { TimeSeriesChart } from "../charts/time-series-chart";
 import type { FilterUIConfig } from "@/components/filters/types";
 import { createFilterConfig } from "@/components/filters/helpers";
+import { useMemo } from "react";
 import { METRICS_GENERAL_ENABLED_FIELDS } from "@/constants";
-import type { GeneralTabProps } from "../../helpers";
-import { EmptyMetricsState } from "../../empty-metrics-state";
-import { MetricsToolbar } from "../../metrics-toolbar";
+import type { GeneralTabProps } from "../helpers";
+import { mapEnabledFieldsToDataFields } from "../helpers";
+import { EmptyMetricsState } from "../empty-metrics-state";
+import { MetricsToolbar } from "../metrics-toolbar";
 
 export function GeneralTab({
   specialty,
@@ -18,35 +20,21 @@ export function GeneralTab({
   onExportExcel,
   isExportingExcel,
 }: GeneralTabProps) {
-  // Memoize filterValues to prevent unnecessary re-renders and resets
-  const filterValues = useMemo(
-    () => ({
-      year: filters.year,
-      location: filters.location,
-      autonomy: filters.autonomy,
-      sex: filters.sex,
-      ageMin: filters.ageMin,
-      ageMax: filters.ageMax,
-      type: filters.type,
-      presential: filters.presential,
-      smoker: filters.smoker,
-      dateFrom: filters.dateFrom,
-      dateTo: filters.dateTo,
-    }),
-    [
-      filters.year,
-      filters.location,
-      filters.autonomy,
-      filters.sex,
-      filters.ageMin,
-      filters.ageMax,
-      filters.type,
-      filters.presential,
-      filters.smoker,
-      filters.dateFrom,
-      filters.dateTo,
-    ]
+  // Get the data fields that correspond to enabled filter fields for this tab
+  const enabledDataFields = useMemo(
+    () => mapEnabledFieldsToDataFields(METRICS_GENERAL_ENABLED_FIELDS),
+    []
   );
+
+  // Create filterValues that only includes fields enabled for this tab
+  // For general tab, also set location to the main location for the specialty
+  const filterValues = useMemo(() => {
+    const values: Record<string, unknown> = {};
+    for (const field of enabledDataFields) {
+      values[field] = filters[field as keyof typeof filters];
+    }
+    return values;
+  }, [enabledDataFields, filters]);
 
   const filterConfig: FilterUIConfig = (createFilterConfig({
     enabledFields: METRICS_GENERAL_ENABLED_FIELDS,

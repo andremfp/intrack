@@ -28,6 +28,47 @@ import type { ConsultationsFilters } from "@/lib/api/consultations";
 export type { ConsultationsFilters };
 
 /**
+ * Maps enabled filter fields to their corresponding data field keys in ConsultationsFilters.
+ * This mirrors the logic in mapEnabledFieldsToSetterFields but returns the data field names.
+ */
+export function mapEnabledFieldsToDataFields(
+  enabledFields: string[]
+): Array<keyof ConsultationsFilters> {
+  const dataFields: Array<keyof ConsultationsFilters> = [];
+
+  for (const field of enabledFields) {
+    switch (field) {
+      case "ageRange":
+        dataFields.push("ageMin", "ageMax");
+        break;
+      case "dateRange":
+        dataFields.push("dateFrom", "dateTo");
+        break;
+      case "year":
+      case "location":
+      case "internship":
+      case "sex":
+      case "autonomy":
+      case "processNumber":
+      case "type":
+      case "presential":
+      case "smoker":
+      case "contraceptive":
+      case "new_contraceptive":
+      case "family_type":
+      case "school_level":
+      case "professional_area":
+      case "profession":
+      case "vaccination_plan":
+        dataFields.push(field as keyof ConsultationsFilters);
+        break;
+    }
+  }
+
+  return dataFields;
+}
+
+/**
  * Shared props type for metrics tab components.
  * Simplifies prop passing by using a filters object and setFilter function
  * instead of individual props for each filter.

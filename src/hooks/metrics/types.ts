@@ -6,6 +6,8 @@ export interface UseMetricsDataParams {
   userId: string;
   specialty: Specialty | null;
   filters: ConsultationsFilters;
+  /** Filters that are applied to the data fetch but don't show as "active" in the UI */
+  implicitFilters?: Partial<ConsultationsFilters>;
 }
 
 export interface UseMetricsDataReturn {
