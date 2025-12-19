@@ -1,4 +1,4 @@
-import { COMMON_CONSULTATION_FIELDS, MGF_FIELDS, type SpecialtyField } from "@/constants";
+import { COMMON_CONSULTATION_FIELDS, MGF_FIELDS, MGF_CONSULTATION_TYPE_SECTIONS, TAB_CONSTANTS, type SpecialtyField } from "@/constants";
 import type {
   ConsultationMGF,
   ConsultationMetrics,
@@ -171,6 +171,26 @@ function getDetailsValue(consultation: ConsultationMGF, key: string): unknown {
   return (consultation.details as Record<string, unknown>)[key] ?? null;
 }
 
+function getTypeSpecificValue(
+  consultation: ConsultationMGF,
+  type: string,
+  sectionKey: string,
+  fieldKey: string
+): unknown {
+  if (!consultation.details || typeof consultation.details !== "object") {
+    return null;
+  }
+  const details = consultation.details as Record<string, unknown>;
+  const typeKey = type.toLowerCase();
+  const typeData = details[typeKey] as
+    | Record<string, Record<string, unknown>>
+    | undefined;
+  if (!typeData) return null;
+  const sectionData = typeData[sectionKey] as Record<string, unknown> | undefined;
+  if (!sectionData) return null;
+  return sectionData[fieldKey] ?? null;
+}
+
 function formatBoolean(value: unknown): ConsultationExportCell {
   if (value === null || value === undefined) return null;
   if (typeof value === "boolean") return value ? "Sim" : "Não";
@@ -218,8 +238,10 @@ function formatIcpcCodes(value: unknown): ConsultationExportCell {
 interface ExportColumnConfig {
   key: string;
   header: string;
-  source: "column" | "details";
+  source: "column" | "details" | "type_specific";
   fieldKey?: string;
+  typeKey?: string; // For type-specific fields: the consultation type (e.g., "dm", "hta", "sm")
+  sectionKey?: string; // For type-specific fields: the section key (e.g., "exams", "history")
   formatter?: (
     value: unknown,
     consultation: ConsultationMGF
@@ -271,6 +293,12 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
         : null,
   },
   {
+    key: "favorite",
+    header: "Favorito",
+    source: "column",
+    formatter: (value) => formatBoolean(value),
+  },
+  {
     key: "location",
     header: "Local",
     source: "column",
@@ -310,6 +338,40 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
       formatWithOptions(commonFieldByKey.get("age_unit"), value),
   },
   {
+    key: "family_type",
+    header: "Tipologia de Família",
+    source: "details",
+    formatter: (value) =>
+      formatWithOptions(mgfFieldByKey.get("family_type"), value),
+  },
+  {
+    key: "school_level",
+    header: "Escolaridade",
+    source: "details",
+    formatter: (value) =>
+      formatWithOptions(mgfFieldByKey.get("school_level"), value),
+  },
+  {
+    key: "professional_area",
+    header: "Sector de Actividade",
+    source: "details",
+    formatter: (value) =>
+      formatWithOptions(mgfFieldByKey.get("professional_area"), value),
+  },
+  {
+    key: "profession",
+    header: "Profissão",
+    source: "details",
+    formatter: (value) =>
+      formatWithOptions(mgfFieldByKey.get("profession"), value),
+  },
+  {
+    key: "vaccination_plan",
+    header: "PNV Cumprido",
+    source: "details",
+    formatter: (value) => formatBoolean(value),
+  },
+  {
     key: "type",
     header: "Tipologia",
     source: "column",
@@ -328,10 +390,10 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
     formatter: (value) => formatWithOptions(mgfFieldByKey.get("smoker"), value),
   },
   {
-    key: "favorite",
-    header: "Favorito",
-    source: "column",
-    formatter: (value) => formatBoolean(value),
+    key: "chronic_diseases",
+    header: "Doenças Crónicas",
+    source: "details",
+    formatter: (value) => formatTextList(value),
   },
   {
     key: "internship",
@@ -373,10 +435,17 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
     formatter: (value) => formatIcpcCodes(value),
   },
   {
-    key: "chronic_diseases",
-    header: "Doenças Crónicas",
+    key: "referrence",
+    header: "Referenciação",
     source: "details",
-    formatter: (value) => formatTextList(value),
+    formatter: (value) =>
+      formatWithOptions(mgfFieldByKey.get("referrence"), value),
+  },
+  {
+    key: "referrence_motive",
+    header: "Motivo da Referenciação (ICPC-2)",
+    source: "details",
+    formatter: (value) => formatIcpcCodes(value),
   },
   {
     key: "procedure",
@@ -390,18 +459,184 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
     source: "details",
     formatter: (value) => formatTextList(value),
   },
+  // Type-specific fields: DM (Diabetes)
   {
-    key: "referrence",
-    header: "Referenciação",
-    source: "details",
+    key: "dm_exams_creatinina",
+    header: "DM - Creatinina (mg/dL)",
+    source: "type_specific",
+    typeKey: "dm",
+    sectionKey: "exams",
+    fieldKey: "creatinina",
     formatter: (value) =>
-      formatWithOptions(mgfFieldByKey.get("referrence"), value),
+      typeof value === "number" ? value : value ? Number(value) || String(value) : null,
   },
   {
-    key: "referrence_motive",
-    header: "Motivo da Referenciação (ICPC-2)",
-    source: "details",
-    formatter: (value) => formatIcpcCodes(value),
+    key: "dm_exams_score2",
+    header: "DM - Score2",
+    source: "type_specific",
+    typeKey: "dm",
+    sectionKey: "exams",
+    fieldKey: "score2",
+    formatter: (value) => (value ? String(value) : null),
+  },
+  {
+    key: "dm_exams_albuminuria",
+    header: "DM - Albuminuria (mg/g)",
+    source: "type_specific",
+    typeKey: "dm",
+    sectionKey: "exams",
+    fieldKey: "albuminuria",
+    formatter: (value) =>
+      typeof value === "number" ? value : value ? Number(value) || String(value) : null,
+  },
+  {
+    key: "dm_exams_ldl",
+    header: "DM - LDL (mg/dL)",
+    source: "type_specific",
+    typeKey: "dm",
+    sectionKey: "exams",
+    fieldKey: "ldl",
+    formatter: (value) =>
+      typeof value === "number" ? value : value ? Number(value) || String(value) : null,
+  },
+  {
+    key: "dm_exams_hba1c",
+    header: "DM - HbA1C (%)",
+    source: "type_specific",
+    typeKey: "dm",
+    sectionKey: "exams",
+    fieldKey: "hba1c",
+    formatter: (value) =>
+      typeof value === "number" ? value : value ? Number(value) || String(value) : null,
+  },
+  {
+    key: "dm_exams_tfg",
+    header: "DM - TFG (mL/min)",
+    source: "type_specific",
+    typeKey: "dm",
+    sectionKey: "exams",
+    fieldKey: "tfg",
+    formatter: (value) =>
+      typeof value === "number" ? value : value ? Number(value) || String(value) : null,
+  },
+  {
+    key: "dm_history_medicamentos",
+    header: "DM - Medicamentos",
+    source: "type_specific",
+    typeKey: "dm",
+    sectionKey: "history",
+    fieldKey: "medicamentos",
+    formatter: (value) => formatTextList(value),
+  },
+  {
+    key: "dm_history_complicacoes",
+    header: "DM - Complicações",
+    source: "type_specific",
+    typeKey: "dm",
+    sectionKey: "history",
+    fieldKey: "complicacoes",
+    formatter: (value) => formatTextList(value),
+  },
+  // Type-specific fields: HTA (Hipertensão Arterial)
+  {
+    key: "hta_exams_creatinina",
+    header: "HTA - Creatinina (mg/dL)",
+    source: "type_specific",
+    typeKey: "hta",
+    sectionKey: "exams",
+    fieldKey: "creatinina",
+    formatter: (value) =>
+      typeof value === "number" ? value : value ? Number(value) || String(value) : null,
+  },
+  {
+    key: "hta_exams_score2",
+    header: "HTA - Score2",
+    source: "type_specific",
+    typeKey: "hta",
+    sectionKey: "exams",
+    fieldKey: "score2",
+    formatter: (value) => (value ? String(value) : null),
+  },
+  {
+    key: "hta_exams_albuminuria",
+    header: "HTA - Albuminuria (mg/g)",
+    source: "type_specific",
+    typeKey: "hta",
+    sectionKey: "exams",
+    fieldKey: "albuminuria",
+    formatter: (value) =>
+      typeof value === "number" ? value : value ? Number(value) || String(value) : null,
+  },
+  {
+    key: "hta_exams_ldl",
+    header: "HTA - LDL (mg/dL)",
+    source: "type_specific",
+    typeKey: "hta",
+    sectionKey: "exams",
+    fieldKey: "ldl",
+    formatter: (value) =>
+      typeof value === "number" ? value : value ? Number(value) || String(value) : null,
+  },
+  {
+    key: "hta_exams_tfg",
+    header: "HTA - TFG (mL/min)",
+    source: "type_specific",
+    typeKey: "hta",
+    sectionKey: "exams",
+    fieldKey: "tfg",
+    formatter: (value) =>
+      typeof value === "number" ? value : value ? Number(value) || String(value) : null,
+  },
+  {
+    key: "hta_history_medicamentos",
+    header: "HTA - Medicamentos",
+    source: "type_specific",
+    typeKey: "hta",
+    sectionKey: "history",
+    fieldKey: "medicamentos",
+    formatter: (value) => formatTextList(value),
+  },
+  {
+    key: "hta_history_complicacoes",
+    header: "HTA - Complicações",
+    source: "type_specific",
+    typeKey: "hta",
+    sectionKey: "history",
+    fieldKey: "complicacoes",
+    formatter: (value) => formatTextList(value),
+  },
+  // Type-specific fields: SM (Saúde Materna)
+  {
+    key: "sm_history_trimestre",
+    header: "SM - Trimestre",
+    source: "type_specific",
+    typeKey: "sm",
+    sectionKey: "history",
+    fieldKey: "trimestre",
+    formatter: (value) => {
+      const field = MGF_CONSULTATION_TYPE_SECTIONS.sm?.[0]?.fields?.find(
+        (f) => f.key === "trimestre"
+      );
+      return formatWithOptions(field, value);
+    },
+  },
+  {
+    key: "sm_history_plano_vigilancia",
+    header: "SM - Plano de Vigilância",
+    source: "type_specific",
+    typeKey: "sm",
+    sectionKey: "history",
+    fieldKey: "plano-vigilancia",
+    formatter: (value) => formatTextList(value),
+  },
+  {
+    key: "sm_history_complicacoes",
+    header: "SM - Complicações",
+    source: "type_specific",
+    typeKey: "sm",
+    sectionKey: "history",
+    fieldKey: "complicacoes",
+    formatter: (value) => formatTextList(value),
   },
 ];
 
@@ -413,10 +648,32 @@ export function mapConsultationsToExportTable(
   const rows = consultations.map<ConsultationExportCell[]>((consultation) => {
     return EXPORT_COLUMNS.map((col) => {
       const fieldKey = col.fieldKey ?? col.key;
-      const rawValue =
-        col.source === "column"
-          ? (consultation as Record<string, unknown>)[fieldKey]
-          : getDetailsValue(consultation, fieldKey);
+      let rawValue: unknown;
+
+      if (col.source === "column") {
+        rawValue = (consultation as Record<string, unknown>)[fieldKey];
+      } else if (col.source === "type_specific") {
+        // Get consultation type from the consultation
+        const consultationType = consultation.type as string | undefined;
+        if (
+          consultationType &&
+          col.typeKey &&
+          col.sectionKey &&
+          consultationType.toLowerCase() === col.typeKey
+        ) {
+          rawValue = getTypeSpecificValue(
+            consultation,
+            consultationType,
+            col.sectionKey,
+            fieldKey
+          );
+        } else {
+          rawValue = null;
+        }
+      } else {
+        // source === "details"
+        rawValue = getDetailsValue(consultation, fieldKey);
+      }
 
       if (col.formatter) {
         return col.formatter(rawValue, consultation);
@@ -447,11 +704,6 @@ function formatSexForMetrics(sex: string): string {
   return labels[sex] ?? sex;
 }
 
-// function formatBooleanCategory(value: string): string {
-//   if (value === "true") return "Sim";
-//   if (value === "false") return "Não";
-//   return value;
-// }
 
 function formatPresentialCategory(value: string): string {
   if (value === "true") return "Presencial";
@@ -482,7 +734,7 @@ export function buildMetricsExportSheets(params: {
     }
   };
 
-  if (activeTab === "Geral") {
+  if (activeTab === TAB_CONSTANTS.METRICS_SUB_TABS.GENERAL) {
     // Resumo sheet (only for Geral tab)
     const resumoHeaders = ["Métrica", "Valor"];
     const resumoRows: ExportCell[][] = [
@@ -527,7 +779,7 @@ export function buildMetricsExportSheets(params: {
         rows: metrics.byAgeRange.map((item) => [item.range, item.count]),
       });
     }
-  } else if (activeTab === "Consultas") {
+  } else if (activeTab === TAB_CONSTANTS.METRICS_SUB_TABS.CONSULTATIONS) {
     // Tipologia
     if (metrics.byType.length > 0) {
       pushWithMetadata({
@@ -553,6 +805,32 @@ export function buildMetricsExportSheets(params: {
       });
     }
 
+    // Caracterização do Utente
+    // Tipologia de Família
+    if (metrics.byFamilyType.length > 0) {
+      pushWithMetadata({
+        sheetName: "Tipologia de Família",
+        headers: ["Categoria", "Consultas"],
+        rows: metrics.byFamilyType.map((item) => [
+          formatWithOptions(mgfFieldByKey.get("family_type"), item.familyType),
+          item.count,
+        ]),
+      });
+    }
+
+    // Escolaridade
+    if (metrics.bySchoolLevel.length > 0) {
+      pushWithMetadata({
+        sheetName: "Escolaridade",
+        headers: ["Categoria", "Consultas"],
+        rows: metrics.bySchoolLevel.map((item) => [
+          formatWithOptions(mgfFieldByKey.get("school_level"), item.schoolLevel),
+          item.count,
+        ]),
+      });
+    }
+
+    // História Clínica
     // Fumador
     if (metrics.bySmoker.length > 0) {
       pushWithMetadata({
@@ -565,6 +843,19 @@ export function buildMetricsExportSheets(params: {
       });
     }
 
+    // PNV Cumprido
+    if (metrics.byVaccinationPlan.length > 0) {
+      pushWithMetadata({
+        sheetName: "PNV Cumprido",
+        headers: ["Categoria", "Consultas"],
+        rows: metrics.byVaccinationPlan.map((item) => [
+          formatBoolean(item.vaccinationPlan),
+          item.count,
+        ]),
+      });
+    }
+
+    // Contracetivos
     // Contraceptivo
     if (metrics.byContraceptive.length > 0) {
       pushWithMetadata({
@@ -591,31 +882,38 @@ export function buildMetricsExportSheets(params: {
         ]),
       });
     }
-  } else if (activeTab === "ICPC-2") {
-    // ICPC-2 combined sheet
-    const icpcRows: ExportCell[][] = [];
 
+    // Diagnósticos
+    // Diagnóstico (ICPC-2)
     if (metrics.byDiagnosis.length > 0) {
-      metrics.byDiagnosis.forEach((item) => {
-        icpcRows.push(["Diagnóstico", item.code, item.count]);
-      });
-    }
-    if (metrics.byProblems.length > 0) {
-      metrics.byProblems.forEach((item) => {
-        icpcRows.push(["Problema", item.code, item.count]);
-      });
-    }
-    if (metrics.byNewDiagnosis.length > 0) {
-      metrics.byNewDiagnosis.forEach((item) => {
-        icpcRows.push(["Novo diagnóstico", item.code, item.count]);
+      pushWithMetadata({
+        sheetName: "Diagnóstico (ICPC-2)",
+        headers: ["Código", "Consultas"],
+        rows: metrics.byDiagnosis
+          .filter((item) => item.count > 0)
+          .map((item) => [item.code, item.count]),
       });
     }
 
-    if (icpcRows.length > 0) {
+    // Problemas (ICPC-2)
+    if (metrics.byProblems.length > 0) {
       pushWithMetadata({
-        sheetName: "ICPC-2",
-        headers: ["Tipo", "Código", "Consultas"],
-        rows: icpcRows,
+        sheetName: "Problemas (ICPC-2)",
+        headers: ["Código", "Consultas"],
+        rows: metrics.byProblems
+          .filter((item) => item.count > 0)
+          .map((item) => [item.code, item.count]),
+      });
+    }
+
+    // Novo Diagnóstico (ICPC-2)
+    if (metrics.byNewDiagnosis.length > 0) {
+      pushWithMetadata({
+        sheetName: "Novo Diagnóstico (ICPC-2)",
+        headers: ["Código", "Consultas"],
+        rows: metrics.byNewDiagnosis
+          .filter((item) => item.count > 0)
+          .map((item) => [item.code, item.count]),
       });
     }
   }

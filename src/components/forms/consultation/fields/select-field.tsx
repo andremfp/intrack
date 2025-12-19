@@ -30,7 +30,8 @@ export function SelectField({
   const stringValue = typeof value === "string" ? value.trim() : "";
   const required =
     isRequired !== undefined ? isRequired : field.requiredWhen === "always";
-  const normalizedValue = stringValue || undefined; // Use undefined for empty to show placeholder
+  // Explicitly convert empty string to undefined for Select component to show placeholder
+  const selectValue = stringValue === "" ? undefined : stringValue;
   const hasValue = Boolean(stringValue);
   const showClearButton = !required && hasValue;
 
@@ -42,7 +43,8 @@ export function SelectField({
       </Label>
       <div className="relative">
         <Select
-          value={normalizedValue}
+          key={selectValue === undefined ? "cleared" : "set"}
+          value={selectValue}
           onValueChange={(val) => onUpdate(val)}
           required={required}
         >

@@ -605,7 +605,6 @@ export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
         key: "plano-vigilancia",
         label: "Plano de Vigilância",
         type: "multi-select",
-        requiredWhen: "always",
         options: [
           { value: "analises", label: "Análises" },
           { value: "eco1", label: "Ecografia 1º Trim." },
