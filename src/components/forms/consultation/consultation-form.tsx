@@ -87,6 +87,7 @@ export function ConsultationFieldWithLayout({
     [
       "diagnosis",
       "problems",
+      "referrence",
       "referrence_motive",
       "new_diagnosis",
       "notes",

@@ -839,37 +839,41 @@ export function ConsultationFilters({
               )}
 
             {/* Vaccination plan filter */}
-            {config.enabledFields.includes("vaccination_plan") &&
-              fieldOptions.vaccination_plan.length > 0 && (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    PNV Cumprido
-                  </label>
-                  <Select
-                    value={
-                      (getFilterValue("vaccination_plan") as string) || "all"
-                    }
-                    onValueChange={(value) =>
-                      setFilterValue(
-                        "vaccination_plan",
-                        value === "all" ? undefined : value
-                      )
-                    }
-                  >
-                    <SelectTrigger className="h-8">
-                      <SelectValue placeholder="Todos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      {fieldOptions.vaccination_plan.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+            {config.enabledFields.includes("vaccination_plan") && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">
+                  PNV Cumprido
+                </label>
+                <Select
+                  value={
+                    getFilterValue("vaccination_plan") === undefined
+                      ? "all"
+                      : getFilterValue("vaccination_plan")
+                      ? "yes"
+                      : "no"
+                  }
+                  onValueChange={(value) =>
+                    setFilterValue(
+                      "vaccination_plan",
+                      value === "all"
+                        ? undefined
+                        : value === "yes"
+                        ? true
+                        : false
+                    )
+                  }
+                >
+                  <SelectTrigger className="h-8">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="yes">Sim</SelectItem>
+                    <SelectItem value="no">Não</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         </div>
       </>
