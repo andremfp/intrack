@@ -3,6 +3,7 @@ import {
   IconTable,
   IconDashboard,
   IconInnerShadowTop,
+  IconReport,
 } from "@tabler/icons-react";
 
 import { NavMain } from "@/components/sidebar/nav-main";
@@ -19,6 +20,7 @@ import type { UserData } from "@/lib/api/users";
 import type { Specialty } from "@/lib/api/specialties";
 import { TAB_CONSTANTS, getConsultationsTabDisplayName } from "@/constants";
 import type { TabType } from "@/constants";
+import { getReportsForSpecialty, getReportTabKey } from "@/reports/helpers";
 
 export function AppSidebar({
   user,
@@ -40,6 +42,16 @@ export function AppSidebar({
 }) {
   if (!user) return null;
 
+  const reportItems =
+    specialty && specialty.code
+      ? getReportsForSpecialty(specialty.code).map((report) => ({
+          title: report.key,
+          displayName: report.label,
+          url: "#",
+          tab: getReportTabKey(specialty.code, report.key),
+        }))
+      : [];
+
   // Build nav items dynamically based on specialty
   const navMain = [
     {
@@ -59,6 +71,16 @@ export function AppSidebar({
         },
       ],
     },
+    ...(reportItems.length
+      ? [
+          {
+            title: TAB_CONSTANTS.MAIN_TABS.REPORTS,
+            url: "#",
+            icon: IconReport,
+            items: reportItems,
+          },
+        ]
+      : []),
     {
       title: TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS,
       url: "#",

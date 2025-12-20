@@ -16,6 +16,7 @@ export const TAB_CONSTANTS = {
   MAIN_TABS: {
     METRICS: "Métricas",
     CONSULTATIONS: "Consultas",
+    REPORTS: "Relatórios",
   },
   METRICS_SUB_TABS: {
     GENERAL: "Geral",

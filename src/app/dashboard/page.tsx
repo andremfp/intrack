@@ -27,10 +27,13 @@ function DashboardContent() {
   const [activeTab, updateActiveTab] = useCachedActiveTab();
 
   // Memoize parsed tab values to avoid recalculation
-  const { mainTab, activeSpecialtyYear, metricsSubTab } = useMemo(
-    () => parseTab(activeTab),
-    [activeTab]
-  );
+  const {
+    mainTab,
+    activeSpecialtyYear,
+    metricsSubTab,
+    activeReportKey,
+    activeReportSpecialtyCode,
+  } = useMemo(() => parseTab(activeTab), [activeTab]);
 
   // Extract userId to avoid repeated checks
   const userId = useMemo(
@@ -135,6 +138,8 @@ function DashboardContent() {
           userSpecialty={userSpecialty}
           activeSpecialtyYear={activeSpecialtyYear}
           metricsSubTab={metricsSubTab}
+          activeReportKey={activeReportKey}
+          activeReportSpecialtyCode={activeReportSpecialtyCode}
           onRowClick={handleRowClick}
           onAddConsultation={() => handleAddConsultation(activeSpecialtyYear)}
           onConsultationsRefreshReady={(refresh) => {
