@@ -8,6 +8,7 @@ import type {
   UnitSampleBreakdown,
   UnitSamplePresentialKey,
   UnitSampleTypeBreakdown,
+  UrgencyDay,
 } from "./report-types";
 import { MGF_AUTONOMY_LEVELS_FOR_REPORTS, MGF_CONSULTATION_TYPES_FOR_REPORTS } from "./mgf-reports";
 
@@ -146,15 +147,16 @@ export function buildSummary(records: ConsultationMGF[]): MGFReportSummary {
     }
   });
 
+  const recordsProcessed = filtered.length;
   return {
-    totalConsultations: filtered.length,
+    totalConsultations: recordsProcessed,
     typeCounts,
     autonomyCounts,
     presentialCounts,
   };
 }
 
-const PRESENTIAL_STATES: UnitSamplePresentialKey[] = ["presential", "remote"];
+const PRESENTIAL_STATES: UnitSamplePresentialKey[] = [true, false];
 
 function createTypeCounts(): Record<string, number> {
   const counts: Record<string, number> = {};
@@ -164,16 +166,13 @@ function createTypeCounts(): Record<string, number> {
   return counts;
 }
 
-function createPresentialBreakdowns(): Record<UnitSamplePresentialKey, UnitSampleTypeBreakdown> {
-  const breakdowns: Record<UnitSamplePresentialKey, UnitSampleTypeBreakdown> = {} as Record<
-    UnitSamplePresentialKey,
-    UnitSampleTypeBreakdown
-  >;
+function createPresentialBreakdowns(): Map<UnitSamplePresentialKey, UnitSampleTypeBreakdown> {
+  const breakdowns = new Map<UnitSamplePresentialKey, UnitSampleTypeBreakdown>();
   PRESENTIAL_STATES.forEach((state) => {
-    breakdowns[state] = {
+    breakdowns.set(state, {
       consultations: 0,
       typeCounts: createTypeCounts(),
-    };
+    });
   });
   return breakdowns;
 }
@@ -186,34 +185,37 @@ function createAutonomyBreakdown(): UnitSampleAutonomyBreakdown {
 }
 
 function getPresentialKey(record: ConsultationMGF): UnitSamplePresentialKey {
-  return record.presential === true ? "presential" : "remote";
+  return record.presential === true;
 }
 
 export function buildUnitSampleBreakdown(records: ConsultationMGF[]): UnitSampleBreakdown {
-  const breakdown: UnitSampleBreakdown = {
-    totalConsultations: 0,
-    autonomy: {},
-  };
+  const autonomy: Record<string, UnitSampleAutonomyBreakdown> = {};
+  let totalConsultations = 0;
+
   records.forEach((record) => {
     const type = record.type;
     if (!type || !MGF_CONSULTATION_TYPES_FOR_REPORTS.includes(type)) {
       return;
     }
-    const autonomy = record.autonomy || "unknown";
-    const autonomyEntry = breakdown.autonomy[autonomy] ?? createAutonomyBreakdown();
+    const autonomyKey = record.autonomy || "unknown";
+    const autonomyEntry = autonomy[autonomyKey] ?? createAutonomyBreakdown();
     const presentialKey = getPresentialKey(record);
-    const presentialEntry = autonomyEntry.presential[presentialKey];
+    const presentialEntry = autonomyEntry.presential.get(presentialKey)!;
 
-    breakdown.totalConsultations += 1;
+    totalConsultations += 1;
     autonomyEntry.consultations += 1;
-    presentialEntry.consultations += 1;
+    presentialEntry!.consultations += 1;
     if (type in presentialEntry.typeCounts) {
       presentialEntry.typeCounts[type] += 1;
     }
 
-    breakdown.autonomy[autonomy] = autonomyEntry;
+    autonomy[autonomyKey] = autonomyEntry;
   });
-  return breakdown;
+
+  return {
+    totalConsultations,
+    autonomy,
+  };
 }
 
 function buildUrgencyDayGroups(records: ConsultationMGF[]) {
@@ -263,14 +265,15 @@ export function buildUrgencySelection(
         });
       });
       const totalConsultations = matching.reduce((sum, day) => sum + day.count, 0);
+      const days: UrgencyDay[] = matching.map((day) => ({
+        date: day.date,
+        consultations: day.count,
+        autonomyCounts: day.autonomyCounts,
+      }));
       return {
         label: config.label,
         internships: config.internships,
-        days: matching.map((day) => ({
-          date: day.date,
-          consultations: day.count,
-          autonomyCounts: day.autonomyCounts,
-        })),
+        days,
         autonomyTotals,
         totalConsultations,
       };

@@ -14,12 +14,43 @@ export interface UrgencyDay {
   autonomyCounts: Record<string, number>;
 }
 
+type CountMap = Record<string, number>;
+
+export interface PresentialCounts {
+  presential: number;
+  remote: number;
+}
+
+export interface MGFReportSummary {
+  totalConsultations: number;
+  typeCounts: CountMap;
+  autonomyCounts: CountMap;
+  presentialCounts: PresentialCounts;
+}
+
+export type UnitSamplePresentialKey = boolean;
+
+export interface UnitSampleTypeBreakdown {
+  consultations: number;
+  typeCounts: CountMap;
+}
+
+export interface UnitSampleAutonomyBreakdown {
+  consultations: number;
+  presential: Map<UnitSamplePresentialKey, UnitSampleTypeBreakdown>;
+}
+
+export interface UnitSampleBreakdown {
+  totalConsultations: number;
+  autonomy: Record<string, UnitSampleAutonomyBreakdown>;
+}
+
 export interface UrgencySelection {
   label: string;
   internships: string[];
   days: UrgencyDay[];
   totalConsultations: number;
-  autonomyTotals: Record<string, number>;
+  autonomyTotals: CountMap;
 }
 
 export interface InternshipsSample {
@@ -31,35 +62,6 @@ export interface InternshipsSample {
 export interface ProblemCount {
   code: string;
   count: number;
-}
-
-export interface PresentialCounts {
-  presential: number;
-  remote: number;
-}
-
-export interface MGFReportSummary {
-  totalConsultations: number;
-  typeCounts: Record<string, number>;
-  autonomyCounts: Record<string, number>;
-  presentialCounts: PresentialCounts;
-}
-
-export type UnitSamplePresentialKey = "presential" | "remote";
-
-export interface UnitSampleTypeBreakdown {
-  consultations: number;
-  typeCounts: Record<string, number>;
-}
-
-export interface UnitSampleAutonomyBreakdown {
-  consultations: number;
-  presential: Record<UnitSamplePresentialKey, UnitSampleTypeBreakdown>;
-}
-
-export interface UnitSampleBreakdown {
-  totalConsultations: number;
-  autonomy: Record<string, UnitSampleAutonomyBreakdown>;
 }
 
 export interface MGFReportData {
