@@ -1,7 +1,7 @@
 import type { Specialty } from "@/lib/api/specialties";
 import type { ConsultationMGF } from "@/lib/api/consultations";
 import type { MetricsSubTab } from "@/utils/tab-parsing";
-import type { MGFReportKey } from "@/reports/mgf-reports";
+import type { MGFReportKey } from "@/reports/mgf/mgf-reports";
 
 export interface DashboardContentRouterProps {
   mainTab: string;

@@ -8,7 +8,7 @@ import { ThemeProvider } from "@/components/theme/theme-provider";
 import { cn } from "@/utils/utils";
 import { useMemo, useEffect } from "react";
 import type { Specialty } from "@/lib/api/specialties";
-import { TAB_CONSTANTS } from "@/constants";
+import { SCROLLBAR_CLASSES, TAB_CONSTANTS } from "@/constants";
 import { useCachedUserProfile } from "@/hooks/user/use-cached-user-profile";
 import { useCachedUserSpecialty } from "@/hooks/user/use-cached-user-specialty";
 import { useCachedActiveTab } from "@/hooks/user/use-cached-active-tab";
@@ -128,6 +128,7 @@ function DashboardContent() {
       <SidebarInset
         className={cn(
           "h-screen md:h-[calc(100vh-1rem)] overflow-x-hidden overflow-y-auto px-4 pb-4",
+          SCROLLBAR_CLASSES,
           isLoading && "blur-sm pointer-events-none"
         )}
       >

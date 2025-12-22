@@ -9,8 +9,7 @@ import type {
   UnitSamplePresentialKey,
   UnitSampleTypeBreakdown,
   UrgencyDay,
-} from "./report-types";
-import { MGF_AUTONOMY_LEVELS_FOR_REPORTS, MGF_CONSULTATION_TYPES_FOR_REPORTS } from "./mgf-reports";
+} from "@/reports/report-types";
 
 type WeekInfo = {
   weekKey: string;
@@ -19,7 +18,19 @@ type WeekInfo = {
   month: number;
 };
 
-type UrgencyGroupConfig = {
+export interface ReportUtilsConfig {
+  consultationTypes: string[];
+  autonomyLevels: string[];
+}
+
+export interface InternshipSampleConfig {
+  label: string;
+  internships: string[];
+  location?: string;
+  weekLimit?: number;
+}
+
+export type UrgencyGroupConfig = {
   label: string;
   internships: string[];
   dayLimit: number;
@@ -31,6 +42,8 @@ type UrgencyDayGroup = {
   count: number;
   autonomyCounts: Record<string, number>;
 };
+
+export const PRESENTIAL_STATES: UnitSamplePresentialKey[] = [true, false];
 
 function toDateString(date: Date) {
   return date.toISOString().split("T")[0];
@@ -96,7 +109,6 @@ export function selectBestWeeks(
       });
     }
   });
-  console.log("weekMap", weekMap);
   const weeks = Array.from(weekMap.values())
     .filter((entry) => entry.uniqueDays.size >= (params.minDaysPerWeek ?? 0))
     .sort((a, b) => b.count - a.count)
@@ -112,42 +124,32 @@ export function selectBestWeeks(
   return weeks;
 }
 
-export function buildSummary(records: ConsultationMGF[]): MGFReportSummary {
-  const typeCounts: Record<string, number> = {};
-  MGF_CONSULTATION_TYPES_FOR_REPORTS.forEach((type) => {
-    typeCounts[type] = 0;
-  });
-
-  const autonomyCounts: Record<string, number> = {};
-  MGF_AUTONOMY_LEVELS_FOR_REPORTS.forEach((value) => {
-    autonomyCounts[value] = 0;
-  });
+export function buildSummary(records: ConsultationMGF[], config: ReportUtilsConfig): MGFReportSummary {
+  const typeCounts = createTypeCounts(config.consultationTypes);
+  const autonomyCounts = createAutonomyCounts(config.autonomyLevels);
 
   const presentialCounts = {
     presential: 0,
     remote: 0,
   };
 
-  const filtered = records.filter((record) => record.type && MGF_CONSULTATION_TYPES_FOR_REPORTS.includes(record.type));
-
-  filtered.forEach((record) => {
-    if (record.type && record.type in typeCounts) {
-      typeCounts[record.type] += 1;
+  let recordsProcessed = 0;
+  records.forEach((record) => {
+    if (!record.type || !(record.type in typeCounts)) {
+      return;
     }
+    recordsProcessed += 1;
+    typeCounts[record.type] += 1;
     const autonomy = record.autonomy;
     if (autonomy && autonomy in autonomyCounts) {
       autonomyCounts[autonomy] += 1;
     }
     if (record.presential === true) {
       presentialCounts.presential += 1;
-    } else if (record.presential === false) {
-      presentialCounts.remote += 1;
     } else {
       presentialCounts.remote += 1;
     }
   });
-
-  const recordsProcessed = filtered.length;
   return {
     totalConsultations: recordsProcessed,
     typeCounts,
@@ -156,31 +158,37 @@ export function buildSummary(records: ConsultationMGF[]): MGFReportSummary {
   };
 }
 
-const PRESENTIAL_STATES: UnitSamplePresentialKey[] = [true, false];
-
-function createTypeCounts(): Record<string, number> {
+function createTypeCounts(types: string[]): Record<string, number> {
   const counts: Record<string, number> = {};
-  MGF_CONSULTATION_TYPES_FOR_REPORTS.forEach((type) => {
+  types.forEach((type) => {
     counts[type] = 0;
   });
   return counts;
 }
 
-function createPresentialBreakdowns(): Map<UnitSamplePresentialKey, UnitSampleTypeBreakdown> {
+function createAutonomyCounts(levels: string[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+  levels.forEach((value) => {
+    counts[value] = 0;
+  });
+  return counts;
+}
+
+function createPresentialBreakdowns(config: ReportUtilsConfig): Map<UnitSamplePresentialKey, UnitSampleTypeBreakdown> {
   const breakdowns = new Map<UnitSamplePresentialKey, UnitSampleTypeBreakdown>();
   PRESENTIAL_STATES.forEach((state) => {
     breakdowns.set(state, {
       consultations: 0,
-      typeCounts: createTypeCounts(),
+      typeCounts: createTypeCounts(config.consultationTypes),
     });
   });
   return breakdowns;
 }
 
-function createAutonomyBreakdown(): UnitSampleAutonomyBreakdown {
+function createAutonomyBreakdown(config: ReportUtilsConfig): UnitSampleAutonomyBreakdown {
   return {
     consultations: 0,
-    presential: createPresentialBreakdowns(),
+    presential: createPresentialBreakdowns(config),
   };
 }
 
@@ -188,23 +196,27 @@ function getPresentialKey(record: ConsultationMGF): UnitSamplePresentialKey {
   return record.presential === true;
 }
 
-export function buildUnitSampleBreakdown(records: ConsultationMGF[]): UnitSampleBreakdown {
+export function buildUnitSampleBreakdown(
+  records: ConsultationMGF[],
+  config: ReportUtilsConfig
+): UnitSampleBreakdown {
   const autonomy: Record<string, UnitSampleAutonomyBreakdown> = {};
   let totalConsultations = 0;
 
+  const allowedTypes = new Set(config.consultationTypes);
   records.forEach((record) => {
     const type = record.type;
-    if (!type || !MGF_CONSULTATION_TYPES_FOR_REPORTS.includes(type)) {
+    if (!type || !allowedTypes.has(type)) {
       return;
     }
     const autonomyKey = record.autonomy || "unknown";
-    const autonomyEntry = autonomy[autonomyKey] ?? createAutonomyBreakdown();
+    const autonomyEntry = autonomy[autonomyKey] ?? createAutonomyBreakdown(config);
     const presentialKey = getPresentialKey(record);
     const presentialEntry = autonomyEntry.presential.get(presentialKey)!;
 
     totalConsultations += 1;
     autonomyEntry.consultations += 1;
-    presentialEntry!.consultations += 1;
+    presentialEntry.consultations += 1;
     if (type in presentialEntry.typeCounts) {
       presentialEntry.typeCounts[type] += 1;
     }
@@ -250,55 +262,63 @@ export function buildUrgencySelection(
   if (!records.length) return [];
   const dayGroups = buildUrgencyDayGroups(records);
   return configs
-    .map((config) => {
-      const matching = dayGroups
-        .filter((day) => config.internships.includes(day.internship))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, config.dayLimit);
-      if (!matching.length) {
-        return null;
-      }
-      const autonomyTotals: Record<string, number> = {};
-      matching.forEach((day) => {
-        Object.entries(day.autonomyCounts).forEach(([key, value]) => {
-          autonomyTotals[key] = (autonomyTotals[key] ?? 0) + value;
+    .flatMap((config) =>
+      config.internships.map((internship) => {
+        const matching = dayGroups
+          .filter((day) => day.internship === internship)
+          .sort((a, b) => b.count - a.count)
+          .slice(0, config.dayLimit);
+        if (!matching.length) {
+          return null;
+        }
+        const autonomyTotals: Record<string, number> = {};
+        matching.forEach((day) => {
+          Object.entries(day.autonomyCounts).forEach(([key, value]) => {
+            autonomyTotals[key] = (autonomyTotals[key] ?? 0) + value;
+          });
         });
-      });
-      const totalConsultations = matching.reduce((sum, day) => sum + day.count, 0);
-      const days: UrgencyDay[] = matching.map((day) => ({
-        date: day.date,
-        consultations: day.count,
-        autonomyCounts: day.autonomyCounts,
-      }));
-      return {
-        label: config.label,
-        internships: config.internships,
-        days,
-        autonomyTotals,
-        totalConsultations,
-      };
-    })
+        const totalConsultations = matching.reduce((sum, day) => sum + day.count, 0);
+        const days: UrgencyDay[] = matching.map((day) => ({
+          date: day.date,
+          consultations: day.count,
+          autonomyCounts: day.autonomyCounts,
+        }));
+        return {
+          label: config.label,
+          internship,
+          days,
+          autonomyTotals,
+          totalConsultations,
+        };
+      })
+    )
     .filter(Boolean) as UrgencySelection[];
 }
 
 export function buildInternshipsSamples(
   records: ConsultationMGF[],
-  configs: { label: string; internships: string[] }[]
+  config: ReportUtilsConfig,
+  configs: InternshipSampleConfig[]
 ): InternshipsSample[] {
-  return configs.map((config) => {
+  return configs.map((sampleConfig) => {
     const filtered = records.filter((record) => {
+      if (sampleConfig.location && record.location !== sampleConfig.location) {
+        return false;
+      }
       const internship = getInternship(record);
-      return (
-        record.location === "complementar" &&
-        internship &&
-        config.internships.includes(internship)
-      );
+      return internship && sampleConfig.internships.includes(internship);
     });
-    const weeks = selectBestWeeks(filtered, { limit: 4 });
+    const weeks = selectBestWeeks(filtered, { limit: sampleConfig.weekLimit ?? 4 });
+    const autonomyCounts = createAutonomyCounts(config.autonomyLevels);
+    filtered.forEach((record) => {
+      const autonomy = record.autonomy || "unknown";
+      autonomyCounts[autonomy] = (autonomyCounts[autonomy] ?? 0) + 1;
+    });
     return {
-      label: config.label,
-      internships: config.internships,
+      label: sampleConfig.label,
+      internships: sampleConfig.internships,
       weeks,
+      autonomyCounts,
     };
   });
 }

@@ -1,5 +1,5 @@
 import type { InternshipsSample } from "@/reports/report-types";
-import { ReportSection } from "./shared";
+import { BreakdownList, ReportSection } from "./shared";
 
 interface InternshipsReportSectionProps {
   internshipSamples: InternshipsSample[];
@@ -8,58 +8,92 @@ interface InternshipsReportSectionProps {
 export function InternshipsReportSection({
   internshipSamples,
 }: InternshipsReportSectionProps) {
-  return (
-    <ReportSection
-      title="Formações complementares"
-      subtitle="Semanas inscritas por estágio"
-    >
-      <div className="grid gap-4 md:grid-cols-2">
-        {internshipSamples.map((sample) => {
-          const sampleTotal = sample.weeks.reduce(
-            (sum, week) => sum + week.consultations,
-            0
-          );
+  const samplesWithTotals = internshipSamples.map((sample) => ({
+    ...sample,
+    totalConsultations: sample.weeks.reduce(
+      (sum, week) => sum + week.consultations,
+      0
+    ),
+  }));
 
-          return (
-            <article
-              key={sample.label}
-              className="space-y-3 rounded-lg border border-border/50 p-4"
-            >
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold">{sample.label}</p>
-                <span className="text-xs uppercase text-muted-foreground">
-                  {sampleTotal} consultas
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Estágios: {sample.internships.join(" · ")}
-              </p>
-              {sample.weeks.length ? (
-                <ul className="space-y-2 text-sm">
-                  {sample.weeks.map((week) => (
-                    <li
-                      key={`${sample.label}-${week.weekKey}`}
-                      className="flex items-center justify-between text-xs"
-                    >
-                      <span>
-                        {week.startDate} → {week.endDate}
-                      </span>
-                      <span className="font-semibold">
-                        {week.consultations} consultas
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-xs italic text-muted-foreground">
-                  Sem registos suficientes
-                </p>
-              )}
-            </article>
-          );
-        })}
+  return (
+    <ReportSection title="Formações complementares">
+      <div className="space-y-4">
+        {samplesWithTotals.length ? (
+          samplesWithTotals.map((sample) => {
+            const autonomyItems = Object.entries(sample.autonomyCounts)
+              .filter(([, count]) => count > 0)
+              .map(([autonomy, count]) => ({
+                key: `${sample.label}-autonomy-${autonomy}`,
+                label: autonomy,
+                value: count,
+                kind: "autonomy" as const,
+              }));
+
+            return (
+              <article
+                key={sample.label}
+                className="space-y-4 rounded-lg border border-border/50 p-4"
+              >
+                <div className="flex items-center justify-between text-sm font-semibold">
+                  <p className="text-sm font-semibold">{sample.label}</p>
+                  <span className="text-xs uppercase text-muted-foreground">
+                    {sample.totalConsultations} consultas
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-xs uppercase text-muted-foreground">
+                    Amostra selecionada
+                  </p>
+                  {sample.weeks.length ? (
+                    <ul className="space-y-2 text-sm">
+                      {sample.weeks.map((week) => (
+                        <li
+                          key={`${sample.label}-${week.weekKey}`}
+                          className="flex items-center justify-between text-xs"
+                        >
+                          <span>
+                            {week.startDate} → {week.endDate}
+                          </span>
+                          <span className="font-semibold">
+                            {week.consultations} consultas
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-xs italic text-muted-foreground">
+                      Sem registos suficientes na amostra selecionada.
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs uppercase text-muted-foreground">
+                    Detalhes da amostra
+                  </p>
+                  {autonomyItems.length ? (
+                    <BreakdownList
+                      size="xs"
+                      className="mt-2"
+                      items={autonomyItems}
+                    />
+                  ) : (
+                    <p className="mt-2 text-xs italic text-muted-foreground">
+                      Sem registos de autonomia.
+                    </p>
+                  )}
+                </div>
+              </article>
+            );
+          })
+        ) : (
+          <p className="text-xs italic text-muted-foreground">
+            Sem registos selecionados para as formações complementares.
+          </p>
+        )}
       </div>
     </ReportSection>
   );
 }
-

@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import type { AppError } from "@/errors";
 import { getReportData } from "@/lib/api/reports";
 import type { MGFReportData } from "@/reports/report-types";
-import type { MGFReportKey } from "@/reports/mgf-reports";
+import type { MGFReportKey } from "@/reports/mgf/mgf-reports";
 
 export function useReportsData({
   userId,

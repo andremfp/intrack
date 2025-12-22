@@ -1,6 +1,6 @@
 import { TAB_CONSTANTS } from "@/constants";
 import type { TabType } from "@/constants";
-import type { MGFReportKey } from "@/reports/mgf-reports";
+import type { MGFReportKey } from "@/reports/mgf/mgf-reports";
 
 export type MainTab = typeof TAB_CONSTANTS.MAIN_TABS[keyof typeof TAB_CONSTANTS.MAIN_TABS];
 export type MetricsSubTab = typeof TAB_CONSTANTS.METRICS_SUB_TABS[keyof typeof TAB_CONSTANTS.METRICS_SUB_TABS];

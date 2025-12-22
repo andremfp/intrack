@@ -5,8 +5,7 @@ import { ReportsDashboard } from "@/components/reports/reports-dashboard";
 import { TAB_CONSTANTS } from "@/constants";
 import { cn } from "@/utils/utils";
 import type { DashboardContentRouterProps } from "./types";
-import { SCROLLBAR_CLASSES } from "@/constants";
-import type { MGFReportKey } from "@/reports/mgf-reports";
+import type { MGFReportKey } from "@/reports/mgf/mgf-reports";
 
 /**
  * Component responsible for routing dashboard content based on active tab
@@ -31,7 +30,7 @@ export function DashboardContentRouter({
           {mainTab === TAB_CONSTANTS.MAIN_TABS.METRICS &&
             userId &&
             metricsSubTab && (
-              <div className={cn("flex-1", SCROLLBAR_CLASSES)}>
+              <div className={cn("flex-1")}>
                 <MetricsDashboard
                   userId={userId}
                   specialty={userSpecialty}

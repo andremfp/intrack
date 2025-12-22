@@ -4,26 +4,26 @@ import {
   MGF_REPORT_CONFIGS,
   type MGFReportDefinition,
   type MGFReportKey,
-} from "./mgf-reports";
-import type { SpecialtyReportConfig } from "./report-types";
+} from "@/reports/mgf/mgf-reports";
+import type { SpecialtyReportConfig } from "@/reports/report-types";
 
 const REPORT_TAB_CONFIG: Record<string, MGFReportDefinition[]> = {
   [SPECIALTY_CODES.MGF]: MGF_REPORT_DEFINITIONS,
 };
 
 export const REPORT_CONFIG_REGISTRY: Record<string, SpecialtyReportConfig[]> = {
-    [SPECIALTY_CODES.MGF]: MGF_REPORT_CONFIGS,
+  [SPECIALTY_CODES.MGF]: MGF_REPORT_CONFIGS,
 };
-  
+
 export function getSpecialtyReportConfig(
-specialtyCode?: string | null,
-reportKey?: string
+  specialtyCode?: string | null,
+  reportKey?: string
 ): SpecialtyReportConfig | undefined {
-if (!specialtyCode || !reportKey) {
+  if (!specialtyCode || !reportKey) {
     return undefined;
-}
-const registry = REPORT_CONFIG_REGISTRY[specialtyCode];
-return registry?.find((config) => config.reportKey === reportKey);
+  }
+  const registry = REPORT_CONFIG_REGISTRY[specialtyCode];
+  return registry?.find((config) => config.reportKey === reportKey);
 }
 
 export function getReportsForSpecialty(specialtyCode?: string | null) {
@@ -55,4 +55,3 @@ export function getReportTabDisplayName(
 export function getReportTabKey(specialtyCode: string, reportKey: MGFReportKey | string) {
   return `${TAB_CONSTANTS.MAIN_TABS.REPORTS}.${specialtyCode}.${reportKey}`;
 }
-

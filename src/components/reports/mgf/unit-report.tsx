@@ -7,9 +7,9 @@ import type {
 import {
   MGF_AUTONOMY_LEVELS_FOR_REPORTS,
   MGF_CONSULTATION_TYPES_FOR_REPORTS,
-} from "@/reports/mgf-reports";
+} from "@/reports/mgf/mgf-reports";
 import { BreakdownList, ReportSection } from "./shared";
-import { PRESENTIAL_KEYS, PRESENTIAL_LABELS } from "./helpers";
+import { PRESENTIAL_STATES } from "@/reports/report-utils";
 
 interface UnitReportSectionProps {
   summary?: MGFReportSummary;
@@ -51,9 +51,9 @@ export function UnitReportSection({
 
   const rawWeekGroups = useMemo(
     () => [
-      { label: "Amostra principal", weeks: sampleWeeks },
-      { label: "Ano 2 - 1.ª metade", weeks: firstHalfWeeks },
-      { label: "Ano 3 - 2.ª metade", weeks: secondHalfWeeks },
+      { label: "Amostra Selecionada", weeks: sampleWeeks },
+      { label: "Amostra Selecionada Ano 2", weeks: firstHalfWeeks },
+      { label: "Amostra Selecionada Ano 3", weeks: secondHalfWeeks },
     ],
     [sampleWeeks, firstHalfWeeks, secondHalfWeeks]
   );
@@ -83,12 +83,7 @@ export function UnitReportSection({
       <div className="space-y-6">
         {unitWeekGroups.length ? (
           <div className="space-y-3">
-            <div className="flex items-center justify-between gap-4">
-              <p className="text-xs uppercase text-muted-foreground">
-                Semanas selecionadas
-              </p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3">
               {unitWeekGroups.map((group) => (
                 <article
                   key={group.label}
@@ -149,11 +144,13 @@ export function UnitReportSection({
                 <BreakdownList
                   size="sm"
                   className="mt-2"
-                  items={Object.entries(summary.typeCounts).map(([type, count]) => ({
-                    label: type,
-                    value: count,
-                    key: type,
-                  }))}
+                  items={Object.entries(summary.typeCounts).map(
+                    ([type, count]) => ({
+                      label: type,
+                      value: count,
+                      key: type,
+                    })
+                  )}
                 />
               </div>
               <div>
@@ -168,6 +165,7 @@ export function UnitReportSection({
                       label: autonomy,
                       value: count,
                       key: autonomy,
+                      kind: "autonomy" as const,
                     })
                   )}
                 />
@@ -184,8 +182,7 @@ export function UnitReportSection({
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               {unitSampleAutonomyKeys.map((autonomy) => {
-                const autonomyData =
-                  unitSampleBreakdown.autonomy[autonomy];
+                const autonomyData = unitSampleBreakdown.autonomy[autonomy];
                 if (!autonomyData) {
                   return null;
                 }
@@ -195,11 +192,11 @@ export function UnitReportSection({
                     className="space-y-3 rounded-lg border border-border/50 p-3"
                   >
                     <div className="flex items-center justify-between text-sm font-semibold">
-                      <span>{autonomy}</span>
+                      <span>Autonomia {autonomy}</span>
                       <span>{autonomyData.consultations} consultas</span>
                     </div>
                     <div className="space-y-3 text-xs">
-                      {PRESENTIAL_KEYS.map((state) => {
+                      {PRESENTIAL_STATES.map((state) => {
                         const stateData = autonomyData.presential.get(state);
                         if (!stateData) {
                           return null;
@@ -208,15 +205,9 @@ export function UnitReportSection({
                           <div key={String(state)} className="space-y-2">
                             <div className="flex items-center justify-between text-xs uppercase text-muted-foreground">
                               <span>
-                                {
-                                  PRESENTIAL_LABELS[
-                                    (state ? "true" : "false") as "true" | "false"
-                                  ]
-                                }
+                                {state ? "Presencial" : "Não presencial"}
                               </span>
-                              <span>
-                                {stateData.consultations} consultas
-                              </span>
+                              <span>{stateData.consultations} consultas</span>
                             </div>
                             <BreakdownList
                               size="xs"
@@ -243,4 +234,3 @@ export function UnitReportSection({
     </ReportSection>
   );
 }
-

@@ -47,7 +47,7 @@ export interface UnitSampleBreakdown {
 
 export interface UrgencySelection {
   label: string;
-  internships: string[];
+  internship: string;
   days: UrgencyDay[];
   totalConsultations: number;
   autonomyTotals: CountMap;
@@ -57,6 +57,7 @@ export interface InternshipsSample {
   label: string;
   internships: string[];
   weeks: WeekSample[];
+  autonomyCounts: Record<string, number>;
 }
 
 export interface ProblemCount {

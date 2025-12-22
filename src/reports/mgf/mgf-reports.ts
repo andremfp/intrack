@@ -1,6 +1,6 @@
 import { SPECIALTY_CODES } from "@/constants";
 import type { ConsultationMGF } from "@/lib/api/consultations";
-import type { MGFReportData, SpecialtyReportConfig } from "./report-types";
+import type { MGFReportData, SpecialtyReportConfig } from "@/reports/report-types";
 import {
   getWeekInfo,
   selectBestWeeks,
@@ -9,7 +9,8 @@ import {
   computeTopProblems,
   buildUnitSampleBreakdown,
   buildInternshipsSamples,
-} from "./report-utils";
+} from "@/reports/report-utils";
+import type { ReportUtilsConfig, InternshipSampleConfig } from "@/reports/report-utils";
 
 export type MGFReportKey = "year1" | "years2_3" | "year4";
 
@@ -119,6 +120,11 @@ const REPORT_SPECIALTY_YEAR_MAP: Record<MGFReportKey, number[]> = {
 export const MGF_CONSULTATION_TYPES_FOR_REPORTS = ["SA", "SIJ", "PF", "SM", "Domicílio", "DA"];
 export const MGF_AUTONOMY_LEVELS_FOR_REPORTS = ["observada", "ombro-a-ombro", "parcial", "total"];
 
+const REPORT_UTILS_CONFIG: ReportUtilsConfig = {
+  consultationTypes: MGF_CONSULTATION_TYPES_FOR_REPORTS,
+  autonomyLevels: MGF_AUTONOMY_LEVELS_FOR_REPORTS,
+};
+
 const YEAR1_URGENCY_CONFIG = [
   { label: "Cirurgia Geral", internships: ["cir geral"], dayLimit: 2 },
   { label: "Ortopedia", internships: ["orto"], dayLimit: 2 },
@@ -143,13 +149,14 @@ const YEAR23_URGENCY_CONFIG = [
   },
 ];
 
-const YEAR23_INTERNSHIPS_CONFIG = [
-  { label: "Pediatria", internships: ["pediatria"] },
+const YEAR23_INTERNSHIPS_CONFIG: InternshipSampleConfig[] = [
+  { label: "Pediatria", internships: ["pediatria"], location: "complementar" },
   {
     label: "Ginecologia e Obstetrícia",
     internships: ["gineco", "obstetricia"],
+    location: "complementar",
   },
-  { label: "Psiquiatria", internships: ["psiquiatria"] },
+  { label: "Psiquiatria", internships: ["psiquiatria"], location: "complementar" },
 ];
 
 function buildYear1Report(records: ConsultationMGF[]): MGFReportData {
@@ -168,10 +175,11 @@ function buildYear1Report(records: ConsultationMGF[]): MGFReportData {
     const weekInfo = getWeekInfo(record);
     return weekInfo && selectedWeekKeys.has(weekInfo.weekKey);
   });
-  const summary = buildSummary(sampleRecords);
-  const unitSampleBreakdown = buildUnitSampleBreakdown(sampleRecords);
+  const summary = buildSummary(sampleRecords, REPORT_UTILS_CONFIG);
+  const unitSampleBreakdown = buildUnitSampleBreakdown(sampleRecords, REPORT_UTILS_CONFIG);
   const urgencyRecords = records.filter((record) => record.location === "urgência");
   const urgencySelection = buildUrgencySelection(urgencyRecords, YEAR1_URGENCY_CONFIG);
+  
   return {
     summary,
     unitSampleBreakdown,
@@ -204,10 +212,14 @@ function buildYears23Report(records: ConsultationMGF[]): MGFReportData {
     const weekInfo = getWeekInfo(record);
     return weekInfo && selectedWeekKeys.has(weekInfo.weekKey);
   });
-  const summary = buildSummary(sampleRecords);
+  const summary = buildSummary(sampleRecords, REPORT_UTILS_CONFIG);
   const urgencyRecords = records.filter((record) => record.location === "urgência");
   const urgencySelection = buildUrgencySelection(urgencyRecords, YEAR23_URGENCY_CONFIG);
-  const internshipsSamples = buildInternshipsSamples(records, YEAR23_INTERNSHIPS_CONFIG);
+  const internshipsSamples = buildInternshipsSamples(
+    records,
+    REPORT_UTILS_CONFIG,
+    YEAR23_INTERNSHIPS_CONFIG
+  );
   const topProblems = computeTopProblems(sampleRecords);
   return {
     summary,
@@ -223,7 +235,7 @@ function buildYear4Report(records: ConsultationMGF[]): MGFReportData {
   const filtered = records.filter(
     (record) => record.location === "unidade" && record.autonomy === "total" && record.type && MGF_CONSULTATION_TYPES_FOR_REPORTS.includes(record.type)
   );
-  const summary = buildSummary(filtered);
+  const summary = buildSummary(filtered, REPORT_UTILS_CONFIG);
   return {
     summary,
   };

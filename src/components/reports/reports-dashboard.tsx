@@ -2,7 +2,7 @@ import { DataErrorDisplay } from "@/components/ui/data-error-display";
 import { useEffect, useState } from "react";
 import type { ComponentType } from "react";
 import { useReportsData } from "@/hooks/reports/use-reports";
-import type { MGFReportKey } from "@/reports/mgf-reports";
+import type { MGFReportKey } from "@/reports/mgf/mgf-reports";
 import { getReportTabDefinition } from "@/reports/helpers";
 
 const reportSectionsLoaders = import.meta.glob("./*/sections.tsx");
@@ -68,7 +68,7 @@ export function ReportsDashboard({
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-6 pb-4">
+    <div className="flex flex-1 flex-col gap-6 pb-4 pt-2">
       <section className="space-y-3 rounded-lg border border-border/50 p-4">
         <div className="flex flex-col gap-1">
           <p className="text-xs font-semibold uppercase text-muted-foreground">

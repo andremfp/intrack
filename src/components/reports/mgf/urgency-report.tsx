@@ -1,6 +1,5 @@
 import type { ProblemCount, UrgencySelection } from "@/reports/report-types";
 import { BreakdownList, ReportSection } from "./shared";
-import { formatAutonomyCounts } from "./helpers";
 
 interface UrgencyReportSectionProps {
   urgencySelections: UrgencySelection[];
@@ -15,63 +14,84 @@ export function UrgencyReportSection({
     <ReportSection title="Urgência">
       <div className="space-y-6">
         {urgencySelections.length ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {urgencySelections.map((selection) => {
               const dayItems = selection.days.map((day) => {
-                const autonomyHelper = formatAutonomyCounts(day.autonomyCounts);
                 return {
-                  key: `${selection.label}-${day.date}`,
-                  label: day.date,
-                  value: `${day.consultations} consultas`,
-                  helper: autonomyHelper
-                    ? `Autonomia ${autonomyHelper}`
-                    : undefined,
+                  key: `${selection.label}-${selection.internship}-${day.date}`,
+                  date: day.date,
+                  consultations: day.consultations,
+                  kind: "autonomy" as const,
                 };
               });
 
+              const autonomyItems = Object.entries(
+                selection.autonomyTotals
+              ).map(([autonomy, count]) => ({
+                key: `${selection.label}-${selection.internship}-${autonomy}`,
+                label: autonomy,
+                value: count,
+                kind: "autonomy" as const,
+              }));
+
               return (
                 <article
-                  key={selection.label}
-                  className="space-y-3 rounded-lg border border-border/50 p-4"
+                  key={`${selection.label}-${selection.internship}`}
+                  className="space-y-4 rounded-lg border border-border/50 p-4"
                 >
                   <div className="flex items-center justify-between gap-4">
-                    <div>
+                    <div className="space-y-1">
                       <p className="text-sm font-semibold">{selection.label}</p>
                     </div>
                     <span className="text-xs uppercase text-muted-foreground">
                       {selection.totalConsultations}{" "}
-                      {selection.totalConsultations === 1 ? "registo" : "registos"}
+                      {selection.totalConsultations === 1
+                        ? "consulta"
+                        : "consultas"}
                     </span>
                   </div>
 
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
+                  <div className="space-y-4">
+                    <div className="rounded-lg border border-border/50 bg-muted/20 p-3">
                       <p className="text-xs uppercase text-muted-foreground">
-                        Dias selecionados
+                        Amostra selecionada
                       </p>
                       {dayItems.length ? (
-                        <BreakdownList size="xs" className="mt-2" items={dayItems} />
+                        <div className="mt-2 space-y-2 text-sm">
+                          {dayItems.map((day) => (
+                            <div className="flex items-center justify-between">
+                              <span>{day.date}</span>
+                              <span className="font-semibold">
+                                {day.consultations}{" "}
+                                {day.consultations === 1
+                                  ? "consulta"
+                                  : "consultas"}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       ) : (
                         <p className="mt-2 text-xs italic text-muted-foreground">
                           Sem dias selecionados.
                         </p>
                       )}
                     </div>
+
                     <div>
                       <p className="text-xs uppercase text-muted-foreground">
-                        Totais por autonomia
+                        Detalhe da amostra
                       </p>
-                      <BreakdownList
-                        size="xs"
-                        className="mt-2"
-                        items={Object.entries(selection.autonomyTotals).map(
-                          ([autonomy, count]) => ({
-                            key: `${selection.label}-${autonomy}`,
-                            label: autonomy,
-                            value: count,
-                          })
-                        )}
-                      />
+                      {autonomyItems.length ? (
+                        <BreakdownList
+                          size="xs"
+                          className="mt-2"
+                          items={autonomyItems}
+                        />
+                      ) : (
+                        <p className="mt-2 text-xs italic text-muted-foreground">
+                          Sem registos de autonomia.
+                        </p>
+                      )}
                     </div>
                   </div>
                 </article>
@@ -103,4 +123,3 @@ export function UrgencyReportSection({
     </ReportSection>
   );
 }
-

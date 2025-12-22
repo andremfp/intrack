@@ -35,6 +35,7 @@ export function NavMain({
       title: string;
       displayName?: string;
       url: string;
+      tab?: TabType;
     }[];
   }[];
   activeTab: TabType;
