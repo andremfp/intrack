@@ -59,7 +59,10 @@ export function UrgencyReportSection({
                       {dayItems.length ? (
                         <div className="mt-2 space-y-2 text-sm">
                           {dayItems.map((day) => (
-                            <div className="flex items-center justify-between">
+                            <div
+                              key={day.key}
+                              className="flex items-center justify-between"
+                            >
                               <span>{day.date}</span>
                               <span className="font-semibold">
                                 {day.consultations}{" "}

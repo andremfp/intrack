@@ -20,16 +20,17 @@ export function ReportSection({
   children,
 }: ReportSectionProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const isExpanded = isOpen;
 
   return (
     <section className="rounded-lg border border-border/50 bg-background/40">
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <Collapsible open={isExpanded} onOpenChange={setIsOpen}>
         <div className="flex flex-col">
           <CollapsibleTrigger asChild>
             <button
               type="button"
-              aria-label={isOpen ? `Ocultar ${title}` : `Expandir ${title}`}
-              aria-expanded={isOpen}
+              aria-label={isExpanded ? `Ocultar ${title}` : `Expandir ${title}`}
+              aria-expanded={isExpanded}
               className="flex w-full items-start justify-between gap-4 px-4 py-2 text-left cursor-pointer"
             >
               <div className="space-y-1 text-left">
@@ -44,9 +45,9 @@ export function ReportSection({
               </div>
               <span className="flex h-8 w-8 items-center justify-center text-muted-foreground">
                 <span className="sr-only">
-                  {isOpen ? `Ocultar ${title}` : `Expandir ${title}`}
+                  {isExpanded ? `Ocultar ${title}` : `Expandir ${title}`}
                 </span>
-                {isOpen ? (
+                {isExpanded ? (
                   <ChevronUp className="h-4 w-4" />
                 ) : (
                   <ChevronDown className="h-4 w-4" />
