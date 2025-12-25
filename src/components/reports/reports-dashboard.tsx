@@ -2,6 +2,8 @@ import { DataErrorDisplay } from "@/components/ui/data-error-display";
 import { ExportMenu } from "@/components/ui/export-menu";
 import { useEffect, useRef, useState } from "react";
 import type { ComponentType } from "react";
+import type { ReactElement } from "react";
+import type { DocumentProps } from "@react-pdf/renderer";
 import { useReportsData } from "@/hooks/reports/use-reports";
 import type { MGFReportKey } from "@/reports/mgf/mgf-reports";
 import { getReportTabDefinition } from "@/reports/helpers";
@@ -39,7 +41,7 @@ export function ReportsDashboard({
   const [SpecialtySections, setSpecialtySections] =
     useState<ComponentType<SpecialtyReportSectionsProps> | null>(null);
   const [buildPdfDocument, setBuildPdfDocument] = useState<
-    ((props: SpecialtyReportPdfDocProps) => import("react").ReactElement) | null
+    ((props: SpecialtyReportPdfDocProps) => ReactElement<DocumentProps>) | null
   >(null);
   const [moduleLoadError, setModuleLoadError] = useState(false);
   const [isExportingCsv, setIsExportingCsv] = useState(false);
@@ -233,7 +235,9 @@ export function ReportsDashboard({
             />
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">{definition.description}</p>
+        <p className="text-sm text-muted-foreground">
+          {definition.description}
+        </p>
         <ul className="list-disc space-y-1 pl-4 text-sm leading-snug text-foreground">
           {definition.sections.map((section) => (
             <li key={section.key}>
@@ -302,5 +306,5 @@ interface SpecialtyReportSectionsModule {
 interface SpecialtyReportPdfModule {
   buildPdfDocument: (
     props: SpecialtyReportPdfDocProps
-  ) => import("react").ReactElement;
+  ) => ReactElement<DocumentProps>;
 }
