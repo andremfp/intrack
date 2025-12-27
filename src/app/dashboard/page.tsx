@@ -8,7 +8,7 @@ import { ThemeProvider } from "@/components/theme/theme-provider";
 import { cn } from "@/utils/utils";
 import { useMemo, useEffect } from "react";
 import type { Specialty } from "@/lib/api/specialties";
-import { TAB_CONSTANTS } from "@/constants";
+import { SCROLLBAR_CLASSES, TAB_CONSTANTS } from "@/constants";
 import { useCachedUserProfile } from "@/hooks/user/use-cached-user-profile";
 import { useCachedUserSpecialty } from "@/hooks/user/use-cached-user-specialty";
 import { useCachedActiveTab } from "@/hooks/user/use-cached-active-tab";
@@ -27,10 +27,13 @@ function DashboardContent() {
   const [activeTab, updateActiveTab] = useCachedActiveTab();
 
   // Memoize parsed tab values to avoid recalculation
-  const { mainTab, activeSpecialtyYear, metricsSubTab } = useMemo(
-    () => parseTab(activeTab),
-    [activeTab]
-  );
+  const {
+    mainTab,
+    activeSpecialtyYear,
+    metricsSubTab,
+    activeReportKey,
+    activeReportSpecialtyCode,
+  } = useMemo(() => parseTab(activeTab), [activeTab]);
 
   // Extract userId to avoid repeated checks
   const userId = useMemo(
@@ -125,6 +128,7 @@ function DashboardContent() {
       <SidebarInset
         className={cn(
           "h-screen md:h-[calc(100vh-1rem)] overflow-x-hidden overflow-y-auto px-4 pb-4",
+          SCROLLBAR_CLASSES,
           isLoading && "blur-sm pointer-events-none"
         )}
       >
@@ -135,6 +139,8 @@ function DashboardContent() {
           userSpecialty={userSpecialty}
           activeSpecialtyYear={activeSpecialtyYear}
           metricsSubTab={metricsSubTab}
+          activeReportKey={activeReportKey}
+          activeReportSpecialtyCode={activeReportSpecialtyCode}
           onRowClick={handleRowClick}
           onAddConsultation={() => handleAddConsultation(activeSpecialtyYear)}
           onConsultationsRefreshReady={(refresh) => {

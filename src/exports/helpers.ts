@@ -1,15 +1,27 @@
 import { COMMON_CONSULTATION_FIELDS, MGF_FIELDS, MGF_CONSULTATION_TYPE_SECTIONS, TAB_CONSTANTS, type SpecialtyField } from "@/constants";
+import type { ReactElement } from "react";
+import type { DocumentProps } from "@react-pdf/renderer";
 import type {
   ConsultationMGF,
   ConsultationMetrics,
 } from "@/lib/api/consultations";
 import type {
   ExportCell,
+  ExportRow,
   ExportTable,
   ExportSheet,
   ConsultationExportCell,
   ConsultationExportTable,
 } from "./types";
+import type {
+  MGFReportData,
+  MGFReportSummary,
+  WeekSample,
+  UnitSampleBreakdown,
+  UrgencySelection,
+  InternshipsSample,
+  ProblemCount,
+} from "@/reports/report-types";
 
 function ensureFileExtension(filename: string, extension: string): string {
   if (!extension.startsWith(".")) {
@@ -151,6 +163,29 @@ export async function downloadXlsx(
   const link = document.createElement("a");
   link.href = url;
   link.setAttribute("download", ensureFileExtension(filename, ".xlsx"));
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(url);
+}
+
+export async function downloadReportPdfReact(options: {
+  filename: string;
+  pdfDocument: ReactElement<DocumentProps>;
+}): Promise<void> {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return;
+  }
+
+  const { filename, pdfDocument } = options;
+  const [{ pdf }] = await Promise.all([import("@react-pdf/renderer")]);
+  const blob = await pdf(pdfDocument).toBlob();
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", ensureFileExtension(filename, ".pdf"));
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -922,3 +957,369 @@ export function buildMetricsExportSheets(params: {
 }
 
 
+interface ReportExportTableParams {
+  reportData: MGFReportData;
+  metadataRows: ExportCell[][];
+  reportLabel: string;
+}
+
+interface ReportExportSheetsParams {
+  reportData: MGFReportData;
+  metadataRows: ExportCell[][];
+  reportLabel: string;
+}
+
+const WEEK_HEADERS = [
+  "Semana",
+  "Período",
+  "Consultas",
+  "Dias únicos",
+] satisfies (string | number)[];
+
+const URGENCY_HEADERS = [
+  "Seleção",
+  "Internship",
+  "Detalhe",
+  "Valor",
+] satisfies (string | number)[];
+
+const FORMATION_HEADERS = [
+  "Formação",
+  "Detalhe",
+  "Valor",
+  "Extra",
+] satisfies (string | number)[];
+
+export function buildReportExportMetadataRows(params: {
+  specialtyCode?: string | null;
+  reportLabel: string;
+  reportKey: string;
+}): ExportCell[][] {
+  const { specialtyCode, reportLabel, reportKey } = params;
+  const now = new Date();
+  const exportDate = now.toLocaleString("pt-PT");
+  return [
+    ["Exportado em", exportDate],
+    ["Especialidade", specialtyCode ? specialtyCode.toUpperCase() : "N/A"],
+    ["Relatório", reportLabel],
+    ["Chave do relatório", reportKey],
+  ];
+}
+
+export function buildReportExportTable(params: ReportExportTableParams): ExportTable {
+  const { reportData, metadataRows, reportLabel } = params;
+  const rows: ExportRow[] = [];
+
+  rows.push(["Informação", "Relatório", reportLabel]);
+
+  if (reportData.summary) {
+    addReportSummaryRows(rows, reportData.summary);
+  }
+
+  if (reportData.unitSampleBreakdown) {
+    addUnitSampleRows(rows, reportData.unitSampleBreakdown);
+  }
+
+  addWeekRows(rows, "Semanas selecionadas", reportData.sampleWeeks);
+  addWeekRows(rows, "Semanas ano 2", reportData.firstHalfWeeks);
+  addWeekRows(rows, "Semanas ano 3", reportData.secondHalfWeeks);
+
+  addUrgencyRows(rows, reportData.urgencySelection);
+  addInternshipRows(rows, reportData.internshipsSamples);
+  addTopProblemsRows(rows, reportData.topProblems);
+
+  return {
+    metadataRows,
+    headers: ["Seção", "Detalhe", "Valor"],
+    rows,
+  };
+}
+
+export function buildReportExportSheets(params: ReportExportSheetsParams): ExportSheet[] {
+  const { reportData, metadataRows } = params;
+  const sheets: ExportSheet[] = [];
+
+  const pushSheet = (sheet: Omit<ExportSheet, "metadataRows">) => {
+    if (sheet.rows.length === 0) return;
+    if (sheets.length === 0) {
+      sheets.push({ ...sheet, metadataRows });
+    } else {
+      sheets.push(sheet);
+    }
+  };
+
+  if (reportData.summary) {
+    const summaryRows: ExportCell[][] = [];
+    summaryRows.push(["Total de consultas", reportData.summary.totalConsultations]);
+    summaryRows.push([
+      "Consultas presenciais",
+      reportData.summary.presentialCounts.presential,
+    ]);
+    summaryRows.push([
+      "Consultas não presenciais",
+      reportData.summary.presentialCounts.remote,
+    ]);
+    Object.entries(reportData.summary.typeCounts)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .forEach(([type, count]) => {
+        summaryRows.push([`Tipo: ${type}`, count]);
+      });
+    Object.entries(reportData.summary.autonomyCounts)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .forEach(([autonomy, count]) => {
+        summaryRows.push([`Autonomia: ${autonomy}`, count]);
+      });
+    pushSheet({
+      sheetName: "Resumo",
+      headers: ["Métrica", "Valor"],
+      rows: summaryRows,
+    });
+  }
+
+  if (reportData.unitSampleBreakdown) {
+    pushSheet({
+      sheetName: "Unidade",
+      headers: ["Autonomia", "Presencial", "Não presencial", "Total"],
+      rows: Object.entries(reportData.unitSampleBreakdown.autonomy)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([autonomy, entry]) => {
+          const presentialTrue = entry.presential.get(true)?.consultations ?? 0;
+          const presentialFalse = entry.presential.get(false)?.consultations ?? 0;
+          return [autonomy, presentialTrue, presentialFalse, entry.consultations];
+        }),
+    });
+
+    const detailRows: ExportCell[][] = [];
+    Object.entries(reportData.unitSampleBreakdown.autonomy)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .forEach(([autonomy, entry]) => {
+        entry.presential.forEach((detail, key) => {
+          Object.entries(detail.typeCounts ?? {})
+            .sort(([a], [b]) => a.localeCompare(b))
+            .forEach(([type, count]) => {
+              detailRows.push([
+                autonomy,
+                key ? "Presencial" : "Não presencial",
+                type,
+                count,
+              ]);
+            });
+        });
+      });
+
+    pushSheet({
+      sheetName: "Unidade (Detalhe)",
+      headers: ["Autonomia", "Presencialidade", "Tipologia", "Consultas"],
+      rows: detailRows,
+    });
+  }
+
+  addWeekSheet(reportData.sampleWeeks, "Semanas selecionadas", pushSheet);
+  addWeekSheet(reportData.firstHalfWeeks, "Semanas ano 2", pushSheet);
+  addWeekSheet(reportData.secondHalfWeeks, "Semanas ano 3", pushSheet);
+
+  if (reportData.urgencySelection && reportData.urgencySelection.length > 0) {
+    const rows: ExportCell[][] = [];
+    reportData.urgencySelection.forEach((selection) => {
+      rows.push([
+        selection.label,
+        selection.internship,
+        "Total consultas",
+        selection.totalConsultations,
+      ]);
+      selection.days.forEach((day) => {
+        rows.push([
+          selection.label,
+          selection.internship,
+          day.date,
+          day.consultations,
+        ]);
+      });
+    });
+    pushSheet({
+      sheetName: "Urgência",
+      headers: URGENCY_HEADERS,
+      rows,
+    });
+  }
+
+  if (reportData.internshipsSamples && reportData.internshipsSamples.length > 0) {
+    const rows: ExportCell[][] = [];
+    reportData.internshipsSamples.forEach((sample) => {
+      const totalConsultations = sample.weeks.reduce(
+        (sum, week) => sum + week.consultations,
+        0
+      );
+      rows.push([sample.label, "Total de semanas", sample.weeks.length, ""]);
+      rows.push([sample.label, "Consultas totais", totalConsultations, ""]);
+      sample.weeks.forEach((week) => {
+        rows.push([
+          sample.label,
+          `Semana ${week.weekKey}`,
+          `${week.startDate} → ${week.endDate}`,
+          week.consultations,
+        ]);
+      });
+      Object.entries(sample.autonomyCounts)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .forEach(([autonomy, count]) => {
+          rows.push([sample.label, `Autonomia ${autonomy}`, count, ""]);
+        });
+    });
+    pushSheet({
+      sheetName: "Formações complementares",
+      headers: FORMATION_HEADERS,
+      rows,
+    });
+  }
+
+  if (reportData.topProblems && reportData.topProblems.length > 0) {
+    pushSheet({
+      sheetName: "Top problemas",
+      headers: ["Código", "Consultas"],
+      rows: reportData.topProblems.map((problem) => [
+        problem.code,
+        problem.count,
+      ]),
+    });
+  }
+
+  return sheets;
+}
+
+function addReportSummaryRows(rows: ExportRow[], summary: MGFReportSummary) {
+  rows.push(["Resumo", "Total de consultas", summary.totalConsultations]);
+  rows.push([
+    "Resumo",
+    "Consultas presenciais",
+    summary.presentialCounts.presential,
+  ]);
+  rows.push([
+    "Resumo",
+    "Consultas não presenciais",
+    summary.presentialCounts.remote,
+  ]);
+  Object.entries(summary.typeCounts)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .forEach(([type, count]) => {
+      rows.push(["Resumo", `Tipo: ${type}`, count]);
+    });
+  Object.entries(summary.autonomyCounts)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .forEach(([autonomy, count]) => {
+      rows.push(["Resumo", `Autonomia: ${autonomy}`, count]);
+    });
+}
+
+function addUnitSampleRows(rows: ExportRow[], breakdown: UnitSampleBreakdown) {
+  rows.push(["Unidade", "Consultas totais", breakdown.totalConsultations]);
+  Object.entries(breakdown.autonomy)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .forEach(([autonomy, entry]) => {
+      rows.push([
+        "Unidade",
+        `Autonomia ${autonomy} - Consultas`,
+        entry.consultations,
+      ]);
+      entry.presential.forEach((detail, key) => {
+        rows.push([
+          "Unidade",
+          `Autonomia ${autonomy} - ${key ? "Presencial" : "Não presencial"}`,
+          detail.consultations,
+        ]);
+
+        Object.entries(detail.typeCounts ?? {})
+          .sort(([a], [b]) => a.localeCompare(b))
+          .forEach(([type, count]) => {
+            rows.push([
+              "Unidade",
+              `Autonomia ${autonomy} - ${key ? "Presencial" : "Não presencial"} - Tipo: ${type}`,
+              count,
+            ]);
+          });
+      });
+    });
+}
+
+function addWeekRows(rows: ExportRow[], section: string, weeks?: WeekSample[]) {
+  if (!weeks || weeks.length === 0) return;
+  weeks.forEach((week) => {
+    rows.push([
+      section,
+      `${week.startDate} → ${week.endDate}`,
+      `${week.consultations} consultas (${week.uniqueDays} dias)`,
+    ]);
+  });
+}
+
+function addUrgencyRows(rows: ExportRow[], selections?: UrgencySelection[]) {
+  if (!selections || selections.length === 0) return;
+  selections.forEach((selection) => {
+    rows.push([
+      "Urgência",
+      `${selection.label} (${selection.internship})`,
+      `${selection.totalConsultations} consultas`,
+    ]);
+    selection.days.forEach((day) => {
+      rows.push([
+        "Urgência",
+        `Dia ${day.date}`,
+        `${day.consultations} consultas`,
+      ]);
+    });
+  });
+}
+
+function addInternshipRows(rows: ExportRow[], samples?: InternshipsSample[]) {
+  if (!samples || samples.length === 0) return;
+  samples.forEach((sample) => {
+    const totalConsultations = sample.weeks.reduce(
+      (sum, week) => sum + week.consultations,
+      0
+    );
+    rows.push([
+      "Formações",
+      sample.label,
+      `${totalConsultations} consultas (${sample.weeks.length} semanas)`,
+    ]);
+    Object.entries(sample.autonomyCounts)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .forEach(([autonomy, count]) => {
+        rows.push([
+          "Formações",
+          `Autonomia ${autonomy}`,
+          `${count} consultas`,
+        ]);
+      });
+  });
+}
+
+function addTopProblemsRows(rows: ExportRow[], problems?: ProblemCount[]) {
+  if (!problems || problems.length === 0) return;
+  problems.forEach((problem) => {
+    rows.push([
+      "Problemas",
+      problem.code,
+      `${problem.count} consultas`,
+    ]);
+  });
+}
+
+function addWeekSheet(
+  weeks: WeekSample[] | undefined,
+  name: string,
+  pushSheet: (sheet: Omit<ExportSheet, "metadataRows">) => void
+) {
+  if (!weeks || weeks.length === 0) return;
+  const rows = weeks.map((week) => [
+    week.weekKey,
+    `${week.startDate} → ${week.endDate}`,
+    week.consultations,
+    week.uniqueDays,
+  ]);
+  pushSheet({
+    sheetName: name,
+    headers: WEEK_HEADERS,
+    rows,
+  });
+}
