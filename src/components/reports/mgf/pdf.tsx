@@ -1,11 +1,28 @@
 /* eslint-disable react-refresh/only-export-components */
+import React from "react";
 import type { ReactElement } from "react";
-import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import {
+  Document,
+  Image,
+  Page,
+  StyleSheet,
+  Text,
+  View,
+} from "@react-pdf/renderer";
+
+// Needed when executing this module in Node (e.g. CLI PDF generation), since some
+// tooling compiles JSX to React.createElement().
+void React;
 import type {
   InternshipsSample,
   MGFReportData,
   WeekSample,
 } from "@/reports/report-types";
+
+const INTRACK_LOGO_SRC =
+  typeof window === "undefined"
+    ? new URL("../../../../public/intrack-icon-light.png", import.meta.url).href
+    : "/intrack-icon-light.png";
 
 // Explicit page box dimensions (points) to guarantee full A4 pages even when
 // content is short and wrapping is disabled.
@@ -71,6 +88,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     gap: 16,
+    alignItems: "center",
+  },
+  headerBrand: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  logoIcon: {
+    width: 25,
+    height: 25,
+    marginRight: 5,
   },
   footer: {
     position: "absolute",
@@ -130,11 +157,14 @@ function Header(props: {
 }) {
   return (
     <View style={styles.header} fixed>
-      <View>
-        <Text style={styles.appName}>{props.appName}</Text>
-        <Text style={[styles.small, styles.muted]}>
-          Relatório • {props.reportTitle}
-        </Text>
+      <View style={styles.headerBrand}>
+        <Image src={INTRACK_LOGO_SRC} style={styles.logoIcon} />
+        <View>
+          <Text style={styles.appName}>{props.appName}</Text>
+          <Text style={[styles.small, styles.muted]}>
+            Relatório • {props.reportTitle}
+          </Text>
+        </View>
       </View>
       <View>
         <Text style={[styles.small, styles.muted, styles.headerRight]}>
