@@ -3,7 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { IconX, IconBrandGithub, IconStethoscope } from "@tabler/icons-react";
+import { AppLogo } from "@/components/ui/logo";
+import { IconX, IconBrandGithub } from "@tabler/icons-react";
 
 export function AboutModal({ onClose }: { onClose: () => void }) {
   // Prevent body scroll when modal is open
@@ -41,14 +42,17 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
           {/* Header */}
           <div className="relative pt-8 pb-6 px-6">
             <div className="flex flex-col items-center space-y-4">
-              {/* Logo/Icon */}
               <div className="relative">
-                <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center ring-2 ring-border shadow-lg">
-                  <IconStethoscope className="h-10 w-10 text-primary" />
+                <div className="h-20 w-20 rounded-2xl flex items-center justify-center ring-1 ring-border shadow-md">
+                  <AppLogo
+                    variant="icon"
+                    className="h-10 w-10 select-none"
+                    aria-hidden="true"
+                    alt=""
+                  />
                 </div>
               </div>
 
-              {/* Title and Version */}
               <div className="text-center space-y-2">
                 <h2 className="text-2xl font-bold tracking-tight">InTrack</h2>
                 <Badge

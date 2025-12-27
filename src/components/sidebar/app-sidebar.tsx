@@ -1,10 +1,5 @@
 import * as React from "react";
-import {
-  IconTable,
-  IconDashboard,
-  IconInnerShadowTop,
-  IconReport,
-} from "@tabler/icons-react";
+import { IconTable, IconDashboard, IconReport } from "@tabler/icons-react";
 
 import { NavMain } from "@/components/sidebar/nav-main";
 import { NavUser } from "@/components/sidebar/nav-user";
@@ -21,6 +16,7 @@ import type { Specialty } from "@/lib/api/specialties";
 import { TAB_CONSTANTS, getConsultationsTabDisplayName } from "@/constants";
 import type { TabType } from "@/constants";
 import { getReportsForSpecialty, getReportTabKey } from "@/reports/helpers";
+import { AppLogo } from "@/components/ui/logo";
 
 export function AppSidebar({
   user,
@@ -106,8 +102,13 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarContent>
-              <div className="flex items-center gap-2">
-                <IconInnerShadowTop className="!size-5" />
+              <div className="flex items-center gap-1">
+                <AppLogo
+                  variant="icon"
+                  className="h-7 w-7"
+                  aria-hidden="true"
+                  alt=""
+                />
                 <span className="text-base font-semibold">InTrack</span>
               </div>
             </SidebarContent>
