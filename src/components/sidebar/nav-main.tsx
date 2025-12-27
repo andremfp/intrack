@@ -35,6 +35,7 @@ export function NavMain({
       title: string;
       displayName?: string;
       url: string;
+      tab?: TabType;
     }[];
   }[];
   activeTab: TabType;
@@ -58,18 +59,20 @@ export function NavMain({
         </SidebarMenu>
         <SidebarMenu>
           {items.map((item) => {
-            // Check if any sub-item is active
+            const hasSubItems = item.items && item.items.length > 0;
+            const computeDefaultTab = (subItemTitle: string) => {
+              const yearMatch = subItemTitle.match(/\.(\d+)$/);
+              if (yearMatch) {
+                return `${item.title}.${yearMatch[1]}`;
+              }
+              return `${item.title}.${subItemTitle}`;
+            };
             const isSubItemActive =
-              item.items &&
-              item.items.some((subItem) => {
-                // For specialty year sub-items (like "MGF.1"), match the pattern
-                const yearMatch = subItem.title.match(/\.(\d+)$/);
-                if (yearMatch) {
-                  const yearNumber = yearMatch[1];
-                  return activeTab === `${item.title}.${yearNumber}`;
-                }
-                // For other sub-items (like Métricas sub-items), match directly
-                return activeTab === `${item.title}.${subItem.title}`;
+              hasSubItems &&
+              item.items!.some((subItem) => {
+                const subItemTab =
+                  subItem.tab ?? computeDefaultTab(subItem.title);
+                return activeTab === subItemTab;
               });
             const isActive = activeTab === item.title || isSubItemActive;
 
@@ -95,12 +98,8 @@ export function NavMain({
                     <CollapsibleContent>
                       <SidebarMenuSub>
                         {item.items.map((subItem) => {
-                          // Extract year number from title like "MGF.1" -> "1"
-                          const yearMatch = subItem.title.match(/\.(\d+)$/);
-                          // Determine the sub-item tab format
-                          const subItemTab = yearMatch
-                            ? `${item.title}.${yearMatch[1]}`
-                            : `${item.title}.${subItem.title}`;
+                          const subItemTab =
+                            subItem.tab ?? computeDefaultTab(subItem.title);
                           const isSubActive = activeTab === subItemTab;
                           const displayLabel =
                             subItem.displayName || subItem.title;

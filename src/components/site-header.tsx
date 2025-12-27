@@ -3,6 +3,7 @@ import { ModeToggle } from "@/components/theme/mode-toggle";
 import type { Specialty } from "@/lib/api/specialties";
 import type { TabType } from "@/constants";
 import { TAB_CONSTANTS, getConsultationsTabDisplayName } from "@/constants";
+import { getReportTabDisplayName } from "@/reports/helpers";
 
 interface SiteHeaderProps {
   specialty?: Specialty | null;
@@ -22,6 +23,18 @@ export function SiteHeader({ specialty, activeTab }: SiteHeaderProps) {
         return `${specialty.name} - ${specialty.code.toUpperCase()}.${year}`;
       }
     } else if (activeTab) {
+      const reportMatch = activeTab.match(
+        new RegExp(`${TAB_CONSTANTS.MAIN_TABS.REPORTS}\\.([^.]+)\\.([^/.]+)$`)
+      );
+      if (reportMatch) {
+        const [, reportSpecialtyCode, reportKey] = reportMatch;
+        const displayName = getReportTabDisplayName(
+          reportSpecialtyCode,
+          reportKey
+        );
+        return `${specialty.name} - ${displayName}`;
+      }
+
       const subTab = activeTab.split(".")[1];
       // If the sub-tab is the Consultations metrics tab, use the dynamic display name
       const displayName =

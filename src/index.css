@@ -158,3 +158,42 @@
     border-color: var(--destructive);
   }
 }
+
+body.report-print-mode {
+  background: #fff;
+}
+
+body.report-print-mode * {
+  visibility: hidden;
+}
+
+body.report-print-mode .report-print-wrapper,
+body.report-print-mode .report-print-wrapper * {
+  visibility: visible;
+}
+
+body.report-print-mode .report-print-wrapper {
+  position: relative;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+@media print {
+  .report-export-controls {
+    display: none;
+  }
+
+  .report-print-wrapper {
+    display: block !important;
+    flex: none !important;
+    min-height: auto !important;
+    page-break-inside: auto;
+  }
+
+  .report-print-wrapper section,
+  .report-print-wrapper > * {
+    page-break-inside: auto;
+    break-inside: auto;
+  }
+}
