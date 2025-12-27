@@ -982,6 +982,13 @@ const URGENCY_HEADERS = [
   "Detalhe",
   "Valor",
 ] satisfies (string | number)[];
+const URGENCY_AUTONOMY_HEADERS = [
+  "Seleção",
+  "Internship",
+  "Contexto",
+  "Autonomia",
+  "Consultas",
+] satisfies (string | number)[];
 
 const FORMATION_HEADERS = [
   "Formação",
@@ -1025,6 +1032,7 @@ export function buildReportExportTable(params: ReportExportTableParams): ExportT
   addWeekRows(rows, "Semanas ano 3", reportData.secondHalfWeeks);
 
   addUrgencyRows(rows, reportData.urgencySelection);
+  addUrgencyAutonomyBreakdownRows(rows, reportData.urgencySelection);
   addInternshipRows(rows, reportData.internshipsSamples);
   addTopProblemsRows(rows, reportData.topProblems);
 
@@ -1141,6 +1149,43 @@ export function buildReportExportSheets(params: ReportExportSheetsParams): Expor
       headers: URGENCY_HEADERS,
       rows,
     });
+
+    const autonomyRows: ExportCell[][] = [];
+    reportData.urgencySelection.forEach((selection) => {
+      Object.entries(selection.autonomyTotals)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .forEach(([autonomy, count]) => {
+          autonomyRows.push([
+            selection.label,
+            selection.internship,
+            "Total",
+            autonomy,
+            count,
+          ]);
+        });
+
+      selection.days.forEach((day) => {
+        Object.entries(day.autonomyCounts)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .forEach(([autonomy, count]) => {
+            autonomyRows.push([
+              selection.label,
+              selection.internship,
+              `Dia ${day.date}`,
+              autonomy,
+              count,
+            ]);
+          });
+      });
+    });
+
+    if (autonomyRows.length > 0) {
+      pushSheet({
+        sheetName: "Urgência (Autonomias)",
+        headers: URGENCY_AUTONOMY_HEADERS,
+        rows: autonomyRows,
+      });
+    }
   }
 
   if (reportData.internshipsSamples && reportData.internshipsSamples.length > 0) {
@@ -1266,6 +1311,40 @@ function addUrgencyRows(rows: ExportRow[], selections?: UrgencySelection[]) {
         `Dia ${day.date}`,
         `${day.consultations} consultas`,
       ]);
+    });
+  });
+}
+
+function addUrgencyAutonomyBreakdownRows(
+  rows: ExportRow[],
+  selections?: UrgencySelection[]
+) {
+  if (!selections || selections.length === 0) return;
+
+  rows.push([]);
+  rows.push(["Urgência - Autonomias", "Seleção/Contexto", "Consultas"]);
+
+  selections.forEach((selection) => {
+    Object.entries(selection.autonomyTotals)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .forEach(([autonomy, count]) => {
+        rows.push([
+          "Urgência - Autonomias",
+          `${selection.label} (${selection.internship}) - Total - Autonomia ${autonomy}`,
+          `${count} consultas`,
+        ]);
+      });
+
+    selection.days.forEach((day) => {
+      Object.entries(day.autonomyCounts)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .forEach(([autonomy, count]) => {
+          rows.push([
+            "Urgência - Autonomias",
+            `${selection.label} (${selection.internship}) - Dia ${day.date} - Autonomia ${autonomy}`,
+            `${count} consultas`,
+          ]);
+        });
     });
   });
 }
