@@ -48,6 +48,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build app
+        run: npm run build
+
       - uses: supabase/setup-cli@v1
         with:
           version: latest
