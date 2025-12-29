@@ -13,14 +13,7 @@ export const GradientBackground = ({
   ...props
 }: GradientBackgroundProps) => {
   return (
-    <div
-      className={cn("relative", className)}
-      style={{
-        background:
-          "radial-gradient(ellipse 80% 50% at 50% 0%, var(--landing-gradient-start) 0%, var(--landing-gradient-middle) 50%, var(--landing-gradient-end) 100%)",
-      }}
-      {...props}
-    >
+    <div className={cn("relative gradient-bg", className)} {...props}>
       {children}
     </div>
   );

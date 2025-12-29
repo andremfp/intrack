@@ -18,7 +18,7 @@ export function HeroSection() {
   return (
     <GradientBackground className="relative w-full min-h-[80vh] flex items-center justify-center sm:py-20">
       <div className="relative z-10 mx-auto flex w-full flex-col items-center justify-center gap-10 px-4 md:px-0 max-w-6xl">
-        <h1 className="relative mx-auto w-full max-w-4xl text-center text-5xl font-bold text-[var(--foreground)] sm:text-5xl md:text-5xl lg:text-6xl xl:text-7xl">
+        <h1 className="relative mx-auto w-full max-w-4xl text-center text-5xl font-bold text-[var(--foreground)] sm:text-5xl md:text-5xl lg:text-6xl xl:text-7xl drop-shadow-sm dark:drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]">
           <div className="flex flex-col items-center justify-center gap-2">
             <span className="inline-flex flex-wrap items-center justify-center gap-2">
               {staticHeroWords.map((word, index) => (
@@ -45,12 +45,14 @@ export function HeroSection() {
                 delay: 0.3,
                 ease: "easeInOut",
               }}
+              className="relative"
             >
               <FlipWords
                 words={heroMetrics}
                 duration={3000}
-                className="text-[var(--foreground)]"
+                className="text-[var(--foreground)] relative z-10 drop-shadow-sm"
               />
+              <div className="absolute inset-0 bg-gradient-to-r from-[var(--primary)]/20 to-[var(--chart-1)]/20 blur-xl opacity-50 animate-pulse" />
             </motion.div>
           </div>
         </h1>
@@ -67,7 +69,7 @@ export function HeroSection() {
           }}
           className="relative z-10 mx-auto w-full max-w-xl py-4 text-center text-lg font-normal text-[var(--muted-foreground)]"
         >
-          <h4 className="text-xl lg:text-2xl lg:leading-tight max-w-5xl mx-auto text-center tracking-tight font-medium text-[var(--foreground)]">
+          <h4 className="text-xl lg:text-2xl lg:leading-tight max-w-5xl mx-auto text-center tracking-tight font-medium text-[var(--foreground)] drop-shadow-sm">
             Simplifica o teu internato. Aproveita melhor o teu tempo.
           </h4>
         </motion.p>
@@ -84,7 +86,11 @@ export function HeroSection() {
           }}
           className="relative z-10 flex flex-wrap items-center justify-center gap-4"
         >
-          <Button asChild size="lg" className="text-sm sm:text-lg">
+          <Button
+            asChild
+            size="lg"
+            className="text-sm sm:text-lg bg-gradient-to-r from-[var(--primary)] to-[var(--chart-1)] hover:from-[var(--primary)]/90 hover:to-[var(--chart-1)]/90 text-[var(--primary-foreground)] shadow-lg hover:shadow-xl hover:shadow-[var(--primary)]/25 transition-all duration-300 hover:scale-105 border-0"
+          >
             <Link to="/register">Criar conta</Link>
           </Button>
         </motion.div>
@@ -103,7 +109,7 @@ export function HeroSection() {
           }}
           className="relative z-10 mt-2 w-full max-w-6xl px-4 hidden md:block"
         >
-          <div className="relative overflow-hidden rounded-xl bg-[var(--background)] h-[clamp(260px,38vw,480px)] shadow-lg">
+          <div className="relative overflow-hidden rounded-xl bg-[var(--background)] h-[clamp(260px,38vw,480px)] shadow-2xl shadow-black/10 dark:shadow-black/40 border border-border/50 backdrop-blur-sm">
             <img
               src={illustrationSrc}
               alt="InTrack - Consultations"
