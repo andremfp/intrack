@@ -3,20 +3,92 @@ import { MGF_ICPC2_CODES } from "../src/icpc2-codes.ts";
 
 const YEAR = Number(process.argv[2]);
 const SPECIALTY_YEAR = Number(process.argv[3]);
-if (isNaN(YEAR) || isNaN(SPECIALTY_YEAR) || SPECIALTY_YEAR < 1 || SPECIALTY_YEAR > 4 || YEAR < 2000) throw new Error("Invalid year or specialty year");
+if (
+  isNaN(YEAR) ||
+  isNaN(SPECIALTY_YEAR) ||
+  SPECIALTY_YEAR < 1 ||
+  SPECIALTY_YEAR > 4 ||
+  YEAR < 2000
+)
+  throw new Error("Invalid year or specialty year");
 
-const LOCATIONS = ["unidade", "urgência", "complementar", "form_curta"] as const;
+const LOCATIONS = [
+  "unidade",
+  "urgência",
+  "complementar",
+  "form_curta",
+] as const;
 const AUTONOMY = ["total", "parcial", "observada", "ombro-a-ombro"] as const;
-const TYPES = [null,"SA", "SIJ", "PF", "SM", "DM", "HTA", "DA", "AM", "Domicílio"] as const;
-const INTERNSHIPS = [null, "cardio", "endocrino", "gastro", "geriatria", "hemato", "neuro", "nefro", "onco", "otorrino", "pediatria", "psiquiatria", "reumato", "urologia", "gineco", "obstetricia", "orto", "neurocir", "pedopsiquiatria", "dermato", "paliativos", "pneumo", "cir vascular", "cir toracica", "cir geral", "cir plastica", "med interna", "form_curta"] as const;
+const TYPES = [
+  null,
+  "SA",
+  "SIJ",
+  "PF",
+  "SM",
+  "DM",
+  "HTA",
+  "DA",
+  "AM",
+  "Domicílio",
+] as const;
+const INTERNSHIPS = [
+  null,
+  "cardio",
+  "endocrino",
+  "gastro",
+  "geriatria",
+  "hemato",
+  "neuro",
+  "nefro",
+  "onco",
+  "otorrino",
+  "pediatria",
+  "psiquiatria",
+  "reumato",
+  "urologia",
+  "gineco",
+  "obstetricia",
+  "orto",
+  "neurocir",
+  "pedopsiquiatria",
+  "dermato",
+  "paliativos",
+  "pneumo",
+  "cir vascular",
+  "cir toracica",
+  "cir geral",
+  "cir plastica",
+  "med interna",
+  "form_curta",
+] as const;
 const SEX = ["m", "f", "other"] as const;
 const SMOKER = ["sim", "nao", "ex fumador"] as const;
 const FAMILY_TYPES = [null, "tipo1"] as const;
-const SCHOOL_LEVELS = [null, "sem", "primario", "9ano", "secundario", "superior", "mestrado", "doutoramento"] as const;
+const SCHOOL_LEVELS = [
+  null,
+  "sem",
+  "primario",
+  "9ano",
+  "secundario",
+  "superior",
+  "mestrado",
+  "doutoramento",
+] as const;
 const PROFESSIONAL_AREAS = [null, "health"] as const;
 const PROFESSIONS = [null, "medicine", "nursing", "pharmacy", "other"] as const;
-const CONTRACEPTIVES = [null, "coc", "cop", "siu", "preserv", "implante", "anel", "adesivo", "laqueacao", "natural", "menopausa"] as const;
-
+const CONTRACEPTIVES = [
+  null,
+  "coc",
+  "cop",
+  "siu",
+  "preserv",
+  "implante",
+  "anel",
+  "adesivo",
+  "laqueacao",
+  "natural",
+  "menopausa",
+] as const;
 
 function random<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -54,14 +126,17 @@ const values: string[] = [];
 const date = new Date(`${YEAR}-01-01`);
 while (date.getFullYear() === YEAR) {
   if (isWeekday(date)) {
-    const location = SPECIALTY_YEAR === 4 ? random(LOCATIONS.filter(l => l === "unidade")) : random(LOCATIONS);
+    const location =
+      SPECIALTY_YEAR === 4
+        ? random(LOCATIONS.filter((l) => l === "unidade"))
+        : random(LOCATIONS);
     const autonomy = random(AUTONOMY);
     const type = location === "unidade" ? random(TYPES) : null;
-    const internship =
-      location !== "unidade" ? random(INTERNSHIPS) : null;
+    const internship = location !== "unidade" ? random(INTERNSHIPS) : null;
     const family_type = location === "unidade" ? random(FAMILY_TYPES) : null;
     const school_level = location === "unidade" ? random(SCHOOL_LEVELS) : null;
-    const professional_area = location === "unidade" ? random(PROFESSIONAL_AREAS) : null;
+    const professional_area =
+      location === "unidade" ? random(PROFESSIONAL_AREAS) : null;
     const profession = location === "unidade" ? random(PROFESSIONS) : null;
     const referrence = location === "unidade" ? random(INTERNSHIPS) : null;
 
@@ -86,8 +161,10 @@ while (date.getFullYear() === YEAR) {
       new_diagnosis: Math.random() < 0.3 ? randomICPC2Codes(1) : null,
       referrence,
       referrence_motive: referrence ? randomICPC2Codes(1) : null,
-      contraceptive: location === "unidade" && sex !== "m" ? random(CONTRACEPTIVES) : null,
-      new_contraceptive: location === "unidade" && sex !== "m" ? random(CONTRACEPTIVES) : null,
+      contraceptive:
+        location === "unidade" && sex !== "m" ? random(CONTRACEPTIVES) : null,
+      new_contraceptive:
+        location === "unidade" && sex !== "m" ? random(CONTRACEPTIVES) : null,
       procedure: ["Observação clínica"],
       notes: ["Gerado automaticamente"],
     };
@@ -96,7 +173,9 @@ while (date.getFullYear() === YEAR) {
 (
   (SELECT user_id FROM users LIMIT 1),
   (SELECT id FROM specialties WHERE code = 'mgf' LIMIT 1),
-  ${SPECIALTY_YEAR},'${date.toISOString().slice(0, 10)}','${sex}',${age},'years',
+  ${SPECIALTY_YEAR},'${date
+      .toISOString()
+      .slice(0, 10)}','${sex}',${age},'years',
   ${randomProcessNumber()},'${location}','${autonomy}',
   '${JSON.stringify(details)}'::jsonb,
   false,NOW(),NOW()
@@ -127,4 +206,6 @@ ${values.join(",\n")};
 `;
 
 writeFileSync(`consultations_${YEAR}_${SPECIALTY_YEAR}.sql`, sql.trim());
-console.log(`Generated ${values.length} consultations for ${YEAR} ${SPECIALTY_YEAR}`);
+console.log(
+  `Generated ${values.length} consultations for ${YEAR} ${SPECIALTY_YEAR}`
+);
