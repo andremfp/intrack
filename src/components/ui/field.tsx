@@ -168,14 +168,19 @@ function FieldSeparator({
       )}
       {...props}
     >
-      <Separator className="absolute inset-0 top-1/2" />
-      {children && (
-        <span
-          className="bg-background text-muted-foreground relative mx-auto block w-fit px-2"
-          data-slot="field-separator-content"
-        >
-          {children}
-        </span>
+      {children ? (
+        <div className="flex items-center">
+          <Separator className="flex-1" />
+          <span
+            className="text-muted-foreground px-2 whitespace-nowrap"
+            data-slot="field-separator-content"
+          >
+            {children}
+          </span>
+          <Separator className="flex-1" />
+        </div>
+      ) : (
+        <Separator className="absolute inset-0 top-1/2" />
       )}
     </div>
   );

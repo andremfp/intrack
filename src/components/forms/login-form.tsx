@@ -1,4 +1,4 @@
-import { GalleryVerticalEnd, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 
 import { cn } from "@/utils/utils";
@@ -81,9 +81,6 @@ export function LoginForm({
       <form onSubmit={handleSubmit}>
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
-            <div className="flex size-8 items-center justify-center rounded-md">
-              <GalleryVerticalEnd className="size-6" />
-            </div>
             <h1 className="text-xl font-bold">Bem vindo ao InTrack</h1>
             <h2 className="text-sm">
               Monitorização de consultas para internos de medicina
@@ -126,7 +123,7 @@ export function LoginForm({
                 href="/forgot-password"
                 className="ml-auto text-sm underline-offset-4 hover:underline"
               >
-                Esqueceu a sua password?
+                Esqueceste-te da password?
               </a>
             </div>
             <div className="relative">

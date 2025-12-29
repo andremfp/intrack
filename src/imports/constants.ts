@@ -50,6 +50,7 @@ export const HEADER_TO_KEY_MAP: Record<string, string> = {
   Referenciacao: "referrence",
   "Motivo da Referenciação": "referrence_motive",
   "Motivo da Referenciacao": "referrence_motive",
+  "PNV Cumprido": "vaccination_plan",
 };
 
 // Boolean parsing constants
