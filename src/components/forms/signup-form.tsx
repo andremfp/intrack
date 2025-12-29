@@ -1,4 +1,4 @@
-import { GalleryVerticalEnd, Eye, EyeOff, Check, X, Mail } from "lucide-react";
+import { Eye, EyeOff, Check, X, Mail } from "lucide-react";
 import { useState } from "react";
 
 import { cn, validatePasswordCriteria, isPasswordValid } from "@/utils/utils";
@@ -156,9 +156,6 @@ export function SignupForm({
       <form onSubmit={handleSubmit}>
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
-            <div className="flex size-8 items-center justify-center rounded-md">
-              <GalleryVerticalEnd className="size-6" />
-            </div>
             <h1 className="text-xl font-bold">Bem vindo ao InTrack</h1>
             <p className="text-sm">
               Monitorização de consultas para internos de medicina
@@ -337,7 +334,7 @@ export function SignupForm({
             </FieldDescription>
           ) : null}
           <FieldDescription className="text-center">
-            Já tem uma conta? <a href="/">Login</a>
+            Já tem uma conta? <a href="/login">Login</a>
           </FieldDescription>
         </FieldGroup>
       </form>
