@@ -1,11 +1,12 @@
 import { ModeToggle } from "@/components/theme/mode-toggle";
 import { ResetPasswordForm } from "@/components/forms/reset-password-form";
 import { ThemeProvider } from "@/components/theme/theme-provider";
+import { SubtleBackground } from "@/components/ui/subtle-background";
 
 export default function ResetPasswordPage() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <div className="bg-background flex min-h-svh flex-col">
+      <SubtleBackground variant="auth">
         <header className="flex justify-end p-4">
           <ModeToggle />
         </header>
@@ -14,7 +15,7 @@ export default function ResetPasswordPage() {
             <ResetPasswordForm />
           </div>
         </main>
-      </div>
+      </SubtleBackground>
     </ThemeProvider>
   );
 }

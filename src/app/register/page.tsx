@@ -1,11 +1,12 @@
 import { ModeToggle } from "@/components/theme/mode-toggle";
 import { SignupForm } from "@/components/forms/signup-form";
 import { ThemeProvider } from "@/components/theme/theme-provider";
+import { SubtleBackground } from "@/components/ui/subtle-background";
 
 export default function SignupPage() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <div className="bg-background flex min-h-svh flex-col">
+      <SubtleBackground variant="auth">
         <header className="flex justify-end p-4">
           <ModeToggle />
         </header>
@@ -14,7 +15,7 @@ export default function SignupPage() {
             <SignupForm />
           </div>
         </main>
-      </div>
+      </SubtleBackground>
     </ThemeProvider>
   );
 }

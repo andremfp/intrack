@@ -51,7 +51,7 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --breakpoint-xs: 580px;
+  --color-landing-footer-background: var(--landing-footer-background);
 }
 
 :root {
@@ -94,10 +94,20 @@
   --age-18-44: oklch(0.63 0.17 149);
   --age-45-64: oklch(0.55 0.22 263);
   --age-65: oklch(0.58 0.22 27);
+  --landing-gradient-start: #f8fafc;
+  --landing-gradient-middle: #fefefe;
+  --landing-gradient-end: #ffffff;
+  --landing-overlay-soft: rgba(59, 130, 246, 0.12);
+  --landing-overlay-bright: rgba(168, 85, 247, 0.2);
+  --landing-blob-blue: rgba(59, 130, 246, 0.3);
+  --landing-blob-purple: rgba(168, 85, 247, 0.25);
+  --landing-blob-amber: rgba(251, 191, 36, 0.25);
+  --landing-footer-background: oklch(0.15 0 49);
+  --landing-nav-background: oklch(1 0 0);
 }
 
 .dark {
-  --background: oklch(0.141 0.005 285.823);
+  --background: oklch(0.15 0 49);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.21 0.006 285.885);
   --card-foreground: oklch(0.985 0 0);
@@ -135,6 +145,16 @@
   --age-18-44: oklch(0.63 0.17 149);
   --age-45-64: oklch(0.55 0.22 263);
   --age-65: oklch(0.58 0.22 27);
+  --landing-gradient-start: #0f0a19;
+  --landing-gradient-middle: #0a0814;
+  --landing-gradient-end: #05040a;
+  --landing-overlay-soft: rgba(56, 189, 248, 0.06);
+  --landing-overlay-bright: rgba(139, 92, 246, 0.12);
+  --landing-blob-blue: rgba(59, 130, 246, 0.2);
+  --landing-blob-purple: rgba(139, 92, 246, 0.18);
+  --landing-blob-amber: rgba(236, 72, 153, 0.15);
+  --landing-footer-background: oklch(0.15 0 49);
+  --landing-nav-background: oklch(0.15 0 49);
 }
 
 @layer base {
