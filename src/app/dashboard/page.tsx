@@ -5,7 +5,6 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { useSidebar } from "@/components/ui/sidebar-context";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme/theme-provider";
-import { SubtleBackground } from "@/components/ui/subtle-background";
 import { cn } from "@/utils/utils";
 import { useMemo, useEffect } from "react";
 import type { Specialty } from "@/lib/api/specialties";
@@ -133,26 +132,24 @@ function DashboardContent() {
           isLoading && "blur-sm pointer-events-none"
         )}
       >
-        <SubtleBackground variant="dashboard" className="min-h-0 flex-1">
-          <SiteHeader specialty={userSpecialty} activeTab={activeTab} />
-          <DashboardContentRouter
-            mainTab={mainTab}
-            userId={userId!}
-            userSpecialty={userSpecialty}
-            activeSpecialtyYear={activeSpecialtyYear}
-            metricsSubTab={metricsSubTab}
-            activeReportKey={activeReportKey}
-            activeReportSpecialtyCode={activeReportSpecialtyCode}
-            onRowClick={handleRowClick}
-            onAddConsultation={() => handleAddConsultation(activeSpecialtyYear)}
-            onConsultationsRefreshReady={(refresh) => {
-              refreshConsultationsRef.current = refresh;
-            }}
-            onMetricsRefreshReady={(refresh) => {
-              refreshMetricsRef.current = refresh;
-            }}
-          />
-        </SubtleBackground>
+        <SiteHeader specialty={userSpecialty} activeTab={activeTab} />
+        <DashboardContentRouter
+          mainTab={mainTab}
+          userId={userId!}
+          userSpecialty={userSpecialty}
+          activeSpecialtyYear={activeSpecialtyYear}
+          metricsSubTab={metricsSubTab}
+          activeReportKey={activeReportKey}
+          activeReportSpecialtyCode={activeReportSpecialtyCode}
+          onRowClick={handleRowClick}
+          onAddConsultation={() => handleAddConsultation(activeSpecialtyYear)}
+          onConsultationsRefreshReady={(refresh) => {
+            refreshConsultationsRef.current = refresh;
+          }}
+          onMetricsRefreshReady={(refresh) => {
+            refreshMetricsRef.current = refresh;
+          }}
+        />
       </SidebarInset>
       <ModalManager
         userProfile={userProfile}

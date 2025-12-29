@@ -1,5 +1,4 @@
 import { ThemeProvider } from "@/components/theme/theme-provider";
-import { SubtleBackground } from "@/components/ui/subtle-background";
 
 import { HeroSection } from "@/components/ui/hero-section";
 import { NavbarLanding } from "@/components/ui/navbar-landing";
@@ -9,7 +8,7 @@ import { Footer } from "@/components/ui/footer";
 export default function LandingPage() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <SubtleBackground variant="landing">
+      <div className="relative min-h-svh flex flex-col overflow-hidden">
         <NavbarLanding />
         <main className="flex flex-1 flex-col">
           <HeroSection />
@@ -20,7 +19,7 @@ export default function LandingPage() {
           {/* CTA Section */}
         </main>
         <Footer />
-      </SubtleBackground>
+      </div>
     </ThemeProvider>
   );
 }

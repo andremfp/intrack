@@ -1,4 +1,4 @@
-import { GalleryVerticalEnd, Eye, EyeOff, Check, X } from "lucide-react";
+import { Eye, EyeOff, Check, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -144,9 +144,6 @@ export function ResetPasswordForm({
       <div className={cn("flex flex-col gap-6", className)} {...props}>
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
-            <div className="flex size-8 items-center justify-center rounded-md">
-              <GalleryVerticalEnd className="size-6" />
-            </div>
             <h1 className="text-xl font-bold">A verificar...</h1>
             <FieldDescription className="text-center">
               A verificar o link de recuperação
@@ -162,9 +159,6 @@ export function ResetPasswordForm({
       <div className={cn("flex flex-col gap-6", className)} {...props}>
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
-            <div className="flex size-8 items-center justify-center rounded-md">
-              <GalleryVerticalEnd className="size-6" />
-            </div>
             <h1 className="text-xl font-bold">Link inválido</h1>
             <FieldDescription className="text-center text-destructive">
               {error ||
@@ -180,7 +174,7 @@ export function ResetPasswordForm({
               </Button>
             </Field>
             <FieldDescription className="text-center">
-              <a href="/" className="underline-offset-4 hover:underline">
+              <a href="/login" className="underline-offset-4 hover:underline">
                 Voltar ao login
               </a>
             </FieldDescription>
@@ -195,9 +189,6 @@ export function ResetPasswordForm({
       <form onSubmit={handleSubmit}>
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
-            <div className="flex size-8 items-center justify-center rounded-md">
-              <GalleryVerticalEnd className="size-6" />
-            </div>
             <h1 className="text-xl font-bold">Redefinir password</h1>
             <FieldDescription className="text-center">
               Introduz a tua nova password

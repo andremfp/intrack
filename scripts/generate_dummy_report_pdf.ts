@@ -41,9 +41,7 @@ async function main() {
     definition: {
       label: "Dummy report",
       description: "Minimal stub report to validate PDF rendering.",
-      sections: [
-        { key: "summary", title: "Resumo", description: "Resumo" },
-      ],
+      sections: [{ key: "summary", title: "Resumo", description: "Resumo" }],
     },
     generatedAt: new Date("2025-12-27T00:00:00.000Z"),
   });
@@ -59,6 +57,3 @@ main().catch((err) => {
   console.error(err);
   process.exitCode = 1;
 });
-
-
-
