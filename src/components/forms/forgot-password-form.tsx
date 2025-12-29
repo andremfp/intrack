@@ -1,4 +1,3 @@
-import { GalleryVerticalEnd } from "lucide-react";
 import { useState } from "react";
 
 import { cn } from "@/utils/utils";
@@ -80,9 +79,6 @@ export function ForgotPasswordForm({
       <div className={cn("flex flex-col gap-6", className)} {...props}>
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
-            <div className="flex size-8 items-center justify-center rounded-md">
-              <GalleryVerticalEnd className="size-6" />
-            </div>
             <h1 className="text-xl font-bold">Email enviado</h1>
             <FieldDescription className="text-center">
               Verifica a tua caixa de entrada. Enviámos um link para redefinir a
@@ -103,7 +99,7 @@ export function ForgotPasswordForm({
             </Button>
           </Field>
           <FieldDescription className="text-center">
-            <a href="/" className="underline-offset-4 hover:underline">
+            <a href="/login" className="underline-offset-4 hover:underline">
               Voltar ao login
             </a>
           </FieldDescription>
@@ -117,9 +113,6 @@ export function ForgotPasswordForm({
       <form onSubmit={handleSubmit}>
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
-            <div className="flex size-8 items-center justify-center rounded-md">
-              <GalleryVerticalEnd className="size-6" />
-            </div>
             <h1 className="text-xl font-bold">Recuperar password</h1>
             <FieldDescription className="text-center">
               Introduz o teu email e enviaremos um link para redefinir uma nova
@@ -153,7 +146,7 @@ export function ForgotPasswordForm({
             </FieldDescription>
           ) : null}
           <FieldDescription className="text-center">
-            <a href="/" className="underline-offset-4 hover:underline">
+            <a href="/login" className="underline-offset-4 hover:underline">
               Voltar ao login
             </a>
           </FieldDescription>
