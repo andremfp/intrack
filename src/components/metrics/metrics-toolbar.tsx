@@ -1,6 +1,8 @@
 import { ConsultationFilters } from "@/components/filters/consultation-filters";
 import type { FilterUIConfig } from "@/components/filters/types";
 import { ExportMenu } from "@/components/ui/export-menu";
+import { Button } from "@/components/ui/button";
+import { IconRefresh } from "@tabler/icons-react";
 
 interface MetricsToolbarProps {
   filterConfig: FilterUIConfig;
@@ -8,6 +10,8 @@ interface MetricsToolbarProps {
   totalConsultations: number;
   onExportExcel?: () => void;
   isExportingExcel?: boolean;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
 /**
@@ -20,6 +24,8 @@ export function MetricsToolbar({
   totalConsultations,
   onExportExcel,
   isExportingExcel = false,
+  onRefresh,
+  isRefreshing = false,
 }: MetricsToolbarProps) {
   const isLoading = !hasActiveFilters && totalConsultations === 0;
   return (
@@ -33,6 +39,20 @@ export function MetricsToolbar({
           isExportingExcel={isExportingExcel}
           isLoading={isLoading}
         />
+      )}
+      {onRefresh && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRefresh}
+          disabled={isRefreshing || isLoading}
+          className="h-8"
+          title="Atualizar métricas"
+        >
+          <IconRefresh
+            className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+          />
+        </Button>
       )}
     </div>
   );

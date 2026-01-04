@@ -19,6 +19,8 @@ export function GeneralTab({
   getSexLabel,
   onExportExcel,
   isExportingExcel,
+  onRefresh,
+  isRefreshing,
 }: GeneralTabProps) {
   // Get the data fields that correspond to enabled filter fields for this tab
   const enabledDataFields = useMemo(
@@ -75,6 +77,8 @@ export function GeneralTab({
         totalConsultations={metrics.totalConsultations}
         onExportExcel={onExportExcel}
         isExportingExcel={isExportingExcel}
+        onRefresh={onRefresh}
+        isRefreshing={isRefreshing}
       />
 
       {/* Key metrics charts: keep side-by-side even on small screens */}

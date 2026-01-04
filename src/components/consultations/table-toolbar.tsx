@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { IconTrash, IconPlus } from "@tabler/icons-react";
+import { IconTrash, IconPlus, IconRefresh } from "@tabler/icons-react";
 import { ConsultationFilters } from "@/components/filters/consultation-filters";
 import { ConsultationSorting } from "@/components/sorting/consultation-sorting";
 import type { FilterUIConfig } from "@/components/filters/types";
@@ -26,6 +26,8 @@ interface TableToolbarProps {
   isExportingCsv?: boolean;
   isExportingExcel?: boolean;
   onImport?: () => void;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
 export function TableToolbar({
@@ -45,6 +47,8 @@ export function TableToolbar({
   isExportingCsv,
   isExportingExcel,
   onImport,
+  onRefresh,
+  isRefreshing = false,
 }: TableToolbarProps) {
   return (
     <div className="flex items-center justify-between flex-shrink-0 gap-2 pt-2">
@@ -91,6 +95,20 @@ export function TableToolbar({
                 isLoading={isLoading}
               />
             ) : null}
+            {onRefresh && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRefresh}
+                disabled={isRefreshing || isLoading}
+                className="h-8"
+                title="Atualizar dados"
+              >
+                <IconRefresh
+                  className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+                />
+              </Button>
+            )}
           </div>
         )}
 

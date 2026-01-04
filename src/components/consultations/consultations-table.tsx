@@ -63,6 +63,8 @@ interface ConsultationsTableProps {
     isExportingCsv?: boolean;
     isExportingExcel?: boolean;
     onImport?: () => void;
+    onRefresh?: () => void;
+    isRefreshing?: boolean;
   };
   isLoading?: boolean;
 }
@@ -85,6 +87,8 @@ export function ConsultationsTable({
     isExportingCsv,
     isExportingExcel,
     onImport,
+    onRefresh,
+    isRefreshing,
   } = actions || {};
 
   const specialtyCode = specialty.code ?? SPECIALTY_CODES.MGF;
@@ -168,6 +172,8 @@ export function ConsultationsTable({
         isExportingCsv={isExportingCsv}
         isExportingExcel={isExportingExcel}
         onImport={onImport}
+        onRefresh={onRefresh}
+        isRefreshing={isRefreshing}
       />
     );
   }
@@ -191,6 +197,8 @@ export function ConsultationsTable({
         isExportingCsv={isExportingCsv}
         isExportingExcel={isExportingExcel}
         onImport={onImport}
+        onRefresh={onRefresh}
+        isRefreshing={isRefreshing}
       />
 
       <div className="rounded-lg border overflow-hidden flex flex-col flex-1 min-h-0">
