@@ -1,4 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import {
+  useQuery,
+  useQueryClient,
+  type UseQueryResult,
+} from "@tanstack/react-query";
 import { toasts } from "@/utils/toasts";
 import type { AppError } from "@/errors";
 import {
@@ -11,6 +16,39 @@ import type { ConsultationsFilters } from "@/lib/api/consultations";
 import { PAGINATION_CONSTANTS, TAB_CONSTANTS } from "@/constants";
 import { mergeFilters } from "@/hooks/filters/helpers";
 import { useConsultationsSorting } from "@/hooks/consultations/use-consultations-sorting";
+import { consultations as consultationKeys } from "@/lib/query/keys";
+
+// Query function that throws errors instead of returning ApiResponse
+async function fetchConsultations({
+  userId,
+  specialtyYear,
+  page,
+  pageSize,
+  filters,
+  sorting,
+}: {
+  userId: string;
+  specialtyYear: number;
+  page: number;
+  pageSize: number;
+  filters: ConsultationsFilters;
+  sorting: ConsultationsSorting;
+}): Promise<{ consultations: ConsultationMGF[]; totalCount: number }> {
+  const result = await getMGFConsultations(
+    userId,
+    specialtyYear,
+    page,
+    pageSize,
+    filters,
+    sorting
+  );
+
+  if (!result.success) {
+    throw result.error;
+  }
+
+  return result.data;
+}
 
 interface UseConsultationsParams {
   userId: string | undefined;
@@ -44,6 +82,7 @@ interface UseConsultationsResult {
 
 /**
  * Hook to manage consultations loading, sorting, and pagination.
+ * Now uses React Query for caching with pagination/sorting/filter-aware query keys.
  * Filters are consumed as read-only input from parent.
  * Filter state management is handled by the parent component.
  */
@@ -53,19 +92,50 @@ export function useConsultations({
   mainTab,
   filters, // Filters managed by parent via useFilters (read-only)
 }: UseConsultationsParams): UseConsultationsResult {
-  const [consultations, setConsultations] = useState<ConsultationMGF[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
+  const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [error, setError] = useState<AppError | null>(null);
   const hasLoadedConsultationsRef = useRef(false);
-  const requestIdRef = useRef(0);
 
   const pageSize = PAGINATION_CONSTANTS.CONSULTATIONS_PAGE_SIZE;
 
   // Sorting state & persistence, kept separate from filters
   const { sorting, setSorting } = useConsultationsSorting({ specialtyYear });
+
+  // React Query for consultations data
+  const query: UseQueryResult<
+    { consultations: ConsultationMGF[]; totalCount: number },
+    AppError
+  > = useQuery({
+    queryKey: consultationKeys.list({
+      userId: userId || "",
+      specialtyYear: specialtyYear || 1,
+      page: currentPage,
+      pageSize,
+      filters,
+      sorting,
+    }),
+    queryFn: () =>
+      fetchConsultations({
+        userId: userId || "",
+        specialtyYear: specialtyYear || 1,
+        page: currentPage,
+        pageSize,
+        filters,
+        sorting,
+      }),
+    enabled: !!(
+      userId &&
+      specialtyYear &&
+      mainTab === TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS
+    ),
+  });
+
+  // Extract data from query
+  const consultationData = query.data?.consultations ?? [];
+  const totalCount = query.data?.totalCount ?? 0;
+  const isLoading = query.isLoading;
+  const error = query.error as AppError | null;
 
   const loadConsultations = useCallback(
     async (
@@ -73,99 +143,85 @@ export function useConsultations({
       filtersOverride?: Partial<ConsultationsFilters>,
       sortingOverride?: ConsultationsSorting
     ) => {
-      if (!userId) return;
+      if (!userId || !specialtyYear) return;
 
-      // Bump request id to track the latest in-flight request
-      const requestId = ++requestIdRef.current;
-
-      // Only show loading spinner on initial load
-      const isInitialLoad = !hasLoadedConsultationsRef.current;
-      if (isInitialLoad) {
-        setIsLoading(true);
+      // For React Query, we change the current page and let the query refetch
+      // with the new parameters
+      if (page !== currentPage) {
+        setCurrentPage(page);
+        return;
       }
 
-      // Merge filters using shared utility (same pattern as MetricsDashboard)
-      const filtersToUse = mergeFilters(filters, filtersOverride);
-      const sortingToUse = sortingOverride ?? sorting;
+      // For filter/sorting overrides, we need to invalidate and refetch the specific query
+      if (filtersOverride || sortingOverride) {
+        const filtersToUse = filtersOverride
+          ? mergeFilters(filters, filtersOverride)
+          : filters;
+        const sortingToUse = sortingOverride ?? sorting;
 
-      const result = await getMGFConsultations(
-        userId,
-        specialtyYear ?? 1,
-        page,
-        pageSize,
-        filtersToUse,
-        sortingToUse
-      );
-
-      // Ignore stale responses (if a newer request was started meanwhile)
-      if (requestId === requestIdRef.current) {
-        if (result.success) {
-          setConsultations(result.data.consultations);
-          setTotalCount(result.data.totalCount);
-          setCurrentPage(page);
-          setError(null);
-          hasLoadedConsultationsRef.current = true;
-        } else {
-          // Always show toast for immediate feedback
-          toasts.apiError(result.error, "Erro ao carregar consultas");
-
-          // Only set error state if we don't have cached data to show
-          // If we have cached data, just show toast (non-blocking)
-          if (isInitialLoad) {
-            setError(result.error);
-          }
-        }
-
-        if (isInitialLoad) {
-          setIsLoading(false);
-          setIsInitialLoad(false);
-        }
+        await queryClient.invalidateQueries({
+          queryKey: consultationKeys.list({
+            userId,
+            specialtyYear,
+            page,
+            pageSize,
+            filters: filtersToUse,
+            sorting: sortingToUse,
+          }),
+        });
+      } else {
+        // Simple refetch of current query
+        await query.refetch();
       }
     },
-    [userId, specialtyYear, pageSize, filters, sorting]
+    [
+      userId,
+      specialtyYear,
+      currentPage,
+      pageSize,
+      filters,
+      sorting,
+      queryClient,
+      query,
+    ]
   );
 
   const handleSortingChange = useCallback(
     async (newSorting: ConsultationsSorting) => {
-      if (!userId) return;
+      if (!userId || !specialtyYear) return;
 
       // Update sorting (persistence is handled by useConsultationsSorting)
       setSorting(newSorting);
 
+      // Reset to page 1 when sorting changes
       setCurrentPage(1);
-      // Pass undefined to use current filters (they're already in the hook's scope)
-      await loadConsultations(1, undefined, newSorting);
+      // The query will automatically refetch due to the queryKey dependency
     },
-    [userId, setSorting, loadConsultations]
+    [userId, specialtyYear, setSorting]
   );
 
   const handlePageChange = useCallback(
     async (page: number) => {
-      if (!userId) return;
-      await loadConsultations(page);
+      if (!userId || !specialtyYear) return;
+      setCurrentPage(page);
+      // The query will automatically refetch due to the queryKey dependency
     },
-    [userId, loadConsultations]
+    [userId, specialtyYear]
   );
 
   const handleBulkDelete = useCallback(
-    async (ids: string[]): Promise<{
+    async (
+      ids: string[]
+    ): Promise<{
       deletedIds: string[];
       failedIds: string[];
     }> => {
-      if (!userId) {
+      if (!userId || !specialtyYear) {
         return { deletedIds: [], failedIds: ids };
       }
 
       const deletedIds: string[] = [];
       const failedIds: string[] = [];
-
-      setIsLoading(true);
-
-      // Helper to refresh consultations list after delete operations
-      const refreshAfterDelete = async () => {
-        // Pass undefined to use current filters and sorting
-        await loadConsultations(currentPage, undefined, undefined);
-      };
 
       try {
         const deletePromises = ids.map((id) => deleteConsultation(id));
@@ -205,49 +261,67 @@ export function useConsultations({
           );
         }
 
+        // Invalidate consultations queries to refresh data
+        if (deletedIds.length > 0) {
+          await queryClient.invalidateQueries({
+            queryKey: consultationKeys.prefix({ userId, specialtyYear }),
+          });
+        }
+
         // Return results for optimistic update handling
         return { deletedIds, failedIds };
       } catch (error) {
         console.error("Unexpected error during bulk delete:", error);
-        toasts.error("Erro ao eliminar consultas", "Ocorreu um erro inesperado.");
+        toasts.error(
+          "Erro ao eliminar consultas",
+          "Ocorreu um erro inesperado."
+        );
         // On unexpected error, mark all as failed
         return { deletedIds: [], failedIds: ids };
-      } finally {
-        // Always refresh to show any partial deletions or current state
-        await refreshAfterDelete();
-        setIsLoading(false);
       }
     },
-    [userId, currentPage, loadConsultations]
+    [userId, specialtyYear, queryClient]
   );
 
   const refreshConsultations = useCallback(async () => {
-    if (!userId) return;
-    // Pass undefined to use current filters and sorting
-    await loadConsultations(currentPage, undefined, undefined);
-  }, [userId, currentPage, loadConsultations]);
+    if (!userId || !specialtyYear) return;
+
+    // Invalidate the current consultations query to force a refetch
+    await queryClient.invalidateQueries({
+      queryKey: consultationKeys.list({
+        userId,
+        specialtyYear,
+        page: currentPage,
+        pageSize,
+        filters,
+        sorting,
+      }),
+    });
+  }, [
+    userId,
+    specialtyYear,
+    currentPage,
+    pageSize,
+    filters,
+    sorting,
+    queryClient,
+  ]);
 
   const retryLoadConsultations = useCallback(async () => {
-    await loadConsultations();
-  }, [loadConsultations]);
+    await query.refetch();
+  }, [query]);
 
-  // Reactive loading: whenever user/config/filters/sorting change, (re)load page 1.
-  // This mirrors the MetricsDashboard pattern (useDataFetching with filters in deps)
-  // and avoids having multiple sources of truth for filters.
+  // Reactive loading: whenever user/config/filters/sorting change, reset to page 1.
+  // With React Query, the query will automatically refetch when queryKey changes.
   useEffect(() => {
     if (!userId) return;
     if (mainTab !== TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS) return;
     if (specialtyYear === undefined) return;
 
-    // Reset flags so the spinner/error state behaves correctly for new configs/filters
-    setError(null);
-    hasLoadedConsultationsRef.current = false;
-    setIsInitialLoad(true);
+    // Reset to page 1 when dependencies change
     setCurrentPage(1);
-
-    // Use current filters & sorting from hook scope
-    loadConsultations(1, undefined, undefined);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setIsInitialLoad(true);
+    hasLoadedConsultationsRef.current = false;
   }, [
     userId,
     specialtyYear,
@@ -258,9 +332,8 @@ export function useConsultations({
     sorting.order,
   ]);
 
-
   return {
-    consultations,
+    consultations: consultationData,
     totalCount,
     currentPage,
     sorting,
@@ -276,5 +349,3 @@ export function useConsultations({
     refreshConsultations,
   };
 }
-
-

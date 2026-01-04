@@ -24,12 +24,14 @@ interface ReportsDashboardProps {
   userId: string;
   specialtyCode: string;
   reportKey: MGFReportKey;
+  onRefreshReady?: (refresh: () => Promise<void>) => void;
 }
 
 export function ReportsDashboard({
   userId,
   specialtyCode,
   reportKey,
+  onRefreshReady,
 }: ReportsDashboardProps) {
   const definition = getReportTabDefinition(specialtyCode, reportKey);
   const { data, isLoading, error, refresh } = useReportsData({
@@ -48,6 +50,13 @@ export function ReportsDashboard({
   const [isExportingExcel, setIsExportingExcel] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const reportRef = useRef<HTMLDivElement | null>(null);
+
+  // Register refresh function with parent component
+  useEffect(() => {
+    if (onRefreshReady) {
+      onRefreshReady(async () => refresh());
+    }
+  }, [onRefreshReady, refresh]);
 
   useEffect(() => {
     let canceled = false;

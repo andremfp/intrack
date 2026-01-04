@@ -15,5 +15,6 @@ export interface DashboardContentRouterProps {
   onAddConsultation: () => void;
   onConsultationsRefreshReady: (refresh: () => Promise<void>) => void;
   onMetricsRefreshReady?: (refresh: () => Promise<void>) => void;
+  onReportsRefreshReady?: (refresh: () => Promise<void>) => void;
 }
 
