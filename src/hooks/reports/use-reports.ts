@@ -5,16 +5,28 @@ import type { MGFReportData } from "@/reports/report-types";
 import type { MGFReportKey } from "@/reports/mgf/mgf-reports";
 import { reports } from "@/lib/query/keys";
 
-// Query function that throws errors instead of returning ApiResponse
+// Query function that receives parameters from query context
 async function fetchReportData({
-  userId,
-  specialtyCode,
-  reportKey,
+  queryKey,
 }: {
-  userId: string;
-  specialtyCode: string;
-  reportKey: string;
+  queryKey: readonly unknown[];
 }): Promise<MGFReportData> {
+  // Extract parameters from query key
+  const [, , userId, specialtyCode, reportKey] = queryKey as [
+    string,
+    string,
+    string,
+    string,
+    string
+  ];
+
+  console.log("🔍 fetchReportData called with:", {
+    queryKey,
+    userId,
+    specialtyCode,
+    reportKey,
+  });
+
   const result = await getReportData({
     userId,
     specialtyCode,
@@ -41,7 +53,7 @@ export function useReportsData({
 
   const query = useQuery({
     queryKey: reports.data({ userId, specialtyCode, reportKey }),
-    queryFn: () => fetchReportData({ userId, specialtyCode, reportKey }),
+    queryFn: fetchReportData,
     enabled: !!(userId && specialtyCode && reportKey),
   });
 
