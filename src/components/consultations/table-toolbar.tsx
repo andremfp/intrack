@@ -59,7 +59,7 @@ export function TableToolbar({
             className="h-8 flex-shrink-0"
           >
             <IconPlus className="h-4 w-4" />
-            <span className="hidden sm:inline">Adicionar Consulta</span>
+            <span className="hidden lg:inline">Adicionar Consulta</span>
           </Button>
         )}
         {onBulkDelete && (
@@ -71,7 +71,7 @@ export function TableToolbar({
             className="h-8 flex-shrink-0"
           >
             <IconTrash className="h-4 w-4" />
-            <span className="hidden sm:inline">
+            <span className="hidden lg:inline">
               {isDeleteMode ? "Cancelar" : "Eliminar"}
             </span>
           </Button>
@@ -108,7 +108,7 @@ export function TableToolbar({
                 className="h-8 flex-shrink-0"
               >
                 <IconTrash className="h-4 w-4" />
-                <span className="hidden sm:inline">Eliminar Selecionadas</span>
+                <span className="hidden lg:inline">Eliminar Selecionadas</span>
               </Button>
             )}
           </>
