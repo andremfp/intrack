@@ -66,12 +66,12 @@ export function ExportMenu({
           {isExporting ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="hidden sm:inline">A exportar...</span>
+              <span className="hidden lg:inline">A exportar...</span>
             </>
           ) : (
             <>
               <Download className="h-4 w-4" />
-              <span className="hidden sm:inline">{buttonLabel}</span>
+              <span className="hidden lg:inline">{buttonLabel}</span>
             </>
           )}
         </Button>

@@ -39,7 +39,7 @@ export function ConsultationSorting({
           ) : (
             <IconSortDescending className="h-4 w-4" />
           )}
-          <span className="hidden sm:inline">{getSortingLabel()}</span>
+          <span className="hidden lg:inline">{getSortingLabel()}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-64" align="end">
@@ -116,5 +116,3 @@ export function ConsultationSorting({
     </Popover>
   );
 }
-
-

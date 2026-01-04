@@ -23,6 +23,8 @@ export function ConsultationsTab({
   hasActiveFilters,
   onExportExcel,
   isExportingExcel,
+  onRefresh,
+  isRefreshing,
 }: MetricsTabProps) {
   // Get the data fields that correspond to enabled filter fields for this tab
   const enabledDataFields = useMemo(
@@ -74,6 +76,8 @@ export function ConsultationsTab({
         totalConsultations={metrics.totalConsultations}
         onExportExcel={onExportExcel}
         isExportingExcel={isExportingExcel}
+        onRefresh={onRefresh}
+        isRefreshing={isRefreshing}
       />
 
       <div className="grid gap-3 grid-cols-1 lg:grid-cols-2">

@@ -1,5 +1,7 @@
 import { DataErrorDisplay } from "@/components/ui/data-error-display";
 import { ExportMenu } from "@/components/ui/export-menu";
+import { Button } from "@/components/ui/button";
+import { IconRefresh } from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
 import type { ComponentType } from "react";
 import type { ReactElement } from "react";
@@ -24,12 +26,14 @@ interface ReportsDashboardProps {
   userId: string;
   specialtyCode: string;
   reportKey: MGFReportKey;
+  onRefreshReady?: (refresh: () => Promise<void>) => void;
 }
 
 export function ReportsDashboard({
   userId,
   specialtyCode,
   reportKey,
+  onRefreshReady,
 }: ReportsDashboardProps) {
   const definition = getReportTabDefinition(specialtyCode, reportKey);
   const { data, isLoading, error, refresh } = useReportsData({
@@ -48,6 +52,13 @@ export function ReportsDashboard({
   const [isExportingExcel, setIsExportingExcel] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const reportRef = useRef<HTMLDivElement | null>(null);
+
+  // Register refresh function with parent component
+  useEffect(() => {
+    if (onRefreshReady) {
+      onRefreshReady(async () => refresh());
+    }
+  }, [onRefreshReady, refresh]);
 
   useEffect(() => {
     let canceled = false;
@@ -223,7 +234,7 @@ export function ReportsDashboard({
             </p>
             <h2 className="text-lg font-semibold">{definition.label}</h2>
           </div>
-          <div className="report-export-controls print:hidden">
+          <div className="report-export-controls print:hidden flex items-center gap-2">
             <ExportMenu
               onExportCsv={() => handleExport("csv")}
               onExportExcel={() => handleExport("xlsx")}
@@ -233,6 +244,16 @@ export function ReportsDashboard({
               isPrinting={isPrinting}
               isLoading={isLoading || !data}
             />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refresh}
+              disabled={isLoading}
+              className="h-8"
+              title="Atualizar relatório"
+            >
+              <IconRefresh className="h-4 w-4" />
+            </Button>
           </div>
         </div>
         <p className="text-sm text-muted-foreground">

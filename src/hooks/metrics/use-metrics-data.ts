@@ -1,13 +1,56 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getConsultationMetrics,
   type ConsultationMetrics,
 } from "@/lib/api/consultations";
-import { useDataFetching } from "@/hooks/filters/use-data-fetching";
+import type { AppError } from "@/errors";
 import type { UseMetricsDataParams, UseMetricsDataReturn } from "./types";
+import { metrics } from "@/lib/query/keys";
+
+// Query function that receives parameters from query context
+async function fetchMetricsData({
+  queryKey,
+}: {
+  queryKey: readonly unknown[];
+}): Promise<ConsultationMetrics> {
+  // Extract parameters from query key
+  // Note: filters and implicitFilters are stringified in the query key for stable comparison
+  const [, , userId, specialtyCode, filtersStr, implicitFiltersStr] =
+    queryKey as [
+      string,
+      string,
+      string,
+      string,
+      string, // stableStringify(filters)
+      string // stableStringify(implicitFilters)
+    ];
+
+  // Parse the stringified filters back to objects
+  const filters = JSON.parse(filtersStr) as Record<string, unknown>;
+  const implicitFilters = JSON.parse(implicitFiltersStr) as Record<
+    string,
+    unknown
+  >;
+
+  // Merge implicit filters with regular filters
+  // Implicit filters take precedence if there's a conflict
+  const mergedFilters = { ...filters, ...implicitFilters };
+  const result = await getConsultationMetrics(
+    userId,
+    mergedFilters,
+    specialtyCode
+  );
+
+  if (!result.success) {
+    throw result.error;
+  }
+
+  return result.data;
+}
 
 /**
  * Hook for fetching and managing metrics data.
- * Uses unified data fetching pattern for consistency.
+ * Now uses React Query for caching and automatic invalidation.
  */
 export function useMetricsData({
   userId,
@@ -15,35 +58,44 @@ export function useMetricsData({
   filters,
   implicitFilters = {},
 }: UseMetricsDataParams): UseMetricsDataReturn {
-  const { data: metrics, isLoading, error, loadData: loadMetrics, retryLoadData: retryLoadMetrics } =
-    useDataFetching<ConsultationMetrics>({
+  const queryClient = useQueryClient();
+  const specialtyCode = specialty?.code;
+
+  const query = useQuery({
+    queryKey: metrics.summary({
+      userId,
+      specialtyCode: specialtyCode || "",
       filters,
-      fetchFunction: async (filtersToUse) => {
-        // Merge implicit filters with regular filters
-        // Implicit filters take precedence if there's a conflict
-        const mergedFilters = { ...filtersToUse, ...implicitFilters };
-        const result = await getConsultationMetrics(userId, mergedFilters, specialty?.code);
-        return {
-          success: result.success,
-          data: result.success ? result.data : undefined,
-          error: result.success ? undefined : result.error,
-        };
-      },
-      // Tie automatic loading to user/specialty AND the current filters snapshot.
-      // This ensures that when filters are restored from localStorage for a metrics tab,
-      // metrics are (re)loaded with the correct filters instead of any stale state
-      // from a previous tab.
-      // Also include implicitFilters in dependencies to reload when they change.
-      loadDependencies: [userId, specialty?.id, JSON.stringify(filters), JSON.stringify(implicitFilters)],
-      errorMessage: "Erro ao carregar métricas",
+      implicitFilters,
+    }),
+    queryFn: fetchMetricsData,
+    enabled: !!(userId && specialtyCode),
+  });
+
+  const loadMetrics = async (filtersOverride?: Partial<typeof filters>) => {
+    // For manual refresh, invalidate the current query
+    await queryClient.invalidateQueries({
+      queryKey: metrics.summary({
+        userId,
+        specialtyCode: specialtyCode || "",
+        filters: filtersOverride ? { ...filters, ...filtersOverride } : filters,
+        implicitFilters,
+      }),
     });
+  };
+
+  const retryLoadMetrics = async () => {
+    // For retry, invalidate and refetch
+    await queryClient.invalidateQueries({
+      queryKey: metrics.prefix({ userId, specialtyCode: specialtyCode || "" }),
+    });
+  };
 
   return {
-    metrics,
-    isLoading,
-    error,
+    metrics: query.data ?? null,
+    isLoading: query.isLoading,
+    error: query.error as AppError | null,
     loadMetrics,
     retryLoadMetrics,
   };
 }
-
