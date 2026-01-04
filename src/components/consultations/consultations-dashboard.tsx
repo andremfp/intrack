@@ -207,6 +207,7 @@ export function ConsultationsDashboard({
             isExportingCsv,
             isExportingExcel,
             onImport: () => setIsImportModalOpen(true),
+            onRefresh: refreshConsultations,
           }}
           isLoading={isLoading}
         />

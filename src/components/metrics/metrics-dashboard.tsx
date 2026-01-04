@@ -153,6 +153,7 @@ export function MetricsDashboard({
         getSexLabel={getSexLabel}
         onExportExcel={handleExportExcel}
         isExportingExcel={isExportingExcel}
+        onRefresh={loadMetrics}
       />
     );
   }
@@ -167,6 +168,7 @@ export function MetricsDashboard({
         hasActiveFilters={hasActiveFilters}
         onExportExcel={handleExportExcel}
         isExportingExcel={isExportingExcel}
+        onRefresh={loadMetrics}
       />
     );
   }

@@ -1,8 +1,32 @@
-import { useState, useCallback, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AppError } from "@/errors";
 import { getReportData } from "@/lib/api/reports";
 import type { MGFReportData } from "@/reports/report-types";
 import type { MGFReportKey } from "@/reports/mgf/mgf-reports";
+import { reports } from "@/lib/query/keys";
+
+// Query function that throws errors instead of returning ApiResponse
+async function fetchReportData({
+  userId,
+  specialtyCode,
+  reportKey,
+}: {
+  userId: string;
+  specialtyCode: string;
+  reportKey: string;
+}): Promise<MGFReportData> {
+  const result = await getReportData({
+    userId,
+    specialtyCode,
+    reportKey,
+  });
+
+  if (!result.success) {
+    throw result.error;
+  }
+
+  return result.data;
+}
 
 export function useReportsData({
   userId,
@@ -13,40 +37,24 @@ export function useReportsData({
   specialtyCode: string;
   reportKey: MGFReportKey;
 }) {
-  const [data, setData] = useState<MGFReportData | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<AppError | null>(null);
+  const queryClient = useQueryClient();
 
-  const loadReport = useCallback(async () => {
-    if (!userId || !reportKey || !specialtyCode) return;
+  const query = useQuery({
+    queryKey: reports.data({ userId, specialtyCode, reportKey }),
+    queryFn: () => fetchReportData({ userId, specialtyCode, reportKey }),
+    enabled: !!(userId && specialtyCode && reportKey),
+  });
 
-    setIsLoading(true);
-    setError(null);
-
-    const result = await getReportData({
-      userId,
-      specialtyCode,
-      reportKey,
+  const refresh = () => {
+    queryClient.invalidateQueries({
+      queryKey: reports.data({ userId, specialtyCode, reportKey }),
     });
-
-    if (result.success) {
-      setData(result.data);
-    } else {
-      setError(result.error);
-      setData(null);
-    }
-
-    setIsLoading(false);
-  }, [reportKey, specialtyCode, userId]);
-
-  useEffect(() => {
-    loadReport();
-  }, [loadReport]);
+  };
 
   return {
-    data,
-    isLoading,
-    error,
-    refresh: loadReport,
+    data: query.data ?? null,
+    isLoading: query.isLoading,
+    error: query.error as AppError | null,
+    refresh,
   };
 }

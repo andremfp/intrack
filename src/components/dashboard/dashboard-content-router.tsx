@@ -22,6 +22,7 @@ export function DashboardContentRouter({
   onAddConsultation,
   onConsultationsRefreshReady,
   onMetricsRefreshReady,
+  onReportsRefreshReady,
 }: DashboardContentRouterProps) {
   return (
     <div className="flex flex-1 flex-col min-h-0">
@@ -63,6 +64,7 @@ export function DashboardContentRouter({
                   userId={userId}
                   specialtyCode={userSpecialty.code}
                   reportKey={activeReportKey as MGFReportKey}
+                  onRefreshReady={onReportsRefreshReady}
                 />
               </div>
             )}
