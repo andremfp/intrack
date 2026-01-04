@@ -24,6 +24,7 @@ export function useFilters({
   filtersKey,
   defaultFilters,
 }: UseFiltersOptions): UseFiltersReturn {
+
   // Memoize reset action creator to maintain stable reference
   const resetActionCreator = useMemo(
     () =>

@@ -7,18 +7,31 @@ import type { AppError } from "@/errors";
 import type { UseMetricsDataParams, UseMetricsDataReturn } from "./types";
 import { metrics } from "@/lib/query/keys";
 
-// Query function that throws errors instead of returning ApiResponse
+// Query function that receives parameters from query context
 async function fetchMetricsData({
-  userId,
-  specialtyCode,
-  filters,
-  implicitFilters,
+  queryKey,
 }: {
-  userId: string;
-  specialtyCode?: string;
-  filters: Record<string, unknown>;
-  implicitFilters: Record<string, unknown>;
+  queryKey: readonly unknown[];
 }): Promise<ConsultationMetrics> {
+  // Extract parameters from query key
+  // Note: filters and implicitFilters are stringified in the query key for stable comparison
+  const [, , userId, specialtyCode, filtersStr, implicitFiltersStr] =
+    queryKey as [
+      string,
+      string,
+      string,
+      string,
+      string, // stableStringify(filters)
+      string // stableStringify(implicitFilters)
+    ];
+
+  // Parse the stringified filters back to objects
+  const filters = JSON.parse(filtersStr) as Record<string, unknown>;
+  const implicitFilters = JSON.parse(implicitFiltersStr) as Record<
+    string,
+    unknown
+  >;
+
   // Merge implicit filters with regular filters
   // Implicit filters take precedence if there's a conflict
   const mergedFilters = { ...filters, ...implicitFilters };
@@ -55,13 +68,7 @@ export function useMetricsData({
       filters,
       implicitFilters,
     }),
-    queryFn: () =>
-      fetchMetricsData({
-        userId,
-        specialtyCode,
-        filters,
-        implicitFilters,
-      }),
+    queryFn: fetchMetricsData,
     enabled: !!(userId && specialtyCode),
   });
 

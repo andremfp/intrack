@@ -18,22 +18,30 @@ import { mergeFilters } from "@/hooks/filters/helpers";
 import { useConsultationsSorting } from "@/hooks/consultations/use-consultations-sorting";
 import { consultations as consultationKeys } from "@/lib/query/keys";
 
-// Query function that throws errors instead of returning ApiResponse
+// Query function that receives parameters from query context
 async function fetchConsultations({
-  userId,
-  specialtyYear,
-  page,
-  pageSize,
-  filters,
-  sorting,
+  queryKey,
 }: {
-  userId: string;
-  specialtyYear: number;
-  page: number;
-  pageSize: number;
-  filters: ConsultationsFilters;
-  sorting: ConsultationsSorting;
+  queryKey: readonly unknown[];
 }): Promise<{ consultations: ConsultationMGF[]; totalCount: number }> {
+  // Extract parameters from query key
+  // Note: filters and sorting are stringified in the query key for stable comparison
+  const [, , userId, specialtyYear, page, pageSize, filtersStr, sortingStr] =
+    queryKey as [
+      string,
+      string,
+      string,
+      number,
+      number,
+      number,
+      string, // stableStringify(filters)
+      string // stableStringify(sorting)
+    ];
+
+  // Parse the stringified filters and sorting back to objects
+  const filters = JSON.parse(filtersStr) as ConsultationsFilters;
+  const sorting = JSON.parse(sortingStr) as ConsultationsSorting;
+
   const result = await getMGFConsultations(
     userId,
     specialtyYear,
@@ -95,7 +103,7 @@ export function useConsultations({
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const hasLoadedConsultationsRef = useRef(false);
+  const hasLoadedConsultationsRef = useRef(false); // Only depend on specialtyYear
 
   const pageSize = PAGINATION_CONSTANTS.CONSULTATIONS_PAGE_SIZE;
 
@@ -103,27 +111,21 @@ export function useConsultations({
   const { sorting, setSorting } = useConsultationsSorting({ specialtyYear });
 
   // React Query for consultations data
+  const queryKey = consultationKeys.list({
+    userId: userId || "",
+    specialtyYear: specialtyYear || 1,
+    page: currentPage,
+    pageSize,
+    filters,
+    sorting,
+  });
+
   const query: UseQueryResult<
     { consultations: ConsultationMGF[]; totalCount: number },
     AppError
   > = useQuery({
-    queryKey: consultationKeys.list({
-      userId: userId || "",
-      specialtyYear: specialtyYear || 1,
-      page: currentPage,
-      pageSize,
-      filters,
-      sorting,
-    }),
-    queryFn: () =>
-      fetchConsultations({
-        userId: userId || "",
-        specialtyYear: specialtyYear || 1,
-        page: currentPage,
-        pageSize,
-        filters,
-        sorting,
-      }),
+    queryKey,
+    queryFn: fetchConsultations,
     enabled: !!(
       userId &&
       specialtyYear &&
