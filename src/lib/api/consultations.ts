@@ -129,7 +129,10 @@ export async function deleteConsultation(
 export async function createConsultationsBatch(
   consultations: ConsultationInsert[]
 ): Promise<
-  ApiResponse<{ created: number; errors: Array<{ index: number; error: string }> }>
+  ApiResponse<{
+    created: number;
+    errors: Array<{ index: number; error: string }>;
+  }>
 > {
   if (consultations.length === 0) {
     return success({ created: 0, errors: [] });
@@ -230,7 +233,6 @@ export async function getConsultationByDateAndProcessNumber(params: {
   return success(consultation);
 }
 
-
 // Generic sorting options for consultations (works for any specialty)
 export interface ConsultationsSorting extends Record<string, unknown> {
   field: ConsultationsSortingField;
@@ -248,7 +250,6 @@ export async function getMGFConsultations(
 ): Promise<
   ApiResponse<{ consultations: ConsultationMGF[]; totalCount: number }>
 > {
-
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -271,7 +272,7 @@ export async function getMGFConsultations(
     if (filters.sex) {
       query = query.eq("sex", filters.sex);
     }
-    
+
     // Age filtering with unit conversion to years
     // For age filtering, we need to consider age_unit and convert to a common unit (years)
     if (filters.ageMin !== undefined || filters.ageMax !== undefined) {
@@ -352,7 +353,10 @@ export async function getMGFConsultations(
       query = query.eq("details->>contraceptive", filters.contraceptive);
     }
     if (filters.new_contraceptive) {
-      query = query.eq("details->>new_contraceptive", filters.new_contraceptive);
+      query = query.eq(
+        "details->>new_contraceptive",
+        filters.new_contraceptive
+      );
     }
   }
 
@@ -504,7 +508,10 @@ export async function getMGFConsultationsForExport(
       query = query.eq("details->>contraceptive", filters.contraceptive);
     }
     if (filters.new_contraceptive) {
-      query = query.eq("details->>new_contraceptive", filters.new_contraceptive);
+      query = query.eq(
+        "details->>new_contraceptive",
+        filters.new_contraceptive
+      );
     }
   }
 
@@ -571,15 +578,14 @@ export async function getConsultationMetrics(
 ): Promise<ApiResponse<ConsultationMetrics>> {
   try {
     // Build query with database-level filtering
-    const viewName = specialtyCode ? `consultations_${specialtyCode}` : "consultations_mgf";
+    const viewName = specialtyCode
+      ? `consultations_${specialtyCode}`
+      : "consultations_mgf";
 
     // Use typed client that allows dynamic view names
     // Supabase types are strict but these views exist in the database
     const typedSupabase = supabase as SupabaseWithDynamicFrom;
-    let query = typedSupabase
-      .from(viewName)
-      .select("*")
-      .eq("user_id", userId);
+    let query = typedSupabase.from(viewName).select("*").eq("user_id", userId);
 
     // Convert year to specialtyYear for API compatibility
     const specialtyYear = filters?.year;
@@ -606,7 +612,10 @@ export async function getConsultationMetrics(
     }
 
     if (filters?.professional_area) {
-      query = query.eq("details->>professional_area", filters.professional_area);
+      query = query.eq(
+        "details->>professional_area",
+        filters.professional_area
+      );
     }
 
     if (filters?.profession) {
@@ -741,18 +750,12 @@ function calculateMetrics(
       (option) => [option.value, option.label]
     )
   );
-  // Total consultations
+  // Initialize all metric maps and counters in single pass
   const totalConsultations = consultations.length;
+  let totalAgeInYears = 0;
+  let validAgeCount = 0;
 
-  // Average age (convert all ages to years)
-  const totalAgeInYears = consultations.reduce((sum, c) => {
-    if (!c.age || !c.age_unit) return sum;
-    return sum + ageToYears(c.age, c.age_unit);
-  }, 0);
-  const averageAge =
-    totalConsultations > 0 ? totalAgeInYears / totalConsultations : 0;
-
-  // By age ranges (years): 0-17, 18-44, 45-64, 65+
+  // Age range buckets: 0-17, 18-44, 45-64, 65+
   const ageRangeBuckets: {
     label: string;
     min: number;
@@ -764,23 +767,38 @@ function calculateMetrics(
     { label: "45-64", min: 45, max: 64, count: 0 },
     { label: "65+", min: 65, count: 0 },
   ];
+
+  // Initialize all maps for counting
+  const monthCounts = new Map<string, number>();
+  const sexCounts = new Map<string, number>();
+  const typeCounts = new Map<string, number>();
+  const presentialCounts = new Map<string, number>();
+  const smokerCounts = new Map<string, number>();
+  const vaccinationPlanCounts = new Map<string, number>();
+  const familyTypeCounts = new Map<string, number>();
+  const schoolLevelCounts = new Map<string, number>();
+  const contraceptiveCounts = new Map<string, number>();
+  const newContraceptiveCounts = new Map<string, number>();
+  const diagnosisCounts = new Map<string, number>();
+  const problemsCounts = new Map<string, number>();
+  const newDiagnosisCounts = new Map<string, number>();
+
+  // Single-pass iteration through all consultations
   consultations.forEach((c) => {
+    // Age calculations (average age and age ranges)
     if (c.age !== null && c.age !== undefined && c.age_unit) {
       const ageYears = ageToYears(c.age, c.age_unit);
+      totalAgeInYears += ageYears;
+      validAgeCount += 1;
+
       const age = Math.floor(ageYears);
       const bucket = ageRangeBuckets.find((b) =>
         b.max !== undefined ? age >= b.min && age <= b.max : age >= b.min
       );
       if (bucket) bucket.count += 1;
     }
-  });
-  const byAgeRange = ageRangeBuckets
-    .filter((b) => b.count > 0)
-    .map((b) => ({ range: b.label, count: b.count }));
 
-  // By month (group by year-month)
-  const monthCounts = new Map<string, number>();
-  consultations.forEach((c) => {
+    // Month grouping
     if (c.date) {
       const date = new Date(c.date);
       const monthKey = `${date.getFullYear()}-${String(
@@ -788,105 +806,59 @@ function calculateMetrics(
       ).padStart(2, "0")}`;
       monthCounts.set(monthKey, (monthCounts.get(monthKey) || 0) + 1);
     }
-  });
-  const byMonth = Array.from(monthCounts.entries())
-    .map(([month, count]) => ({ month, count }))
-    .sort((a, b) => a.month.localeCompare(b.month));
 
-  // By sex
-  const sexCounts = new Map<string, number>();
-  consultations.forEach((c) => {
+    // Sex counting
     if (c.sex) {
       sexCounts.set(c.sex, (sexCounts.get(c.sex) || 0) + 1);
     }
-  });
-  const bySex = Array.from(sexCounts.entries()).map(([sex, count]) => ({
-    sex,
-    count,
-  }));
 
-  // By type - parse the type from JSON if needed
-  const typeCounts = new Map<string, number>();
-  consultations.forEach((c) => {
+    // Type counting
     if (c.type) {
       let typeValue: string;
       if (typeof c.type === "string") {
         typeValue = c.type;
       } else if (typeof c.type === "object" && c.type !== null) {
-        // If it's stored as JSON object, try to extract the value
         typeValue = JSON.stringify(c.type);
       } else {
         return;
       }
       typeCounts.set(typeValue, (typeCounts.get(typeValue) || 0) + 1);
     }
-  });
-  const byType = Array.from(typeCounts.entries())
-    .map(([type, count]) => ({
-      type,
-      label: typeValueToLabel.get(type) ?? type,
-      count,
-    }))
-    .sort((a, b) => b.count - a.count);
 
-  // By presential
-  const presentialCounts = new Map<string, number>();
-  consultations.forEach((c) => {
+    // Presential counting
     if (c.presential !== null && c.presential !== undefined) {
       const key = c.presential ? "true" : "false";
       presentialCounts.set(key, (presentialCounts.get(key) || 0) + 1);
     }
-  });
-  const byPresential = Array.from(presentialCounts.entries()).map(
-    ([presential, count]) => ({
-      presential,
-      count,
-    })
-  );
 
-  // By smoker
-  const smokerCounts = new Map<string, number>();
-  consultations.forEach((c) => {
+    // Smoker counting
     if (c.smoker !== null && c.smoker !== undefined) {
       smokerCounts.set(c.smoker, (smokerCounts.get(c.smoker) || 0) + 1);
     }
-  });
-  const bySmoker = Array.from(smokerCounts.entries()).map(([smoker, count]) => ({
-    smoker,
-    count,
-  }));
 
-  // By vaccination plan
-  const vaccinationPlanCounts = new Map<string, number>();
-  consultations.forEach((c) => {
+    // Vaccination plan counting
     if (c.vaccination_plan !== null && c.vaccination_plan !== undefined) {
       const key = c.vaccination_plan ? "true" : "false";
       vaccinationPlanCounts.set(key, (vaccinationPlanCounts.get(key) || 0) + 1);
     }
-  });
-  const byVaccinationPlan = Array.from(vaccinationPlanCounts.entries()).map(([vaccinationPlan, count]) => ({ vaccinationPlan, count }));
 
-  // By family type
-  const familyTypeCounts = new Map<string, number>();
-  consultations.forEach((c) => {
+    // Family type counting
     if (c.family_type !== null && c.family_type !== undefined) {
-      familyTypeCounts.set(c.family_type, (familyTypeCounts.get(c.family_type) || 0) + 1);
+      familyTypeCounts.set(
+        c.family_type,
+        (familyTypeCounts.get(c.family_type) || 0) + 1
+      );
     }
-  });
-  const byFamilyType = Array.from(familyTypeCounts.entries()).map(([familyType, count]) => ({ familyType, count }));
 
-  // By school level
-  const schoolLevelCounts = new Map<string, number>();
-  consultations.forEach((c) => {
+    // School level counting
     if (c.school_level !== null && c.school_level !== undefined) {
-      schoolLevelCounts.set(c.school_level, (schoolLevelCounts.get(c.school_level) || 0) + 1);
+      schoolLevelCounts.set(
+        c.school_level,
+        (schoolLevelCounts.get(c.school_level) || 0) + 1
+      );
     }
-  });
-  const bySchoolLevel = Array.from(schoolLevelCounts.entries()).map(([schoolLevel, count]) => ({ schoolLevel, count }));
 
-  // By contraceptive
-  const contraceptiveCounts = new Map<string, number>();
-  consultations.forEach((c) => {
+    // Contraceptive counting
     const contraceptive = getDetail(c, "contraceptive");
     if (contraceptive && typeof contraceptive === "string") {
       contraceptiveCounts.set(
@@ -894,14 +866,8 @@ function calculateMetrics(
         (contraceptiveCounts.get(contraceptive) || 0) + 1
       );
     }
-  });
-  const byContraceptive = Array.from(contraceptiveCounts.entries())
-    .map(([contraceptive, count]) => ({ contraceptive, count }))
-    .sort((a, b) => b.count - a.count);
 
-  // By new contraceptive
-  const newContraceptiveCounts = new Map<string, number>();
-  consultations.forEach((c) => {
+    // New contraceptive counting
     const newContraceptive = getDetail(c, "new_contraceptive");
     if (newContraceptive) {
       const key =
@@ -911,18 +877,11 @@ function calculateMetrics(
         (newContraceptiveCounts.get(key) || 0) + 1
       );
     }
-  });
-  const byNewContraceptive = Array.from(newContraceptiveCounts.entries()).map(
-    ([newContraceptive, count]) => ({ newContraceptive, count })
-  );
 
-  // By diagnosis codes (split by semicolon and count each code)
-  const diagnosisCounts = new Map<string, number>();
-  consultations.forEach((c) => {
+    // Diagnosis codes counting
     const diagnosis = getDetail(c, "diagnosis");
-    const codes = Array.isArray(diagnosis) ? diagnosis : [];
-
-    codes.forEach((code) => {
+    const diagnosisCodes = Array.isArray(diagnosis) ? diagnosis : [];
+    diagnosisCodes.forEach((code) => {
       const normalized = String(code).trim();
       if (normalized) {
         diagnosisCounts.set(
@@ -931,18 +890,11 @@ function calculateMetrics(
         );
       }
     });
-  });
-  const byDiagnosis = Array.from(diagnosisCounts.entries())
-    .map(([code, count]) => ({ code, count }))
-    .sort((a, b) => b.count - a.count);
 
-  // By problems codes (split by semicolon and count each code)
-  const problemsCounts = new Map<string, number>();
-  consultations.forEach((c) => {
+    // Problems codes counting
     const problems = getDetail(c, "problems");
-    const codes = Array.isArray(problems) ? problems : [];
-
-    codes.forEach((code) => {
+    const problemsCodes = Array.isArray(problems) ? problems : [];
+    problemsCodes.forEach((code) => {
       const normalized = String(code).trim();
       if (normalized) {
         problemsCounts.set(
@@ -951,18 +903,11 @@ function calculateMetrics(
         );
       }
     });
-  });
-  const byProblems = Array.from(problemsCounts.entries())
-    .map(([code, count]) => ({ code, count }))
-    .sort((a, b) => b.count - a.count);
 
-  // By new diagnosis codes (split by semicolon and count each code)
-  const newDiagnosisCounts = new Map<string, number>();
-  consultations.forEach((c) => {
+    // New diagnosis codes counting
     const newDiagnosis = getDetail(c, "new_diagnosis");
-    const codes = Array.isArray(newDiagnosis) ? newDiagnosis : [];
-
-    codes.forEach((code) => {
+    const newDiagnosisCodes = Array.isArray(newDiagnosis) ? newDiagnosis : [];
+    newDiagnosisCodes.forEach((code) => {
       const normalized = String(code).trim();
       if (normalized) {
         newDiagnosisCounts.set(
@@ -972,6 +917,72 @@ function calculateMetrics(
       }
     });
   });
+  // Calculate final metrics using data from single-pass iteration
+  const averageAge = validAgeCount > 0 ? totalAgeInYears / validAgeCount : 0;
+
+  const byAgeRange = ageRangeBuckets
+    .filter((b) => b.count > 0)
+    .map((b) => ({ range: b.label, count: b.count }));
+
+  const byMonth = Array.from(monthCounts.entries())
+    .map(([month, count]) => ({ month, count }))
+    .sort((a, b) => a.month.localeCompare(b.month));
+
+  const bySex = Array.from(sexCounts.entries()).map(([sex, count]) => ({
+    sex,
+    count,
+  }));
+
+  const byType = Array.from(typeCounts.entries())
+    .map(([type, count]) => ({
+      type,
+      label: typeValueToLabel.get(type) ?? type,
+      count,
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  const byPresential = Array.from(presentialCounts.entries()).map(
+    ([presential, count]) => ({
+      presential,
+      count,
+    })
+  );
+
+  const bySmoker = Array.from(smokerCounts.entries()).map(
+    ([smoker, count]) => ({
+      smoker,
+      count,
+    })
+  );
+
+  const byVaccinationPlan = Array.from(vaccinationPlanCounts.entries()).map(
+    ([vaccinationPlan, count]) => ({ vaccinationPlan, count })
+  );
+
+  const byFamilyType = Array.from(familyTypeCounts.entries()).map(
+    ([familyType, count]) => ({ familyType, count })
+  );
+
+  const bySchoolLevel = Array.from(schoolLevelCounts.entries()).map(
+    ([schoolLevel, count]) => ({ schoolLevel, count })
+  );
+
+  const byContraceptive = Array.from(contraceptiveCounts.entries())
+    .map(([contraceptive, count]) => ({ contraceptive, count }))
+    .sort((a, b) => b.count - a.count);
+
+  const byNewContraceptive = Array.from(newContraceptiveCounts.entries()).map(
+    ([newContraceptive, count]) => ({ newContraceptive, count })
+  );
+
+  const byDiagnosis = Array.from(diagnosisCounts.entries())
+    .map(([code, count]) => ({ code, count }))
+    .sort((a, b) => b.count - a.count);
+
+  const byProblems = Array.from(problemsCounts.entries())
+    .map(([code, count]) => ({ code, count }))
+    .sort((a, b) => b.count - a.count);
+
   const byNewDiagnosis = Array.from(newDiagnosisCounts.entries())
     .map(([code, count]) => ({ code, count }))
     .sort((a, b) => b.count - a.count);

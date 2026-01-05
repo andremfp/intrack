@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import {
   useQuery,
   useQueryClient,
@@ -109,6 +109,9 @@ export function useConsultations({
 
   // Sorting state & persistence, kept separate from filters
   const { sorting, setSorting } = useConsultationsSorting({ specialtyYear });
+
+  // Memoize filter hash to avoid unnecessary re-renders
+  const filtersHash = useMemo(() => JSON.stringify(filters), [filters]);
 
   // React Query for consultations data
   const queryKey = consultationKeys.list({
@@ -329,7 +332,7 @@ export function useConsultations({
     specialtyYear,
     mainTab,
     // React to filter content changes, not just reference
-    JSON.stringify(filters),
+    filtersHash,
     sorting.field,
     sorting.order,
   ]);

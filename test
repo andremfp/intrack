@@ -1,0 +1,26 @@
+#!/bin/bash
+TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjU0MzIxL2F1dGgvdjEiLCJzdWIiOiI3ODUwNzE2MS1mNDdiLTQ0MzYtYTMwOC0wZWQ3NmY4N2Y5N2UiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzY3NjM4MjY4LCJpYXQiOjE3Njc2MzQ2NjgsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsInBob25lIjoiIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZW1haWwiLCJwcm92aWRlcnMiOlsiZW1haWwiXX0sInVzZXJfbWV0YWRhdGEiOnsiZGlzcGxheV9uYW1lIjoiSm_Do28gU2lsdmEiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZX0sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoicGFzc3dvcmQiLCJ0aW1lc3RhbXAiOjE3Njc2MjM2NjR9XSwic2Vzc2lvbl9pZCI6IjRiOGJlMTAwLTQxNDctNDg4Mi1iNTRkLWY1NjI2NTcyMTQwNCIsImlzX2Fub255bW91cyI6ZmFsc2V9.nsETsztS7l6C9oQEyfYkS2e045lPvS8rRmLm1bjMEhQ"
+for i in {1..6}; do
+  echo "Request $i:"
+  RESP="$(
+    curl -sS -X POST http://127.0.0.1:54321/functions/v1/rate-limit \
+      -H "Authorization: Bearer $TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{"operationType": "import"}' \
+      -w '\n__HTTP_STATUS__:%{http_code}\n'
+  )"
+
+  STATUS="$(echo "$RESP" | sed -n 's/^__HTTP_STATUS__://p')"
+  BODY="$(echo "$RESP" | sed '/^__HTTP_STATUS__:/d')"
+
+  echo "HTTP $STATUS"
+  echo "$BODY" | jq . 2>/dev/null || echo "$BODY"
+  echo "$BODY" | jq -r '
+    if .error then
+      "ERROR: \(.error.code) - \(.error.message)"
+    else
+      "OK: success=\(.success // "n/a") allowed=\(.allowed // "n/a") remaining=\(.remainingRequests // "n/a") reset=\(.resetTime // "n/a")"
+    end
+  ' 2>/dev/null || true
+  sleep 1
+done

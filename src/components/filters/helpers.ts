@@ -25,6 +25,21 @@ export type FiltersRecord = Record<string, unknown>;
 export const hasValue = (value: unknown) =>
   value !== undefined && value !== "" && value !== null;
 
+/**
+ * Simple debounce utility for filter inputs
+ * Delays execution until after wait milliseconds have passed since the last call
+ */
+function debounce<T extends (...args: unknown[]) => void>(
+  func: T,
+  wait: number
+): T {
+  let timeout: NodeJS.Timeout | null = null;
+  return ((...args: Parameters<T>) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  }) as T;
+}
+
 export interface FilterBadgeConfig {
   id: string;
   label: string;
@@ -122,27 +137,36 @@ export function createFilterSetters(
   for (const field of fields) {
     const fieldName = String(field);
     const fieldType = getFieldType(fieldName);
-    
-    setters[fieldName] = (value) => {
+
+    // Create the base setter function with type coercion
+    const baseSetter = (value: unknown) => {
       let coercedValue: unknown = value;
-      
+
       // Coerce value to appropriate type
       if (fieldType === "number") {
-        coercedValue = value === "" || value === undefined || value === null 
-          ? undefined 
+        coercedValue = value === "" || value === undefined || value === null
+          ? undefined
           : Number(value);
       } else if (fieldType === "boolean") {
-        coercedValue = value === undefined || value === null 
-          ? undefined 
+        coercedValue = value === undefined || value === null
+          ? undefined
           : Boolean(value);
       } else {
-        coercedValue = value === "" || value === undefined || value === null 
-          ? undefined 
+        coercedValue = value === "" || value === undefined || value === null
+          ? undefined
           : String(value);
       }
-      
+
       setFilter(field as keyof ConsultationsFilters, coercedValue as never);
     };
+
+    // Apply debouncing to text inputs to prevent excessive API calls
+    // Use 300ms debounce for text inputs, no debounce for selects/dates
+    if (fieldType === "string" && ["internship", "location", "processNumber"].includes(fieldName)) {
+      setters[fieldName] = debounce(baseSetter, 300);
+    } else {
+      setters[fieldName] = baseSetter;
+    }
   }
   return setters;
 }
