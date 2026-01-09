@@ -17,7 +17,7 @@
     "sb:local:stop": "npx supabase stop",
     "sb:local:status": "npx supabase status",
     "sb:local:db:redeploy": "npx supabase db reset",
-    "sb:local:functions:deploy": "npx supabase functions serve rate-limit",
+    "sb:local:functions:deploy": "npx supabase functions serve rate-limit &",
     "sb:local:db:pull": "npx supabase db pull",
     "sb:local:db:diff": "npx supabase db diff",
     "sb:local:db:migration:new": "npx supabase migration new",
