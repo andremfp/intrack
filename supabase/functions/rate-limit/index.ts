@@ -50,7 +50,9 @@ export default {
       // Supabase injects these automatically for `supabase functions serve` and for deployed functions.
       const supabaseUrl = getRequiredEnv("SUPABASE_URL");
       const supabaseAnonKey = getRequiredEnv("SUPABASE_ANON_KEY");
-      const supabaseServiceKey = getRequiredEnv("SUPABASE_SERVICE_ROLE_KEY");
+      const supabaseServiceKey =
+        getRequiredEnv("SERVICE_ROLE_KEY") ??
+        getRequiredEnv("SUPABASE_SERVICE_ROLE_KEY");
 
       console.log(
         "Environment check:",
@@ -65,7 +67,7 @@ export default {
       if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
         return createErrorResponse(
           "CONFIG_ERROR",
-          "Missing required Supabase environment variables (SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY). For local dev, run `supabase functions serve ...` (it injects these). For production, set them via `supabase secrets set`.",
+          "Missing required Supabase environment variables (SUPABASE_URL, SUPABASE_ANON_KEY, SERVICE_ROLE_KEY/SUPABASE_SERVICE_ROLE_KEY). For local dev, Supabase injects `SUPABASE_SERVICE_ROLE_KEY`, so set whichever name you rely on via `supabase secrets set` or your shell.",
           500
         );
       }
