@@ -2,7 +2,7 @@ import { DataErrorDisplay } from "@/components/ui/data-error-display";
 import { ExportMenu } from "@/components/ui/export-menu";
 import { Button } from "@/components/ui/button";
 import { IconRefresh } from "@tabler/icons-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ComponentType } from "react";
 import type { ReactElement } from "react";
 import type { DocumentProps } from "@react-pdf/renderer";
@@ -18,6 +18,8 @@ import {
   downloadReportPdfReact,
 } from "@/exports/helpers";
 import { toasts } from "@/utils/toasts";
+import { checkRateLimit, clearRateLimitCache } from "@/lib/api/rate-limit";
+import { ErrorMessages } from "@/errors";
 
 const reportSectionsLoaders = import.meta.glob("./*/sections.tsx");
 const reportPdfLoaders = import.meta.glob("./*/pdf.tsx");
@@ -52,13 +54,7 @@ export function ReportsDashboard({
   const [isExportingExcel, setIsExportingExcel] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const reportRef = useRef<HTMLDivElement | null>(null);
-
-  // Register refresh function with parent component
-  useEffect(() => {
-    if (onRefreshReady) {
-      onRefreshReady(async () => refresh());
-    }
-  }, [onRefreshReady, refresh]);
+  const [isCheckingRateLimit, setIsCheckingRateLimit] = useState(false);
 
   useEffect(() => {
     let canceled = false;
@@ -113,8 +109,45 @@ export function ReportsDashboard({
     };
   }, [definition, specialtyCode]);
 
+  const ensureRateLimitAllowed = useCallback(async () => {
+    if (isCheckingRateLimit) {
+      return false;
+    }
+
+    setIsCheckingRateLimit(true);
+    try {
+      const result = await checkRateLimit("report");
+      if (!result.success || !result.data.allowed) {
+        toasts.error("Erro", ErrorMessages.TOO_MANY_REQUESTS);
+        return false;
+      }
+
+      return true;
+    } finally {
+      setIsCheckingRateLimit(false);
+    }
+  }, [isCheckingRateLimit]);
+
+  const refreshWithRateLimit = useCallback(async () => {
+    const canRefresh = await ensureRateLimitAllowed();
+    if (canRefresh) {
+      refresh();
+    }
+  }, [ensureRateLimitAllowed, refresh]);
+
+  useEffect(() => {
+    if (onRefreshReady) {
+      onRefreshReady(refreshWithRateLimit);
+    }
+  }, [onRefreshReady, refreshWithRateLimit]);
+
   const handleExport = async (format: "csv" | "xlsx" | "pdf") => {
     if (!data || !definition) return;
+
+    const canExport = await ensureRateLimitAllowed();
+    if (!canExport) {
+      return;
+    }
 
     const metadataRows = buildReportExportMetadataRows({
       specialtyCode,
@@ -136,6 +169,7 @@ export function ReportsDashboard({
           reportLabel: definition.label,
         });
         downloadCsv(table, `${baseFilename}.csv`);
+        clearRateLimitCache("report");
       } catch {
         toasts.error(
           "Erro ao exportar relatório",
@@ -160,6 +194,7 @@ export function ReportsDashboard({
           return;
         }
         await downloadXlsx(sheets, `${baseFilename}.xlsx`);
+        clearRateLimitCache("report");
       } catch {
         toasts.error(
           "Erro ao exportar relatório",
@@ -198,6 +233,7 @@ export function ReportsDashboard({
         },
       });
       await downloadReportPdfReact({ filename, pdfDocument });
+      clearRateLimitCache("report");
       console.debug("[ReportsDashboard] PDF export succeeded", { filename });
     } catch (error) {
       console.error("[ReportsDashboard] downloadReportPdf failed", {
@@ -219,6 +255,8 @@ export function ReportsDashboard({
   if (!definition) {
     return <p className="text-sm text-destructive">Relatório inválido.</p>;
   }
+
+  const isExportMenuBusy = isLoading || !data || isCheckingRateLimit;
 
   return (
     <div
@@ -242,13 +280,15 @@ export function ReportsDashboard({
               isExportingCsv={isExportingCsv}
               isExportingExcel={isExportingExcel}
               isPrinting={isPrinting}
-              isLoading={isLoading || !data}
+              isLoading={isExportMenuBusy}
             />
             <Button
               variant="outline"
               size="sm"
-              onClick={refresh}
-              disabled={isLoading}
+              onClick={() => {
+                void refreshWithRateLimit();
+              }}
+              disabled={isLoading || isCheckingRateLimit}
               className="h-8"
               title="Atualizar relatório"
             >
@@ -284,7 +324,9 @@ export function ReportsDashboard({
       {error && (
         <DataErrorDisplay
           error={error}
-          onRetry={refresh}
+          onRetry={() => {
+            void refreshWithRateLimit();
+          }}
           title="Erro ao carregar o relatório"
         />
       )}

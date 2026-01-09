@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import {
   useQuery,
   useQueryClient,
@@ -17,6 +17,8 @@ import { PAGINATION_CONSTANTS, TAB_CONSTANTS } from "@/constants";
 import { mergeFilters } from "@/hooks/filters/helpers";
 import { useConsultationsSorting } from "@/hooks/consultations/use-consultations-sorting";
 import { consultations as consultationKeys } from "@/lib/query/keys";
+import { clearRateLimitCache } from "@/lib/api/rate-limit";
+import { ensureBulkDeleteAllowed as ensureBulkDeleteAllowedRateLimit } from "@/lib/api/bulk-delete-rate-limit";
 
 // Query function that receives parameters from query context
 async function fetchConsultations({
@@ -86,6 +88,7 @@ interface UseConsultationsResult {
     ids: string[]
   ) => Promise<{ deletedIds: string[]; failedIds: string[] }>;
   refreshConsultations: () => Promise<void>;
+  isCheckingDeleteRateLimit: boolean;
 }
 
 /**
@@ -104,11 +107,16 @@ export function useConsultations({
   const [currentPage, setCurrentPage] = useState(1);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const hasLoadedConsultationsRef = useRef(false); // Only depend on specialtyYear
+  const [isCheckingDeleteRateLimit, setIsCheckingDeleteRateLimit] =
+    useState(false);
 
   const pageSize = PAGINATION_CONSTANTS.CONSULTATIONS_PAGE_SIZE;
 
   // Sorting state & persistence, kept separate from filters
   const { sorting, setSorting } = useConsultationsSorting({ specialtyYear });
+
+  // Memoize filter hash to avoid unnecessary re-renders
+  const filtersHash = useMemo(() => JSON.stringify(filters), [filters]);
 
   // React Query for consultations data
   const queryKey = consultationKeys.list({
@@ -211,6 +219,19 @@ export function useConsultations({
     [userId, specialtyYear]
   );
 
+  const ensureBulkDeleteAllowed = useCallback(async () => {
+    if (isCheckingDeleteRateLimit) {
+      return false;
+    }
+
+    setIsCheckingDeleteRateLimit(true);
+    try {
+      return await ensureBulkDeleteAllowedRateLimit();
+    } finally {
+      setIsCheckingDeleteRateLimit(false);
+    }
+  }, [ensureBulkDeleteAllowedRateLimit, isCheckingDeleteRateLimit]);
+
   const handleBulkDelete = useCallback(
     async (
       ids: string[]
@@ -218,6 +239,13 @@ export function useConsultations({
       deletedIds: string[];
       failedIds: string[];
     }> => {
+      const canDelete = await ensureBulkDeleteAllowed();
+      if (!canDelete) {
+        return { deletedIds: [], failedIds: ids };
+      }
+
+      clearRateLimitCache("bulk_delete");
+
       if (!userId || !specialtyYear) {
         return { deletedIds: [], failedIds: ids };
       }
@@ -282,7 +310,7 @@ export function useConsultations({
         return { deletedIds: [], failedIds: ids };
       }
     },
-    [userId, specialtyYear, queryClient]
+    [userId, specialtyYear, queryClient, ensureBulkDeleteAllowed]
   );
 
   const refreshConsultations = useCallback(async () => {
@@ -329,7 +357,7 @@ export function useConsultations({
     specialtyYear,
     mainTab,
     // React to filter content changes, not just reference
-    JSON.stringify(filters),
+    filtersHash,
     sorting.field,
     sorting.order,
   ]);
@@ -349,5 +377,6 @@ export function useConsultations({
     handlePageChange,
     handleBulkDelete,
     refreshConsultations,
+    isCheckingDeleteRateLimit,
   };
 }

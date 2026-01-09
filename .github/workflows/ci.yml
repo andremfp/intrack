@@ -55,10 +55,17 @@ jobs:
         with:
           version: latest
 
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: "2.6.3"
+
       - name: Start Local Supabase
         run: |
           npm run sb:local:start
           npm run sb:local:db:seed:users
+
+      - name: Deploy Functions
+        run: npm run sb:local:functions:deploy
 
       - name: Verify Types
         run: npm run sb:local:generate:schema && git diff --exit-code src/schema.ts
