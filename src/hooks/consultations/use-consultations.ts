@@ -17,8 +17,8 @@ import { PAGINATION_CONSTANTS, TAB_CONSTANTS } from "@/constants";
 import { mergeFilters } from "@/hooks/filters/helpers";
 import { useConsultationsSorting } from "@/hooks/consultations/use-consultations-sorting";
 import { consultations as consultationKeys } from "@/lib/query/keys";
-import { checkRateLimit, clearRateLimitCache } from "@/lib/api/rate-limit";
-import { ErrorMessages } from "@/errors";
+import { clearRateLimitCache } from "@/lib/api/rate-limit";
+import { ensureBulkDeleteAllowed as ensureBulkDeleteAllowedRateLimit } from "@/lib/api/bulk-delete-rate-limit";
 
 // Query function that receives parameters from query context
 async function fetchConsultations({
@@ -226,17 +226,11 @@ export function useConsultations({
 
     setIsCheckingDeleteRateLimit(true);
     try {
-      const result = await checkRateLimit("bulk_delete");
-      if (!result.success || !result.data.allowed) {
-        toasts.error("Erro", ErrorMessages.TOO_MANY_REQUESTS);
-        return false;
-      }
-
-      return true;
+      return await ensureBulkDeleteAllowedRateLimit();
     } finally {
       setIsCheckingDeleteRateLimit(false);
     }
-  }, [isCheckingDeleteRateLimit]);
+  }, [ensureBulkDeleteAllowedRateLimit, isCheckingDeleteRateLimit]);
 
   const handleBulkDelete = useCallback(
     async (
