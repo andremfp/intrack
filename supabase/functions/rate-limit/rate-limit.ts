@@ -44,9 +44,9 @@ type RateLimitTable = {
   };
 };
 
-type SupabaseClient = {
+export interface SupabaseClient {
   from(table: "rate_limits"): RateLimitTable;
-};
+}
 
 /**
  * Check and update rate limit for a user operation

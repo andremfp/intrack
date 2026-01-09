@@ -22,6 +22,7 @@ export const ErrorMessages = {
   SPECIALTY_UPDATE_FAILED: "Não foi possível atualizar a especialidade.",
   NO_FIELDS_TO_UPDATE: "Nenhum campo para atualizar.",
   DELETE_ACCOUNT_FAILED: "Não foi possível eliminar a conta.",
+  TOO_MANY_REQUESTS: "Demasiados pedidos. Tente novamente mais tarde.",
 } as const;
 
 // Convert any error to AppError with friendly message
@@ -44,7 +45,11 @@ export function handleError(error: unknown, context?: string): AppError {
 
   // Supabase errors
   if (error && typeof error === "object" && "code" in error) {
-    const supaError = error as { code: string; message?: string; details?: string };
+    const supaError = error as {
+      code: string;
+      message?: string;
+      details?: string;
+    };
 
     // Unique constraint violation on consultations (date + process_number)
     if (supaError.code === "23505") {

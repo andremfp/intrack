@@ -28,6 +28,7 @@ interface TableToolbarProps {
   onImport?: () => void;
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  isBulkDeleting?: boolean;
 }
 
 export function TableToolbar({
@@ -49,6 +50,7 @@ export function TableToolbar({
   onImport,
   onRefresh,
   isRefreshing = false,
+  isBulkDeleting = false,
 }: TableToolbarProps) {
   return (
     <div className="flex items-center justify-between flex-shrink-0 gap-2 pt-2">
@@ -124,6 +126,7 @@ export function TableToolbar({
                 size="sm"
                 onClick={onHandleBulkDelete}
                 className="h-8 flex-shrink-0"
+                disabled={isBulkDeleting}
               >
                 <IconTrash className="h-4 w-4" />
                 <span className="hidden lg:inline">Eliminar Selecionadas</span>

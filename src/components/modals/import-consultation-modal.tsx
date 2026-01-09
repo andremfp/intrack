@@ -34,11 +34,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ImportSchemaGuide } from "@/imports/schema-guide-component";
 import { SCROLLBAR_CLASSES } from "@/constants";
-import {
-  checkRateLimit,
-  type RateLimitErrorDetails,
-  type RateLimitStatus,
-} from "@/lib/api/rate-limit";
+import { checkRateLimit, clearRateLimitCache } from "@/lib/api/rate-limit";
+import { ErrorMessages } from "@/errors";
 
 interface ImportConsultationModalProps {
   userId: string;
@@ -65,8 +62,6 @@ export function ImportConsultationModal({
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [parseError, setParseError] = useState<string | null>(null);
   const [isCheckingRateLimit, setIsCheckingRateLimit] = useState(false);
-  const [rateLimitStatus, setRateLimitStatus] =
-    useState<RateLimitStatus | null>(null);
 
   type DuplicateDecision = "create" | "keep-existing" | "overwrite";
   const [duplicateDecisions, setDuplicateDecisions] = useState<
@@ -80,20 +75,9 @@ export function ImportConsultationModal({
   const handleClose = () => {
     if (isParsing || isImporting || isCheckingRateLimit) return;
     setIsClosing(true);
-    setRateLimitStatus(null);
     setTimeout(() => {
       onClose();
     }, 300);
-  };
-
-  const formatResetTime = (value?: string | null): string | null => {
-    if (!value) return null;
-    const candidate = new Date(value);
-    if (Number.isNaN(candidate.getTime())) return null;
-    return candidate.toLocaleTimeString("pt-PT", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   };
 
   // Prevent body scroll when modal is open
@@ -114,7 +98,6 @@ export function ImportConsultationModal({
       setSelectedRows(new Set());
       setDuplicateDecisions({});
       setDuplicateExistingIds({});
-      setRateLimitStatus(null);
       setIsParsing(true);
 
       try {
@@ -316,38 +299,12 @@ export function ImportConsultationModal({
       setIsCheckingRateLimit(false);
     });
 
-    if (!rateLimitResponse.success) {
-      const details = rateLimitResponse.error.details as
-        | RateLimitErrorDetails
-        | undefined;
-      if (details?.status === 429) {
-        const formattedReset = formatResetTime(details.resetTime);
-        toasts.warning(
-          "Limite de importações atingido",
-          formattedReset
-            ? `Tente novamente às ${formattedReset}.`
-            : rateLimitResponse.error.userMessage
-        );
-        return;
-      }
-
-      toasts.apiError(rateLimitResponse.error, "Erro no limite de importações");
+    if (!rateLimitResponse.success || !rateLimitResponse.data.allowed) {
+      toasts.error("Erro", ErrorMessages.TOO_MANY_REQUESTS);
       return;
     }
 
-    setRateLimitStatus(rateLimitResponse.data);
-
-    if (!rateLimitResponse.data.allowed) {
-      const formattedReset = formatResetTime(rateLimitResponse.data.resetTime);
-      toasts.warning(
-        "Limite de importações atingido",
-        formattedReset
-          ? `Tente novamente às ${formattedReset}.`
-          : "Tente novamente mais tarde."
-      );
-      return;
-    }
-
+    clearRateLimitCache("import");
     setIsImporting(true);
 
     try {
@@ -451,9 +408,6 @@ export function ImportConsultationModal({
   const validSelectedCount = Array.from(selectedRows).filter(
     (index) => previewData?.consultations[index].errors.length === 0
   ).length;
-  const rateLimitResetLabel = rateLimitStatus?.resetTime
-    ? formatResetTime(rateLimitStatus.resetTime)
-    : null;
 
   return (
     <>
@@ -830,7 +784,6 @@ export function ImportConsultationModal({
                   setPreviewData(null);
                   setSelectedRows(new Set());
                   setParseError(null);
-                  setRateLimitStatus(null);
                 }}
                 disabled={isImporting || isCheckingRateLimit}
                 className="w-full sm:w-auto"
@@ -878,16 +831,6 @@ export function ImportConsultationModal({
                   )}
                 </Button>
               </div>
-              {rateLimitStatus && (
-                <p className="text-xs text-muted-foreground mt-2 sm:mt-1">
-                  Restam {rateLimitStatus.remainingRequests} importação
-                  {rateLimitStatus.remainingRequests !== 1 ? "s" : ""} nesta
-                  janela
-                  {rateLimitResetLabel
-                    ? ` • Repor às ${rateLimitResetLabel}.`
-                    : "."}
-                </p>
-              )}
             </div>
           )}
         </Card>

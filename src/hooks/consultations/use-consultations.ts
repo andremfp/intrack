@@ -17,6 +17,8 @@ import { PAGINATION_CONSTANTS, TAB_CONSTANTS } from "@/constants";
 import { mergeFilters } from "@/hooks/filters/helpers";
 import { useConsultationsSorting } from "@/hooks/consultations/use-consultations-sorting";
 import { consultations as consultationKeys } from "@/lib/query/keys";
+import { checkRateLimit, clearRateLimitCache } from "@/lib/api/rate-limit";
+import { ErrorMessages } from "@/errors";
 
 // Query function that receives parameters from query context
 async function fetchConsultations({
@@ -86,6 +88,7 @@ interface UseConsultationsResult {
     ids: string[]
   ) => Promise<{ deletedIds: string[]; failedIds: string[] }>;
   refreshConsultations: () => Promise<void>;
+  isCheckingDeleteRateLimit: boolean;
 }
 
 /**
@@ -104,6 +107,8 @@ export function useConsultations({
   const [currentPage, setCurrentPage] = useState(1);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const hasLoadedConsultationsRef = useRef(false); // Only depend on specialtyYear
+  const [isCheckingDeleteRateLimit, setIsCheckingDeleteRateLimit] =
+    useState(false);
 
   const pageSize = PAGINATION_CONSTANTS.CONSULTATIONS_PAGE_SIZE;
 
@@ -214,6 +219,25 @@ export function useConsultations({
     [userId, specialtyYear]
   );
 
+  const ensureBulkDeleteAllowed = useCallback(async () => {
+    if (isCheckingDeleteRateLimit) {
+      return false;
+    }
+
+    setIsCheckingDeleteRateLimit(true);
+    try {
+      const result = await checkRateLimit("bulk_delete");
+      if (!result.success || !result.data.allowed) {
+        toasts.error("Erro", ErrorMessages.TOO_MANY_REQUESTS);
+        return false;
+      }
+
+      return true;
+    } finally {
+      setIsCheckingDeleteRateLimit(false);
+    }
+  }, [isCheckingDeleteRateLimit]);
+
   const handleBulkDelete = useCallback(
     async (
       ids: string[]
@@ -221,6 +245,13 @@ export function useConsultations({
       deletedIds: string[];
       failedIds: string[];
     }> => {
+      const canDelete = await ensureBulkDeleteAllowed();
+      if (!canDelete) {
+        return { deletedIds: [], failedIds: ids };
+      }
+
+      clearRateLimitCache("bulk_delete");
+
       if (!userId || !specialtyYear) {
         return { deletedIds: [], failedIds: ids };
       }
@@ -285,7 +316,7 @@ export function useConsultations({
         return { deletedIds: [], failedIds: ids };
       }
     },
-    [userId, specialtyYear, queryClient]
+    [userId, specialtyYear, queryClient, ensureBulkDeleteAllowed]
   );
 
   const refreshConsultations = useCallback(async () => {
@@ -352,5 +383,6 @@ export function useConsultations({
     handlePageChange,
     handleBulkDelete,
     refreshConsultations,
+    isCheckingDeleteRateLimit,
   };
 }

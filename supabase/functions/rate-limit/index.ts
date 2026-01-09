@@ -6,7 +6,11 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { checkRateLimit, getRateLimitStatus } from "./rate-limit.ts";
+import {
+  checkRateLimit,
+  getRateLimitStatus,
+  type SupabaseClient,
+} from "./rate-limit.ts";
 import {
   isValidOperationType,
   createErrorResponse,
@@ -48,12 +52,15 @@ export default {
       const supabaseAnonKey = getRequiredEnv("SUPABASE_ANON_KEY");
       const supabaseServiceKey = getRequiredEnv("SUPABASE_SERVICE_ROLE_KEY");
 
-      console.log("Environment check:", {
-        supabaseUrl: supabaseUrl ?? "MISSING",
-        supabaseAnonKey: supabaseAnonKey ? "SET" : "MISSING",
-        supabaseServiceKey: supabaseServiceKey ? "SET" : "MISSING",
-        testUserId: Deno.env.get("TEST_USER_ID") ? "SET" : "MISSING",
-      });
+      console.log(
+        "Environment check:",
+        JSON.stringify({
+          supabaseUrl: supabaseUrl ?? "MISSING",
+          supabaseAnonKey: supabaseAnonKey ? "SET" : "MISSING",
+          supabaseServiceKey: supabaseServiceKey ? "SET" : "MISSING",
+          testUserId: Deno.env.get("TEST_USER_ID") ? "SET" : "MISSING",
+        })
+      );
 
       if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
         return createErrorResponse(
@@ -141,10 +148,22 @@ export default {
           );
         }
 
+        const rateLimitSupabase = supabase as unknown as SupabaseClient;
         const status = await getRateLimitStatus(
-          supabase,
+          rateLimitSupabase,
           userId,
           operationType
+        );
+        console.log(
+          "rate_limit.status",
+          JSON.stringify({
+            userId,
+            operationType,
+            remainingRequests: status.remainingRequests,
+            resetTime: status.resetTime,
+            allowed: status.allowed,
+            source: "edge_function",
+          })
         );
         return createSuccessResponse(status);
       } else if (request.method === "POST") {
@@ -180,19 +199,48 @@ export default {
           windowStart: requestBody.windowStart,
         };
 
-        console.log("About to call checkRateLimit with:", {
-          userId,
-          operationType,
-          windowStart: requestBody.windowStart,
-          supabaseUrl: !!supabase,
-        });
+        console.log(
+          "rate_limit.check_request",
+          JSON.stringify({
+            userId,
+            operationType,
+            windowStart: requestBody.windowStart,
+            method: "POST",
+          })
+        );
 
-        const result = await checkRateLimit(supabase, rateLimitRequest);
+        const rateLimitSupabase = supabase as unknown as SupabaseClient;
+        const result = await checkRateLimit(
+          rateLimitSupabase,
+          rateLimitRequest
+        );
 
-        console.log("checkRateLimit result:", result);
+        console.log(
+          "rate_limit.check_response",
+          JSON.stringify({
+            userId,
+            operationType,
+            allowed: result.allowed,
+            remainingRequests: result.remainingRequests,
+            resetTime: result.resetTime,
+            retryAfter: result.retryAfter,
+            source: "edge_function",
+          })
+        );
 
         if (!result.allowed) {
           // Rate limit exceeded
+          console.warn(
+            "rate_limit.block",
+            JSON.stringify({
+              userId,
+              operationType,
+              remainingRequests: result.remainingRequests,
+              resetTime: result.resetTime,
+              retryAfter: result.retryAfter,
+              source: "edge_function",
+            })
+          );
           return createErrorResponse(
             "RATE_LIMIT_EXCEEDED",
             `Rate limit exceeded for ${operationType} operation`,
@@ -222,13 +270,15 @@ export default {
         500
       );
     } catch (error) {
-      console.error("Rate limit function error:", error);
-      // Log more details for debugging
-      if (error instanceof Error) {
-        console.error("Error name:", error.name);
-        console.error("Error message:", error.message);
-        console.error("Error stack:", error.stack);
-      }
+      console.error(
+        "rate_limit.error",
+        JSON.stringify({
+          message: error instanceof Error ? error.message : String(error),
+          name: error instanceof Error ? error.name : "Unknown",
+          stack: error instanceof Error ? error.stack : undefined,
+          timestamp: new Date().toISOString(),
+        })
+      );
 
       return createErrorResponse(
         "INTERNAL_ERROR",

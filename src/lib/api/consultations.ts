@@ -1,7 +1,7 @@
 import { supabase } from "@/supabase";
 import type { ApiResponse } from "@/errors";
 import type { Tables, TablesInsert, TablesUpdate } from "@/schema";
-import { success, failure, AppError } from "@/errors";
+import { success, failure, AppError, ErrorMessages } from "@/errors";
 import { normalizeToISODate } from "@/utils/utils";
 import {
   getDefaultSpecialtyDetails,
@@ -12,6 +12,8 @@ import {
   type ConsultationsSortingField,
 } from "@/constants";
 import { sortConsultationsWithFavorites } from "@/lib/api/helpers";
+import { checkRateLimit, clearRateLimitCache } from "@/lib/api/rate-limit";
+import type { RateLimitOperation } from "@/lib/api/rate-limit";
 
 export type Consultation = Tables<"consultations">;
 export type ConsultationInsert = TablesInsert<"consultations">;
@@ -45,6 +47,28 @@ export type ConsultationsFilters = {
   profession?: string;
   vaccination_plan?: string;
 };
+
+async function ensureOperationAllowed(
+  operation: RateLimitOperation
+): Promise<AppError | null> {
+  const result = await checkRateLimit(operation, undefined, { force: true });
+  if (!result.success) {
+    return result.error;
+  }
+  if (!result.data.allowed) {
+    return new AppError(ErrorMessages.TOO_MANY_REQUESTS);
+  }
+
+  return null;
+}
+
+function successWithClear<T>(
+  data: T,
+  operation: RateLimitOperation
+): ApiResponse<T> {
+  clearRateLimitCache(operation);
+  return success(data);
+}
 
 /**
  * Prepares complete details object for a consultation
@@ -134,6 +158,11 @@ export async function createConsultationsBatch(
     errors: Array<{ index: number; error: string }>;
   }>
 > {
+  const rateLimitError = await ensureOperationAllowed("import");
+  if (rateLimitError) {
+    return failure(rateLimitError, "createConsultationsBatch");
+  }
+
   if (consultations.length === 0) {
     return success({ created: 0, errors: [] });
   }
@@ -182,7 +211,7 @@ export async function createConsultationsBatch(
     globalIndex += chunk.length;
   }
 
-  return success({ created: totalCreated, errors });
+  return successWithClear({ created: totalCreated, errors }, "import");
 }
 
 /**
@@ -420,6 +449,11 @@ export async function getMGFConsultationsForExport(
     return success([]);
   }
 
+  const rateLimitError = await ensureOperationAllowed("export");
+  if (rateLimitError) {
+    return failure(rateLimitError, "getMGFConsultationsForExport");
+  }
+
   let query = supabase
     .from("consultations_mgf")
     .select("*")
@@ -522,14 +556,14 @@ export async function getMGFConsultationsForExport(
     const { data, error } = await query;
 
     if (error) return failure(error, "getMGFConsultationsForExport");
-    if (!data) return success([]);
+    if (!data) return successWithClear([], "export");
 
     const sortedData = sortConsultationsWithFavorites(data, {
       field: "age",
       order: sortOrder,
     });
 
-    return success(sortedData);
+    return successWithClear(sortedData, "export");
   }
 
   query = query
@@ -539,9 +573,9 @@ export async function getMGFConsultationsForExport(
   const { data, error } = await query;
 
   if (error) return failure(error, "getMGFConsultationsForExport");
-  if (!data) return success([]);
+  if (!data) return successWithClear([], "export");
 
-  return success(data);
+  return successWithClear(data, "export");
 }
 
 // Metrics types

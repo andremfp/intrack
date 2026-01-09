@@ -3,14 +3,8 @@ import type { ApiResponse } from "@/errors";
 import { AppError, ErrorMessages, failure, success } from "@/errors";
 
 const RATE_LIMIT_FUNCTION_PATH = "rate-limit";
-const RATE_LIMIT_OPERATIONS = [
-  "import",
-  "export",
-  "report",
-  "bulk_delete",
-] as const;
 
-export type RateLimitOperation = (typeof RATE_LIMIT_OPERATIONS)[number];
+export type RateLimitOperation = "import" | "export" | "report" | "bulk_delete";
 
 export interface RateLimitStatus {
   allowed: boolean;
@@ -40,13 +34,6 @@ type RateLimitApiError = {
 
 type RateLimitApiErrorResponse = {
   error?: RateLimitApiError;
-};
-
-const OPERATION_LABELS: Record<RateLimitOperation, string> = {
-  import: "importações",
-  export: "exportações",
-  report: "relatórios",
-  bulk_delete: "operações de eliminação em massa",
 };
 
 function readEnv(key: string): string | undefined {
@@ -120,15 +107,43 @@ function buildRequestHeaders(token: string): Record<string, string> {
   };
 }
 
-function getDefaultErrorMessage(
-  operationType: RateLimitOperation,
-  status: number
-): string {
+function getDefaultErrorMessage(status: number): string {
   if (status === 429) {
-    return `Limite de ${OPERATION_LABELS[operationType]} atingido.`;
+    return ErrorMessages.TOO_MANY_REQUESTS;
   }
 
-  return `Erro ao validar o limite de ${OPERATION_LABELS[operationType]}.`;
+  return "Erro ao validar o limite de utilização.";
+}
+
+const RATE_LIMIT_CACHE_TTL_MS = 10_000;
+const rateLimitCache = new Map<
+  RateLimitOperation,
+  { status: RateLimitStatus; fetchedAt: number }
+>();
+
+function getCachedStatus(
+  operationType: RateLimitOperation
+): RateLimitStatus | null {
+  const cached = rateLimitCache.get(operationType);
+  if (!cached) {
+    return null;
+  }
+
+  if (Date.now() - cached.fetchedAt > RATE_LIMIT_CACHE_TTL_MS) {
+    rateLimitCache.delete(operationType);
+    return null;
+  }
+
+  return cached.status;
+}
+
+export function clearRateLimitCache(operation?: RateLimitOperation) {
+  if (operation) {
+    rateLimitCache.delete(operation);
+    return;
+  }
+
+  rateLimitCache.clear();
 }
 
 async function safeJson(response: Response): Promise<unknown> {
@@ -169,11 +184,7 @@ async function callRateLimitApi(options: {
       status: response.status,
     };
     const message =
-      errorPayload?.message ??
-      getDefaultErrorMessage(
-        options.payload?.operationType ?? "import",
-        response.status
-      );
+      errorPayload?.message ?? getDefaultErrorMessage(response.status);
     throw new AppError(message, errorDetails);
   }
 
@@ -191,12 +202,23 @@ async function callRateLimitApi(options: {
   return body as RateLimitStatus;
 }
 
+type RateLimitCheckOptions = {
+  force?: boolean;
+};
+
 export async function checkRateLimit(
   operationType: RateLimitOperation,
-  windowStart?: string
+  windowStart?: string,
+  options?: RateLimitCheckOptions
 ): Promise<ApiResponse<RateLimitStatus>> {
   try {
     const token = await getAccessToken();
+    if (!options?.force) {
+      const cached = getCachedStatus(operationType);
+      if (cached) {
+        return success(cached);
+      }
+    }
     const data = await callRateLimitApi({
       method: "POST",
       token,
@@ -204,6 +226,10 @@ export async function checkRateLimit(
         operationType,
         ...(windowStart ? { windowStart } : {}),
       },
+    });
+    rateLimitCache.set(operationType, {
+      status: data,
+      fetchedAt: Date.now(),
     });
     return success(data);
   } catch (error) {

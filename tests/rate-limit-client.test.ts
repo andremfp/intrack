@@ -4,7 +4,11 @@ import { supabase } from "@/supabase";
 import { ErrorMessages } from "@/errors";
 import type { AuthError, Session } from "@supabase/supabase-js";
 import type { RateLimitErrorDetails } from "@/lib/api/rate-limit";
-import { checkRateLimit, getRateLimitStatus } from "@/lib/api/rate-limit";
+import {
+  checkRateLimit,
+  getRateLimitStatus,
+  clearRateLimitCache,
+} from "@/lib/api/rate-limit";
 
 import type { MockInstance } from "vitest";
 
@@ -50,6 +54,7 @@ describe("rate-limit client", () => {
 
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
+    clearRateLimitCache();
   });
 
   afterEach(() => {
@@ -117,7 +122,6 @@ describe("rate-limit client", () => {
       json: async () => ({
         error: {
           code: "RATE_LIMIT_EXCEEDED",
-          message: "Too many imports",
           details: errorDetails,
         },
       }),
@@ -127,6 +131,7 @@ describe("rate-limit client", () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
+      expect(result.error.userMessage).toBe(ErrorMessages.TOO_MANY_REQUESTS);
       expect(result.error.details).toMatchObject({
         operationType: "import",
         remainingRequests: 0,
@@ -134,6 +139,69 @@ describe("rate-limit client", () => {
       });
     } else {
       throw new Error("Expected rate limit check to fail");
+    }
+  });
+
+  it("caches successful rate-limit responses", async () => {
+    const payload = {
+      allowed: true,
+      remainingRequests: 2,
+      resetTime: new Date().toISOString(),
+    };
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => payload,
+    });
+
+    await checkRateLimit("import");
+    await checkRateLimit("import");
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("resets the cached status when requested", async () => {
+    const payload = {
+      allowed: true,
+      remainingRequests: 2,
+      resetTime: new Date().toISOString(),
+    };
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => payload,
+    });
+
+    await checkRateLimit("import");
+    clearRateLimitCache("import");
+
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => payload,
+    });
+
+    await checkRateLimit("import");
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("uses generic message for unexpected statuses", async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => null,
+    });
+
+    const result = await checkRateLimit("export");
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.userMessage).toBe(
+        "Erro ao validar o limite de utilização."
+      );
+    } else {
+      throw new Error("Expected server failure");
     }
   });
 
