@@ -251,9 +251,9 @@ export default {
         }
 
         // Rate limit check passed
+        // The frontend expects `{ allowed, remainingRequests, resetTime, retryAfter? }`.
         return createSuccessResponse({
-          success: true,
-          operationType,
+          allowed: true,
           remainingRequests: result.remainingRequests,
           resetTime: result.resetTime,
         });

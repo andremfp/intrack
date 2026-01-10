@@ -64,12 +64,10 @@ function resolveFunctionsBaseUrl(): string {
   const prodUrl = readEnv("VITE_SUPABASE_URL");
 
   if (localUrl) {
-    console.log("[rate-limit] using local", localUrl);
     return `${removeTrailingSlash(normalizeLocalUrl(localUrl))}/functions/v1`;
   }
 
   if (prodUrl) {
-    console.log("[rate-limit] using prod", prodUrl);
     return `${removeTrailingSlash(prodUrl)}/functions/v1`;
   }
 
