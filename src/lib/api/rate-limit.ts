@@ -36,12 +36,16 @@ type RateLimitApiErrorResponse = {
   error?: RateLimitApiError;
 };
 
+const VITE_ENV: Record<string, string | undefined> = {
+  VITE_SUPABASE_FUNCTIONS_URL: import.meta.env.VITE_SUPABASE_FUNCTIONS_URL,
+  VITE_LOCAL_SUPABASE_URL: import.meta.env.VITE_LOCAL_SUPABASE_URL,
+  VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
+};
+
 function readEnv(key: string): string | undefined {
-  const metaEnv =
-    typeof import.meta !== "undefined" && "env" in import.meta
-      ? (import.meta as { env: Record<string, string | undefined> }).env
-      : undefined;
-  return metaEnv?.[key] ?? process.env[key];
+  // NOTE: Vite only injects env vars when referenced as `import.meta.env.VITE_*`.
+  // Dynamic access via `import.meta[key]` won't be replaced during build.
+  return VITE_ENV[key] ?? process.env[key];
 }
 
 function removeTrailingSlash(value: string): string {
@@ -67,98 +71,15 @@ function resolveFunctionsBaseUrl(): string {
     prodUrl,
   });
 
-  // #region agent log
-  fetch("http://127.0.0.1:7243/ingest/5eafd9f8-17b7-439d-bd3e-412612d69091", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      sessionId: "debug-session",
-      runId: "debug-1",
-      hypothesisId: "A",
-      location: "src/lib/api/rate-limit.ts:58",
-      message: "resolveFunctionsBaseUrl env snapshot",
-      data: { override, localUrl, prodUrl },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion agent log
-
-  if (override) {
-    console.log("[rate-limit] using override", override);
-    // #region agent log
-    fetch("http://127.0.0.1:7243/ingest/5eafd9f8-17b7-439d-bd3e-412612d69091", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId: "debug-session",
-        runId: "debug-1",
-        hypothesisId: "A",
-        location: "src/lib/api/rate-limit.ts:60",
-        message: "resolveFunctionsBaseUrl override hit",
-        data: { override },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion agent log
-    return removeTrailingSlash(override);
-  }
-
   if (localUrl) {
     console.log("[rate-limit] using local", localUrl);
-    // #region agent log
-    fetch("http://127.0.0.1:7243/ingest/5eafd9f8-17b7-439d-bd3e-412612d69091", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId: "debug-session",
-        runId: "debug-1",
-        hypothesisId: "B",
-        location: "src/lib/api/rate-limit.ts:66",
-        message: "resolveFunctionsBaseUrl local hit",
-        data: { localUrl },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion agent log
     return `${removeTrailingSlash(normalizeLocalUrl(localUrl))}/functions/v1`;
   }
 
   if (prodUrl) {
     console.log("[rate-limit] using prod", prodUrl);
-    // #region agent log
-    fetch("http://127.0.0.1:7243/ingest/5eafd9f8-17b7-439d-bd3e-412612d69091", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId: "debug-session",
-        runId: "debug-1",
-        hypothesisId: "C",
-        location: "src/lib/api/rate-limit.ts:70",
-        message: "resolveFunctionsBaseUrl prod hit",
-        data: { prodUrl },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion agent log
     return `${removeTrailingSlash(prodUrl)}/functions/v1`;
   }
-
-  console.warn("[rate-limit] missing env for functions URL");
-  // #region agent log
-  fetch("http://127.0.0.1:7243/ingest/5eafd9f8-17b7-439d-bd3e-412612d69091", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      sessionId: "debug-session",
-      runId: "debug-1",
-      hypothesisId: "D",
-      location: "src/lib/api/rate-limit.ts:75",
-      message: "resolveFunctionsBaseUrl missing env",
-      data: {},
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion agent log
 
   throw new AppError(
     "Não foi possível determinar o URL da função de rate limit."
