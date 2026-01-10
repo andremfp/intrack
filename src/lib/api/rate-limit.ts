@@ -58,16 +58,33 @@ function normalizeLocalUrl(value: string): string {
 function resolveFunctionsBaseUrl(): string {
   const override =
     readEnv("VITE_SUPABASE_FUNCTIONS_URL") ?? readEnv("VITE_FUNCTIONS_URL");
+  const localUrl = readEnv("VITE_LOCAL_SUPABASE_URL");
+  const prodUrl = readEnv("VITE_SUPABASE_URL");
+
+  // #region agent log
+  fetch("http://127.0.0.1:7243/ingest/5eafd9f8-17b7-439d-bd3e-412612d69091", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      sessionId: "debug-session",
+      runId: "debug-1",
+      hypothesisId: "A",
+      location: "src/lib/api/rate-limit.ts:58",
+      message: "resolveFunctionsBaseUrl env snapshot",
+      data: { override, localUrl, prodUrl },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion agent log
+
   if (override) {
     return removeTrailingSlash(override);
   }
 
-  const localUrl = readEnv("VITE_LOCAL_SUPABASE_URL");
   if (localUrl) {
     return `${removeTrailingSlash(normalizeLocalUrl(localUrl))}/functions/v1`;
   }
 
-  const prodUrl = readEnv("VITE_SUPABASE_URL");
   if (prodUrl) {
     return `${removeTrailingSlash(prodUrl)}/functions/v1`;
   }
