@@ -51,6 +51,23 @@ export function AppSidebar({
   // Build nav items dynamically based on specialty
   const navMain = [
     {
+      title: TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS,
+      url: "#",
+      icon: IconTable,
+      items:
+        specialty && specialty.years > 1
+          ? Array.from({ length: specialty.years }, (_, i) => ({
+              title: `${specialty.code.toUpperCase()}.${i + 1}`,
+              url: "#",
+            }))
+          : [
+              {
+                title: TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS,
+                url: "#",
+              },
+            ],
+    },
+    {
       title: TAB_CONSTANTS.MAIN_TABS.METRICS,
       url: "#",
       icon: IconDashboard,
@@ -77,23 +94,6 @@ export function AppSidebar({
           },
         ]
       : []),
-    {
-      title: TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS,
-      url: "#",
-      icon: IconTable,
-      items:
-        specialty && specialty.years > 1
-          ? Array.from({ length: specialty.years }, (_, i) => ({
-              title: `${specialty.code.toUpperCase()}.${i + 1}`,
-              url: "#",
-            }))
-          : [
-              {
-                title: TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS,
-                url: "#",
-              },
-            ],
-    },
   ];
 
   return (
