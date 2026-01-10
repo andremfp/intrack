@@ -10,8 +10,17 @@ import { userCache } from "@/utils/user-cache";
 export function useCachedActiveTab() {
   const [activeTab, setActiveTabState] = useState<TabType>(() => {
     const cached = userCache.getActiveTab();
-    const defaultTab = `${TAB_CONSTANTS.MAIN_TABS.METRICS}.${TAB_CONSTANTS.METRICS_SUB_TABS.GENERAL}`;
-    return cached || defaultTab;
+    if (cached) {
+      return cached;
+    }
+
+    const cachedSpecialty = userCache.getUserSpecialty();
+    const defaultTab: TabType =
+      cachedSpecialty?.years && cachedSpecialty.years > 1
+        ? `${TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS}.1`
+        : TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS;
+
+    return defaultTab;
   });
 
   const updateActiveTab = useCallback((tab: TabType) => {

@@ -36,6 +36,9 @@ export function SiteHeader({ specialty, activeTab }: SiteHeaderProps) {
       }
 
       const subTab = activeTab.split(".")[1];
+      if (!subTab) {
+        return `${specialty.name} - ${activeTab}`;
+      }
       // If the sub-tab is the Consultations metrics tab, use the dynamic display name
       const displayName =
         subTab === TAB_CONSTANTS.METRICS_SUB_TABS.CONSULTATIONS
