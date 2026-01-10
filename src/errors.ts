@@ -27,21 +27,30 @@ export const ErrorMessages = {
 
 // Convert any error to AppError with friendly message
 export function handleError(error: unknown, context?: string): AppError {
-  // Always log for developers (even if it's already an AppError)
+  const isDev =
+    typeof import.meta !== "undefined" &&
+    "env" in import.meta &&
+    Boolean((import.meta as { env?: { DEV?: boolean } }).env?.DEV);
+
+  // Log only in dev to avoid leaking details in production consoles.
   const prefix = context ? `[${context}]` : "";
 
   if (error instanceof AppError) {
-    // Log the user-friendly message
-    console.error(`${prefix} AppError:`, error.userMessage);
-    // Also log technical details if available
-    if (error.details) {
-      console.error(`${prefix} Details:`, error.details);
+    if (isDev) {
+      // Log the user-friendly message
+      console.error(`${prefix} AppError:`, error.userMessage);
+      // Also log technical details if available
+      if (error.details) {
+        console.error(`${prefix} Details:`, error.details);
+      }
     }
     return error;
   }
 
-  // Log the raw error
-  console.error(`${prefix} Error:`, error);
+  if (isDev) {
+    // Log the raw error
+    console.error(`${prefix} Error:`, error);
+  }
 
   // Supabase errors
   if (error && typeof error === "object" && "code" in error) {
