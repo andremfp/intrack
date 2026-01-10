@@ -4,6 +4,13 @@
 
 import type { RateLimitConfig, RateLimitOperation } from "./types.ts";
 
+export const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+};
+
 /**
  * Get rate limit configuration for an operation type
  */
@@ -74,7 +81,7 @@ export function createErrorResponse(
     }),
     {
       status,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...corsHeaders },
     }
   );
 }
@@ -85,6 +92,6 @@ export function createErrorResponse(
 export function createSuccessResponse(data: unknown, status: number = 200) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...corsHeaders },
   });
 }

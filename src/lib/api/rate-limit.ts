@@ -60,16 +60,8 @@ function normalizeLocalUrl(value: string): string {
 }
 
 function resolveFunctionsBaseUrl(): string {
-  const override =
-    readEnv("VITE_SUPABASE_FUNCTIONS_URL") ?? readEnv("VITE_FUNCTIONS_URL");
   const localUrl = readEnv("VITE_LOCAL_SUPABASE_URL");
   const prodUrl = readEnv("VITE_SUPABASE_URL");
-
-  console.log("[rate-limit] env snapshot", {
-    override,
-    localUrl,
-    prodUrl,
-  });
 
   if (localUrl) {
     console.log("[rate-limit] using local", localUrl);
