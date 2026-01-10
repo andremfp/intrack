@@ -24,6 +24,7 @@ interface EmptyConsultationsStateProps {
   onImport?: () => void;
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  isBulkDeleting?: boolean;
 }
 
 export function EmptyConsultationsState({
@@ -46,6 +47,7 @@ export function EmptyConsultationsState({
   onImport,
   onRefresh,
   isRefreshing,
+  isBulkDeleting = false,
 }: EmptyConsultationsStateProps) {
   const yearText = specialtyYear
     ? ` ${specialtyCode.toUpperCase()}.${specialtyYear}`
@@ -72,6 +74,7 @@ export function EmptyConsultationsState({
         onImport={onImport}
         onRefresh={onRefresh}
         isRefreshing={isRefreshing}
+        isBulkDeleting={isBulkDeleting}
       />
 
       {/* Empty state */}

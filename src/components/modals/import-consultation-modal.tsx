@@ -34,6 +34,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ImportSchemaGuide } from "@/imports/schema-guide-component";
 import { SCROLLBAR_CLASSES } from "@/constants";
+import { checkRateLimit, clearRateLimitCache } from "@/lib/api/rate-limit";
+import { ErrorMessages } from "@/errors";
 
 interface ImportConsultationModalProps {
   userId: string;
@@ -59,6 +61,7 @@ export function ImportConsultationModal({
   );
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [parseError, setParseError] = useState<string | null>(null);
+  const [isCheckingRateLimit, setIsCheckingRateLimit] = useState(false);
 
   type DuplicateDecision = "create" | "keep-existing" | "overwrite";
   const [duplicateDecisions, setDuplicateDecisions] = useState<
@@ -70,7 +73,7 @@ export function ImportConsultationModal({
   const [showSchemaGuide, setShowSchemaGuide] = useState(false);
 
   const handleClose = () => {
-    if (isParsing || isImporting) return;
+    if (isParsing || isImporting || isCheckingRateLimit) return;
     setIsClosing(true);
     setTimeout(() => {
       onClose();
@@ -291,6 +294,17 @@ export function ImportConsultationModal({
   const handleImport = async () => {
     if (!previewData || !specialty || selectedRows.size === 0) return;
 
+    setIsCheckingRateLimit(true);
+    const rateLimitResponse = await checkRateLimit("import").finally(() => {
+      setIsCheckingRateLimit(false);
+    });
+
+    if (!rateLimitResponse.success || !rateLimitResponse.data.allowed) {
+      toasts.error("Erro", ErrorMessages.TOO_MANY_REQUESTS);
+      return;
+    }
+
+    clearRateLimitCache("import");
     setIsImporting(true);
 
     try {
@@ -771,7 +785,7 @@ export function ImportConsultationModal({
                   setSelectedRows(new Set());
                   setParseError(null);
                 }}
-                disabled={isImporting}
+                disabled={isImporting || isCheckingRateLimit}
                 className="w-full sm:w-auto"
               >
                 <span className="hidden sm:inline">
@@ -783,7 +797,7 @@ export function ImportConsultationModal({
                 <Button
                   variant="outline"
                   onClick={handleClose}
-                  disabled={isImporting}
+                  disabled={isImporting || isCheckingRateLimit}
                   className="w-full sm:w-auto"
                 >
                   Cancelar
@@ -792,6 +806,7 @@ export function ImportConsultationModal({
                   onClick={handleImport}
                   disabled={
                     isImporting ||
+                    isCheckingRateLimit ||
                     validSelectedCount === 0 ||
                     previewData.summary.valid === 0
                   }

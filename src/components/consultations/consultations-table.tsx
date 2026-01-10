@@ -65,6 +65,7 @@ interface ConsultationsTableProps {
     onImport?: () => void;
     onRefresh?: () => void;
     isRefreshing?: boolean;
+    isBulkDeleting?: boolean;
   };
   isLoading?: boolean;
 }
@@ -89,6 +90,7 @@ export function ConsultationsTable({
     onImport,
     onRefresh,
     isRefreshing,
+    isBulkDeleting,
   } = actions || {};
 
   const specialtyCode = specialty.code ?? SPECIALTY_CODES.MGF;
@@ -162,7 +164,7 @@ export function ConsultationsTable({
         selectedIds={selectedIds}
         isLoading={isLoading}
         onAddConsultation={onAddConsultation}
-        onBulkDelete={onBulkDelete}
+      onBulkDelete={onBulkDelete}
         onToggleDeleteMode={toggleDeleteMode}
         onHandleBulkDelete={handleBulkDelete}
         uiFilterConfig={uiFilterConfig}
@@ -174,6 +176,7 @@ export function ConsultationsTable({
         onImport={onImport}
         onRefresh={onRefresh}
         isRefreshing={isRefreshing}
+      isBulkDeleting={isBulkDeleting}
       />
     );
   }

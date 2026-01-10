@@ -89,6 +89,14 @@ function DashboardContent() {
     })();
   }, [userProfile?.data.specialty_id, userSpecialty, updateUserSpecialty]);
 
+  // If we land on the main "Consultas" tab but the specialty has multiple years,
+  // promote it to the first-year subtab so selection + header year are consistent.
+  useEffect(() => {
+    if (!userSpecialty || userSpecialty.years <= 1) return;
+    if (activeTab !== TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS) return;
+    updateActiveTab(`${TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS}.1`);
+  }, [userSpecialty, activeTab, updateActiveTab]);
+
   // Enhanced handlers that include parent component logic
   const handleSpecialtySelected = (specialty: Specialty) => {
     updateUserSpecialty(specialty);
