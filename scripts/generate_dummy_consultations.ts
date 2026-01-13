@@ -66,13 +66,19 @@ const SMOKER = ["sim", "nao", "ex fumador"] as const;
 const FAMILY_TYPES = [null, "tipo1"] as const;
 const SCHOOL_LEVELS = [
   null,
-  "sem",
-  "primario",
-  "9ano",
-  "secundario",
-  "superior",
+  "< 4 anos",
+  "4 anos",
+  "6 anos",
+  "9 anos",
+  "11 anos",
+  "12 anos",
   "mestrado",
+  "bacharelato",
+  "licenciatura",
   "doutoramento",
+  "curso_tecnologico",
+  "pos_graduacao",
+  "curso_esp_tecnologica",
 ] as const;
 const PROFESSIONAL_AREAS = [null, "health"] as const;
 const PROFESSIONS = [null, "medicine", "nursing", "pharmacy", "other"] as const;

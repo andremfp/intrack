@@ -59,14 +59,11 @@ export function SelectField({
             />
           </SelectTrigger>
           <SelectContent>
-            {field.options
-              ?.slice()
-              .sort((a, b) => a.label.localeCompare(b.label))
-              .map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
+            {field.options?.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         {showClearButton && (

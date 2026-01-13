@@ -41,15 +41,7 @@ export function ComboboxField({
   const required =
     isRequired !== undefined ? isRequired : field.requiredWhen === "always";
 
-  // Sort options alphabetically
-  const sortedOptions = React.useMemo(
-    () =>
-      field.options?.slice().sort((a, b) => a.label.localeCompare(b.label)) ||
-      [],
-    [field.options]
-  );
-
-  const selectedOption = sortedOptions.find(
+  const selectedOption = field.options?.find(
     (option) => option.value === stringValue
   );
 
@@ -92,7 +84,7 @@ export function ComboboxField({
             <CommandList className={SCROLLBAR_CLASSES}>
               <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>
               <CommandGroup>
-                {sortedOptions.map((option) => (
+                {field.options?.map((option) => (
                   <CommandItem
                     key={option.value}
                     value={option.value}
