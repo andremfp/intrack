@@ -26,11 +26,31 @@ export function getFieldValue(
   }
 
   // ICPC-2 code fields: form works with string[]
+  // Note: This is legacy - actual field type is "code-search" with multiple=true
   if (field.type === "icpc2-codes") {
     if (Array.isArray(databaseValue)) {
       return databaseValue;
     }
     return [];
+  }
+
+  // Code-search fields: can be single (string) or multiple (array)
+  // Multiple mode: ICPC2 codes (problems, diagnosis, etc.)
+  // Single mode: profession
+  if (field.type === "code-search") {
+    if (field.multiple) {
+      // Multiple selection mode (ICPC2 codes)
+      if (Array.isArray(databaseValue)) {
+        return databaseValue;
+      }
+      return [];
+    } else {
+      // Single selection mode (profession)
+      if (typeof databaseValue === "string") {
+        return databaseValue;
+      }
+      return "";
+    }
   }
 
   // Boolean fields: DB stores boolean, form needs "true" or "false" string (or "" for null/optional)
@@ -56,7 +76,7 @@ export function getFieldValue(
     return [];
   }
 
-  // Other types (text, number, textarea, select, icpc2-codes): convert to string
+  // Other types (text, number, textarea, select): convert to string
   if (databaseValue !== undefined && databaseValue !== null) {
     return String(databaseValue);
   }

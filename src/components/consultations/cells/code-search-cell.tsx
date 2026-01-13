@@ -49,7 +49,7 @@ export function CodeSearchCell({ value, field }: CodeSearchCellProps) {
             </Badge>
           </TooltipTrigger>
           <TooltipContent side="top" className="max-w-[300px]">
-            <p className="text-sm">
+            <p className="text-sm whitespace-normal break-words">
               <span className="font-mono font-semibold">{profession.code}</span>
               <span className="text-muted-foreground"> - </span>
               <span>{profession.description}</span>
@@ -88,26 +88,34 @@ export function CodeSearchCell({ value, field }: CodeSearchCellProps) {
     return { code: entry, description: undefined };
   });
 
-  // Show max 3 codes, then "+X" for the rest
-  const maxVisible = 3;
+  // Show max 2 codes, then "+X" for the rest
+  const maxVisible = 2;
   const visibleCodes = parsedCodes.slice(0, maxVisible);
   const remainingCount = parsedCodes.length - maxVisible;
 
   return (
-    <div className="flex flex-wrap items-center gap-1 text-xs">
-      {visibleCodes.map((item, idx) => (
-        <TooltipProvider key={idx}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge
-                variant="outline"
-                className="font-mono font-semibold cursor-help text-[10px] px-1 py-0"
-              >
-                {item.code}
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-[300px]">
-              <p className="text-sm">
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="cursor-help">
+            <ul className="list-disc list-inside space-y-0.5 text-xs">
+              {visibleCodes.map((item, idx) => (
+                <li key={idx} className="font-mono font-semibold">
+                  {item.code}
+                </li>
+              ))}
+              {remainingCount > 0 && (
+                <li className="font-semibold text-muted-foreground">
+                  +{remainingCount}
+                </li>
+              )}
+            </ul>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[300px]">
+          <div className="space-y-1">
+            {parsedCodes.map((item, idx) => (
+              <p key={idx} className="text-sm whitespace-normal break-words">
                 <span className="font-mono font-semibold">{item.code}</span>
                 {item.description && (
                   <>
@@ -116,39 +124,10 @@ export function CodeSearchCell({ value, field }: CodeSearchCellProps) {
                   </>
                 )}
               </p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      ))}
-      {remainingCount > 0 && (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge
-                variant="outline"
-                className="font-semibold cursor-help text-[10px] px-1 py-0"
-              >
-                +{remainingCount}
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-[300px]">
-              <div className="space-y-1">
-                {parsedCodes.slice(maxVisible).map((item, idx) => (
-                  <p key={idx} className="text-sm">
-                    <span className="font-mono font-semibold">{item.code}</span>
-                    {item.description && (
-                      <>
-                        <span className="text-muted-foreground"> - </span>
-                        <span>{item.description}</span>
-                      </>
-                    )}
-                  </p>
-                ))}
-              </div>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )}
-    </div>
+            ))}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }

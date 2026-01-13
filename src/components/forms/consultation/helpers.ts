@@ -208,6 +208,20 @@ function serializeFieldValue(
     return filteredItems.length > 0 ? filteredItems : null;
   }
 
+  // Handle code-search fields (ICPC2 codes, professions, etc.)
+  // Can be single (string) or multiple (array of strings)
+  if (field.type === "code-search") {
+    if (Array.isArray(value)) {
+      // Multiple selection mode (e.g., ICPC2 codes)
+      const filteredItems = value
+        .map((item) => String(item).trim())
+        .filter((item) => item.length > 0);
+      return filteredItems.length > 0 ? filteredItems : null;
+    }
+    // Single selection mode (e.g., profession)
+    return typeof value === "string" && value.length > 0 ? value : null;
+  }
+
   return typeof value === "string" && value.length > 0 ? value : null; // string or null
 }
 

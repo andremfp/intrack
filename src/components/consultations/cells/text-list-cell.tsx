@@ -16,29 +16,44 @@ export function TextListCell({ value }: TextListCellProps) {
 
   if (items.length === 0) return <span>-</span>;
 
+  // Truncate each item to 20 characters for display
+  const truncateText = (text: string) =>
+    text.length <= 20 ? text : `${text.slice(0, 20)}...`;
+
+  // Show max 2 items, then "+X" for the rest
+  const maxVisible = 2;
+  const visibleItems = items.slice(0, maxVisible);
+  const remainingCount = items.length - maxVisible;
+
   return (
-    <div className="max-w-[200px] space-y-1">
-      {items.map((item, idx) => (
-        <TooltipProvider key={idx}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-start gap-1 text-xs cursor-help">
-                <span className="font-semibold text-muted-foreground shrink-0 text-[10px]">
-                  {idx + 1}.
-                </span>
-                <span className="line-clamp-1 text-[10px] leading-tight">
-                  {item}
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="max-w-[200px] space-y-0.5 cursor-help">
+            {visibleItems.map((item, idx) => (
+              <li key={idx} className="list-disc list-inside text-xs">
+                {truncateText(item)}
+              </li>
+            ))}
+            {remainingCount > 0 && (
+              <div className="flex items-start gap-1 text-xs">
+                <span className="leading-tight font-semibold text-muted-foreground">
+                  +{remainingCount}
                 </span>
               </div>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-[300px]">
-              <p className="text-sm">
-                <span className="font-semibold">{idx + 1}.</span> {item}
-              </p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      ))}
-    </div>
+            )}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[300px]">
+          <div className="space-y-0.5 px-2">
+            {items.map((item, idx) => (
+              <li key={idx} className="text-xs whitespace-normal break-words">
+                {item}
+              </li>
+            ))}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }

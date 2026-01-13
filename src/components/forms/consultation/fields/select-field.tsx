@@ -59,11 +59,16 @@ export function SelectField({
             />
           </SelectTrigger>
           <SelectContent>
-            {field.options?.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
+            {field.options
+              ?.filter(
+                (option): option is { value: string; label: string } =>
+                  "value" in option && option.value !== undefined
+              )
+              .map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
         {showClearButton && (

@@ -42,7 +42,11 @@ export function ComboboxField({
     isRequired !== undefined ? isRequired : field.requiredWhen === "always";
 
   const selectedOption = field.options?.find(
-    (option) => option.value === stringValue
+    (option): option is { value: string; label: string } =>
+      "value" in option &&
+      option.value !== undefined &&
+      "label" in option &&
+      option.value === stringValue
   );
 
   return (
@@ -77,7 +81,13 @@ export function ComboboxField({
           <Command
             filter={(value, search) => {
               // Find the option that matches the value
-              const option = field.options?.find((opt) => opt.value === value);
+              const option = field.options?.find(
+                (opt): opt is { value: string; label: string } =>
+                  "value" in opt &&
+                  opt.value !== undefined &&
+                  "label" in opt &&
+                  opt.value === value
+              );
               if (!option) return 0;
 
               // Search by label (description) instead of value
@@ -99,28 +109,36 @@ export function ComboboxField({
             <CommandList className={SCROLLBAR_CLASSES}>
               <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>
               <CommandGroup>
-                {field.options?.map((option) => (
-                  <CommandItem
-                    key={option.value}
-                    value={option.value}
-                    onSelect={(currentValue) => {
-                      onUpdate(
-                        currentValue === stringValue ? "" : currentValue
-                      );
-                      setOpen(false);
-                    }}
-                  >
-                    {option.label}
-                    <Check
-                      className={cn(
-                        "ml-auto h-4 w-4",
-                        stringValue === option.value
-                          ? "opacity-100"
-                          : "opacity-0"
-                      )}
-                    />
-                  </CommandItem>
-                ))}
+                {field.options
+                  ?.filter(
+                    (option): option is { value: string; label: string } =>
+                      "value" in option &&
+                      option.value !== undefined &&
+                      "label" in option &&
+                      option.label !== undefined
+                  )
+                  .map((option) => (
+                    <CommandItem
+                      key={option.value}
+                      value={option.value}
+                      onSelect={(currentValue) => {
+                        onUpdate(
+                          currentValue === stringValue ? "" : currentValue
+                        );
+                        setOpen(false);
+                      }}
+                    >
+                      {option.label}
+                      <Check
+                        className={cn(
+                          "ml-auto h-4 w-4",
+                          stringValue === option.value
+                            ? "opacity-100"
+                            : "opacity-0"
+                        )}
+                      />
+                    </CommandItem>
+                  ))}
               </CommandGroup>
             </CommandList>
           </Command>

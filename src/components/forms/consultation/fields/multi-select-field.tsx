@@ -46,11 +46,16 @@ export function MultiSelectField({
           />
         </MultiSelectTrigger>
         <MultiSelectContent className={SCROLLBAR_CLASSES}>
-          {field.options?.map((option) => (
-            <MultiSelectItem key={option.value} value={option.value}>
-              {option.label}
-            </MultiSelectItem>
-          ))}
+          {field.options
+            ?.filter(
+              (option): option is { value: string; label: string } =>
+                "value" in option && option.value !== undefined
+            )
+            .map((option) => (
+              <MultiSelectItem key={option.value} value={option.value}>
+                {option.label}
+              </MultiSelectItem>
+            ))}
         </MultiSelectContent>
       </MultiSelect>
       {isInvalid && (
