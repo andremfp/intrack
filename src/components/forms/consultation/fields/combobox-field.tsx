@@ -74,7 +74,22 @@ export function ComboboxField({
           className="w-[var(--radix-popover-trigger-width)] p-0"
           align="start"
         >
-          <Command>
+          <Command
+            filter={(value, search) => {
+              // Find the option that matches the value
+              const option = field.options?.find((opt) => opt.value === value);
+              if (!option) return 0;
+
+              // Search by label (description) instead of value
+              const searchLower = search.toLowerCase();
+              const labelLower = option.label.toLowerCase();
+
+              if (labelLower.includes(searchLower)) {
+                return 1;
+              }
+              return 0;
+            }}
+          >
             <CommandInput
               placeholder={
                 field.placeholder || `Pesquisar ${field.label.toLowerCase()}...`

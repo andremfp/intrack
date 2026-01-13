@@ -289,7 +289,7 @@ export function ConsultationsTable({
                     <TableCell
                       key={field.key}
                       className={
-                        field.type === "icpc2-codes" ||
+                        field.type === "code-search" ||
                         field.type === "text-list"
                           ? "max-w-[200px] overflow-hidden"
                           : ""

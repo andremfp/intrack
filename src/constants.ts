@@ -30,8 +30,8 @@ export const SPECIALTY_CODES = {
 } as const;
 
 // Import ICPC-2 codes
-export type { ICPC2Code } from "./icpc2-codes";
 import { MGF_ICPC2_CODES } from "./icpc2-codes";
+import { PROFESSIONS } from "./professions";
 import type { FilterFieldType } from "@/components/filters/types";
 
 // Common types
@@ -56,7 +56,7 @@ export type FieldType =
   | "combobox"
   | "number"
   | "text-list"
-  | "icpc2-codes";
+  | "code-search";
 
 export type FieldRuleContext = {
   location?: string;
@@ -81,12 +81,14 @@ export interface SpecialtyField {
   units?: string;
   section?: string; // Optional section grouping for UI organization
   mainLocation?: string; // Main location for specialty (used for general metrics tab)
+  multiple?: boolean; // For code-search fields: true = multiple selection, false/undefined = single selection
 }
 
-export interface SpecialtyFieldOption {
-  value: string;
-  label: string;
-}
+// Traditional select/combobox options use value/label
+// Code-search options use code/description
+export type SpecialtyFieldOption =
+  | { value: string; label: string; code?: never; description?: never }
+  | { code: string; description: string; value?: never; label?: never };
 
 export interface ConstultationTypeSection {
   key: string;
@@ -287,20 +289,29 @@ export const MGF_FIELDS: SpecialtyField[] = [
     ],
   },
   {
-    key: "professional_area",
-    label: "Sector de Actividade",
-    type: "select",
-    visibleWhen: (ctx) => ctx.location === "unidade",
-    section: "patient_info",
-    options: [{ value: "health", label: "Saúde" }],
-  },
-  {
     key: "profession",
     label: "Profissão",
+    type: "code-search",
+    visibleWhen: (ctx) => ctx.location === "unidade",
+    section: "patient_info",
+    placeholder: "Pesquisar profissão",
+    options: PROFESSIONS,
+    multiple: false, // Single selection only
+  },
+  {
+    key: "professional_situation",
+    label: "Situação Profissional",
     type: "select",
     visibleWhen: (ctx) => ctx.location === "unidade",
     section: "patient_info",
-    options: [{ value: "medicine", label: "Médicina" }],
+    options: [
+      { value: "nao_activa", label: "Não Activa" },
+      { value: "activa", label: "Activa" },
+      { value: "reformado", label: "Reformado" },
+      { value: "estudante", label: "Estudante" },
+      { value: "N/A", label: "Não Aplicável" },
+      { value: "desconhecida", label: "Desconhecida" },
+    ],
   },
   // História Clínica
   {
@@ -331,23 +342,29 @@ export const MGF_FIELDS: SpecialtyField[] = [
   {
     key: "problems",
     label: "Problemas",
-    type: "icpc2-codes",
+    type: "code-search",
     placeholder: "Pesquisar códigos ICPC-2",
     section: "diagnosis",
+    options: MGF_ICPC2_CODES,
+    multiple: true, // Multiple selection
   },
   {
     key: "diagnosis",
     label: "Diagnóstico",
-    type: "icpc2-codes",
+    type: "code-search",
     placeholder: "Pesquisar códigos ICPC-2",
     section: "diagnosis",
+    options: MGF_ICPC2_CODES,
+    multiple: true, // Multiple selection
   },
   {
     key: "new_diagnosis",
     label: "Novo Diagnóstico",
-    type: "icpc2-codes",
+    type: "code-search",
     placeholder: "Pesquisar códigos ICPC-2",
     section: "diagnosis",
+    options: MGF_ICPC2_CODES,
+    multiple: true, // Multiple selection
   },
   // Referenciação
   {
@@ -389,10 +406,12 @@ export const MGF_FIELDS: SpecialtyField[] = [
   {
     key: "referrence_motive",
     label: "Motivo da referenciação",
-    type: "icpc2-codes",
+    type: "code-search",
     placeholder: "Motivo da referenciação",
     section: "referral",
     visibleWhen: (ctx) => ctx.location === "unidade",
+    options: MGF_ICPC2_CODES,
+    multiple: true, // Multiple selection
   },
   // Planeamento Familiar
   {
@@ -660,7 +679,7 @@ const resolveFieldDefault = (
   if (
     field.type === "text-list" ||
     field.type === "multi-select" ||
-    field.type === "icpc2-codes"
+    field.type === "code-search"
   ) {
     return [] as string[];
   }
@@ -758,8 +777,8 @@ export const CONSULTATIONS_ENABLED_FIELDS: FilterFieldType[] = [
   "new_contraceptive",
   "family_type",
   "school_level",
-  "professional_area",
   "profession",
+  "professional_situation",
   "vaccination_plan",
 ];
 
@@ -788,8 +807,8 @@ export const METRICS_CONSULTATIONS_ENABLED_FIELDS: FilterFieldType[] = [
   "presential",
   "family_type",
   "school_level",
-  "professional_area",
   "profession",
+  "professional_situation",
   "vaccination_plan",
   "smoker",
   "contraceptive",

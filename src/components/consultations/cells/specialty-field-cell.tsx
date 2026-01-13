@@ -2,7 +2,7 @@ import type { SpecialtyField } from "@/constants";
 import { BooleanCell } from "./boolean-cell";
 import { SelectCell } from "./select-cell";
 import { TextListCell } from "./text-list-cell";
-import { ICPC2CodesCell } from "./icpc2-codes-cell";
+import { CodeSearchCell } from "./code-search-cell";
 import { TextCell } from "./text-cell";
 
 interface SpecialtyFieldCellProps {
@@ -23,8 +23,8 @@ export function SpecialtyFieldCell({ value, field }: SpecialtyFieldCellProps) {
       return <SelectCell value={String(value)} options={field.options} />;
     case "text-list":
       return <TextListCell value={value} />;
-    case "icpc2-codes":
-      return <ICPC2CodesCell value={value} />;
+    case "code-search":
+      return <CodeSearchCell value={value} field={field} />;
     case "text":
       return <TextCell value={String(value)} />;
     default:
