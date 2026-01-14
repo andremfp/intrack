@@ -39,7 +39,7 @@ import {
   type CodeSearchItem,
 } from "@/components/forms/consultation/fields/code-search-field";
 import { PROFESSIONS } from "@/professions";
-import { MGF_FIELDS } from "@/constants";
+import { MGF_FIELDS, MGF_SECTION_LABELS } from "@/constants";
 
 /**
  * Filter component specialized to consultations filters.
@@ -226,6 +226,49 @@ export function ConsultationFilters({
     fieldOptions.internship &&
     fieldOptions.internship.length > 0;
 
+  // Helper to get section for a filter field
+  const getFieldSection = (fieldKey: string): string | null => {
+    const field = MGF_FIELDS.find((f) => f.key === fieldKey);
+    return field?.section || null;
+  };
+
+  // Group enabled fields by section
+  const fieldsBySection = useMemo(() => {
+    const sections: Record<string, string[]> = {
+      _general: [], // Fields without a section
+    };
+
+    config.enabledFields.forEach((fieldKey) => {
+      // Handle composite fields
+      if (fieldKey === "ageRange") {
+        sections._general.push("ageRange");
+      } else if (fieldKey === "dateRange") {
+        sections._general.push("dateRange");
+      } else {
+        const section = getFieldSection(fieldKey);
+        if (section) {
+          if (!sections[section]) {
+            sections[section] = [];
+          }
+          sections[section].push(fieldKey);
+        } else {
+          sections._general.push(fieldKey);
+        }
+      }
+    });
+
+    return sections;
+  }, [config.enabledFields]);
+
+  // Section order for display
+  const sectionOrder = [
+    "_general",
+    "consultation_info",
+    "patient_info",
+    "clinical_history",
+    "family_planning",
+  ];
+
   const appliedFilterBadges = useMemo(
     () =>
       hasActiveFilters
@@ -281,6 +324,947 @@ export function ConsultationFilters({
     ]
   );
 
+  // Helper function to render a single field
+  const renderField = (fieldKey: string) => {
+    switch (fieldKey) {
+      case "year":
+        if (
+          !config.enabledFields.includes("year") ||
+          !config.specialty ||
+          config.specialty.years <= 1
+        ) {
+          return null;
+        }
+        return (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
+              Ano
+            </label>
+            <Select
+              value={
+                (getFilterValue("year") as number | undefined)?.toString() ||
+                "all"
+              }
+              onValueChange={(value) =>
+                setFilterValue(
+                  "year",
+                  value === "all" ? undefined : parseInt(value)
+                )
+              }
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Todos os anos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os anos</SelectItem>
+                {Array.from({ length: config.specialty.years }, (_, i) => (
+                  <SelectItem key={i + 1} value={(i + 1).toString()}>
+                    {config.specialty?.code.toUpperCase()}.{i + 1}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        );
+
+      case "processNumber":
+        if (!config.enabledFields.includes("processNumber")) return null;
+        return (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
+              Número de Processo
+            </label>
+            <Input
+              type="number"
+              min={0}
+              max={999999999}
+              value={(getFilterValue("processNumber") as string) || ""}
+              onChange={(e) =>
+                setFilterValue("processNumber", e.target.value || undefined)
+              }
+              className="h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&input-placeholder]:text-muted-foreground"
+            />
+          </div>
+        );
+
+      case "dateRange":
+        if (!config.enabledFields.includes("dateRange")) return null;
+        return (
+          <div className="space-y-1.5 sm:col-span-2">
+            <label className="text-xs font-medium text-muted-foreground">
+              Data
+            </label>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex-1">
+                <DatePicker
+                  value={(getFilterValue("dateFrom") as string) || ""}
+                  onChange={(value) =>
+                    setFilterValue("dateFrom", value || undefined)
+                  }
+                  placeholder="De"
+                  id="date-from"
+                />
+              </div>
+              <div className="flex-1">
+                <DatePicker
+                  value={(getFilterValue("dateTo") as string) || ""}
+                  onChange={(value) =>
+                    setFilterValue("dateTo", value || undefined)
+                  }
+                  placeholder="Até"
+                  id="date-to"
+                />
+              </div>
+            </div>
+          </div>
+        );
+
+      case "ageRange":
+        if (!config.enabledFields.includes("ageRange")) return null;
+        return (
+          <div className="space-y-1.5 sm:col-span-2">
+            <label className="text-xs font-medium text-muted-foreground">
+              Idade (anos)
+            </label>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                placeholder="Min"
+                value={(getFilterValue("ageMin") as number | undefined) ?? ""}
+                min={0}
+                max={150}
+                onChange={(e) =>
+                  setFilterValue(
+                    "ageMin",
+                    e.target.value ? parseInt(e.target.value) : undefined
+                  )
+                }
+                className="h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              <Input
+                type="number"
+                placeholder="Máx"
+                value={(getFilterValue("ageMax") as number | undefined) ?? ""}
+                min={0}
+                max={150}
+                onChange={(e) =>
+                  setFilterValue(
+                    "ageMax",
+                    e.target.value ? parseInt(e.target.value) : undefined
+                  )
+                }
+                className="h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
+          </div>
+        );
+
+      case "location":
+        if (!config.enabledFields.includes("location")) return null;
+        return (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
+              Local
+            </label>
+            <Select
+              value={(getFilterValue("location") as string) || "all"}
+              onValueChange={(value) =>
+                setFilterValue("location", value === "all" ? undefined : value)
+              }
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os locais</SelectItem>
+                {fieldOptions.location
+                  .map((option) => {
+                    const val =
+                      "value" in option
+                        ? option.value
+                        : "code" in option
+                        ? option.code
+                        : undefined;
+                    const label =
+                      "label" in option
+                        ? option.label
+                        : "description" in option
+                        ? option.description
+                        : "";
+                    return { val, label, option };
+                  })
+                  .filter(
+                    (
+                      item
+                    ): item is {
+                      val: string;
+                      label: string;
+                      option: SpecialtyFieldOption;
+                    } => item.val !== undefined
+                  )
+                  .map((item) => (
+                    <SelectItem key={item.val} value={item.val}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        );
+
+      case "internship":
+        if (!shouldShowInternship) return null;
+        return (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
+              Estágio
+            </label>
+            <Select
+              value={(getFilterValue("internship") as string) || "all"}
+              onValueChange={(value) =>
+                setFilterValue(
+                  "internship",
+                  value === "all" ? undefined : value
+                )
+              }
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os estágios</SelectItem>
+                {fieldOptions.internship
+                  .map((option) => {
+                    const val =
+                      "value" in option
+                        ? option.value
+                        : "code" in option
+                        ? option.code
+                        : undefined;
+                    const label =
+                      "label" in option
+                        ? option.label
+                        : "description" in option
+                        ? option.description
+                        : "";
+                    return { val, label, option };
+                  })
+                  .filter(
+                    (
+                      item
+                    ): item is {
+                      val: string;
+                      label: string;
+                      option: SpecialtyFieldOption;
+                    } => item.val !== undefined
+                  )
+                  .map((item) => (
+                    <SelectItem key={item.val} value={item.val}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        );
+
+      case "sex":
+        if (
+          !config.enabledFields.includes("sex") ||
+          fieldOptions.sex.length === 0
+        )
+          return null;
+        return (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
+              Sexo
+            </label>
+            <Select
+              value={(getFilterValue("sex") as string) || "all"}
+              onValueChange={(value) =>
+                setFilterValue("sex", value === "all" ? undefined : value)
+              }
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {fieldOptions.sex
+                  .map((option) => {
+                    const val =
+                      "value" in option
+                        ? option.value
+                        : "code" in option
+                        ? option.code
+                        : undefined;
+                    const label =
+                      "label" in option
+                        ? option.label
+                        : "description" in option
+                        ? option.description
+                        : "";
+                    return { val, label, option };
+                  })
+                  .filter(
+                    (
+                      item
+                    ): item is {
+                      val: string;
+                      label: string;
+                      option: SpecialtyFieldOption;
+                    } => item.val !== undefined
+                  )
+                  .map((item) => (
+                    <SelectItem key={item.val} value={item.val}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        );
+
+      case "autonomy":
+        if (
+          !config.enabledFields.includes("autonomy") ||
+          fieldOptions.autonomy.length === 0
+        )
+          return null;
+        return (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
+              Autonomia
+            </label>
+            <Select
+              value={(getFilterValue("autonomy") as string) || "all"}
+              onValueChange={(value) =>
+                setFilterValue("autonomy", value === "all" ? undefined : value)
+              }
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                {fieldOptions.autonomy
+                  .map((option) => {
+                    const val =
+                      "value" in option
+                        ? option.value
+                        : "code" in option
+                        ? option.code
+                        : undefined;
+                    const label =
+                      "label" in option
+                        ? option.label
+                        : "description" in option
+                        ? option.description
+                        : "";
+                    return { val, label, option };
+                  })
+                  .filter(
+                    (
+                      item
+                    ): item is {
+                      val: string;
+                      label: string;
+                      option: SpecialtyFieldOption;
+                    } => item.val !== undefined
+                  )
+                  .map((item) => (
+                    <SelectItem key={item.val} value={item.val}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        );
+
+      case "type":
+        if (
+          !config.enabledFields.includes("type") ||
+          fieldOptions.type.length === 0
+        )
+          return null;
+        return (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
+              Tipo de Consulta
+            </label>
+            <Select
+              value={(getFilterValue("type") as string) || "all"}
+              onValueChange={(value) =>
+                setFilterValue("type", value === "all" ? undefined : value)
+              }
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {fieldOptions.type
+                  .map((option) => {
+                    const val =
+                      "value" in option
+                        ? option.value
+                        : "code" in option
+                        ? option.code
+                        : undefined;
+                    const label =
+                      "label" in option
+                        ? option.label
+                        : "description" in option
+                        ? option.description
+                        : "";
+                    return { val, label, option };
+                  })
+                  .filter(
+                    (
+                      item
+                    ): item is {
+                      val: string;
+                      label: string;
+                      option: SpecialtyFieldOption;
+                    } => item.val !== undefined
+                  )
+                  .map((item) => (
+                    <SelectItem key={item.val} value={item.val}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        );
+
+      case "presential":
+        if (!config.enabledFields.includes("presential")) return null;
+        return (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
+              Presencial
+            </label>
+            <Select
+              value={
+                getFilterValue("presential") === undefined
+                  ? "all"
+                  : getFilterValue("presential")
+                  ? "yes"
+                  : "no"
+              }
+              onValueChange={(value) =>
+                setFilterValue(
+                  "presential",
+                  value === "all" ? undefined : value === "yes" ? true : false
+                )
+              }
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="yes">Sim</SelectItem>
+                <SelectItem value="no">Não</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        );
+
+      case "smoker":
+        if (
+          !config.enabledFields.includes("smoker") ||
+          fieldOptions.smoker.length === 0
+        )
+          return null;
+        return (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
+              Fumador
+            </label>
+            <Select
+              value={(getFilterValue("smoker") as string) || "all"}
+              onValueChange={(value) =>
+                setFilterValue("smoker", value === "all" ? undefined : value)
+              }
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {fieldOptions.smoker
+                  .map((option) => {
+                    const val =
+                      "value" in option
+                        ? option.value
+                        : "code" in option
+                        ? option.code
+                        : undefined;
+                    const label =
+                      "label" in option
+                        ? option.label
+                        : "description" in option
+                        ? option.description
+                        : "";
+                    return { val, label, option };
+                  })
+                  .filter(
+                    (
+                      item
+                    ): item is {
+                      val: string;
+                      label: string;
+                      option: SpecialtyFieldOption;
+                    } => item.val !== undefined
+                  )
+                  .map((item) => (
+                    <SelectItem key={item.val} value={item.val}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        );
+
+      case "contraceptive":
+        if (
+          !config.enabledFields.includes("contraceptive") ||
+          fieldOptions.contraceptive.length === 0
+        )
+          return null;
+        return (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
+              Contraceptivo
+            </label>
+            <Select
+              value={(getFilterValue("contraceptive") as string) || "all"}
+              onValueChange={(value) =>
+                setFilterValue(
+                  "contraceptive",
+                  value === "all" ? undefined : value
+                )
+              }
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {fieldOptions.contraceptive
+                  .map((option) => {
+                    const val =
+                      "value" in option
+                        ? option.value
+                        : "code" in option
+                        ? option.code
+                        : undefined;
+                    const label =
+                      "label" in option
+                        ? option.label
+                        : "description" in option
+                        ? option.description
+                        : "";
+                    return { val, label, option };
+                  })
+                  .filter(
+                    (
+                      item
+                    ): item is {
+                      val: string;
+                      label: string;
+                      option: SpecialtyFieldOption;
+                    } => item.val !== undefined
+                  )
+                  .map((item) => (
+                    <SelectItem key={item.val} value={item.val}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        );
+
+      case "new_contraceptive":
+        if (
+          !config.enabledFields.includes("new_contraceptive") ||
+          fieldOptions.new_contraceptive.length === 0
+        )
+          return null;
+        return (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
+              Novo Contraceptivo
+            </label>
+            <Select
+              value={(getFilterValue("new_contraceptive") as string) || "all"}
+              onValueChange={(value) =>
+                setFilterValue(
+                  "new_contraceptive",
+                  value === "all" ? undefined : value
+                )
+              }
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {fieldOptions.new_contraceptive
+                  .map((option) => {
+                    const val =
+                      "value" in option
+                        ? option.value
+                        : "code" in option
+                        ? option.code
+                        : undefined;
+                    const label =
+                      "label" in option
+                        ? option.label
+                        : "description" in option
+                        ? option.description
+                        : "";
+                    return { val, label, option };
+                  })
+                  .filter(
+                    (
+                      item
+                    ): item is {
+                      val: string;
+                      label: string;
+                      option: SpecialtyFieldOption;
+                    } => item.val !== undefined
+                  )
+                  .map((item) => (
+                    <SelectItem key={item.val} value={item.val}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        );
+
+      case "family_type":
+        if (
+          !config.enabledFields.includes("family_type") ||
+          fieldOptions.family_type.length === 0
+        )
+          return null;
+        return (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
+              Tipologia de Família
+            </label>
+            <Select
+              value={(getFilterValue("family_type") as string) || "all"}
+              onValueChange={(value) =>
+                setFilterValue(
+                  "family_type",
+                  value === "all" ? undefined : value
+                )
+              }
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {fieldOptions.family_type
+                  .map((option) => {
+                    const val =
+                      "value" in option
+                        ? option.value
+                        : "code" in option
+                        ? option.code
+                        : undefined;
+                    const label =
+                      "label" in option
+                        ? option.label
+                        : "description" in option
+                        ? option.description
+                        : "";
+                    return { val, label, option };
+                  })
+                  .filter(
+                    (
+                      item
+                    ): item is {
+                      val: string;
+                      label: string;
+                      option: SpecialtyFieldOption;
+                    } => item.val !== undefined
+                  )
+                  .map((item) => (
+                    <SelectItem key={item.val} value={item.val}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        );
+
+      case "school_level":
+        if (
+          !config.enabledFields.includes("school_level") ||
+          fieldOptions.school_level.length === 0
+        )
+          return null;
+        return (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
+              Escolaridade
+            </label>
+            <Select
+              value={(getFilterValue("school_level") as string) || "all"}
+              onValueChange={(value) =>
+                setFilterValue(
+                  "school_level",
+                  value === "all" ? undefined : value
+                )
+              }
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {fieldOptions.school_level
+                  .map((option) => {
+                    const val =
+                      "value" in option
+                        ? option.value
+                        : "code" in option
+                        ? option.code
+                        : undefined;
+                    const label =
+                      "label" in option
+                        ? option.label
+                        : "description" in option
+                        ? option.description
+                        : "";
+                    return { val, label, option };
+                  })
+                  .filter(
+                    (
+                      item
+                    ): item is {
+                      val: string;
+                      label: string;
+                      option: SpecialtyFieldOption;
+                    } => item.val !== undefined
+                  )
+                  .map((item) => (
+                    <SelectItem key={item.val} value={item.val}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        );
+
+      case "profession":
+        if (!config.enabledFields.includes("profession")) return null;
+        return (
+          <div className="space-y-1.5 sm:col-span-2">
+            <label className="text-xs font-medium text-muted-foreground">
+              Profissão
+            </label>
+            <div className="[&_label]:hidden [&_.space-y-2]:space-y-1.5 [&_input]:h-8 [&_button]:h-auto [&_button]:py-1">
+              <CodeSearchField
+                field={MGF_FIELDS.find((f) => f.key === "profession")!}
+                value={(getFilterValue("profession") as string) || ""}
+                onUpdate={(value) =>
+                  setFilterValue(
+                    "profession",
+                    typeof value === "string" && value ? value : undefined
+                  )
+                }
+                items={PROFESSIONS as CodeSearchItem[]}
+                mode="single"
+                codeMinWidth="4rem"
+              />
+            </div>
+          </div>
+        );
+
+      case "professional_situation":
+        if (
+          !config.enabledFields.includes("professional_situation") ||
+          !fieldOptions.professional_situation ||
+          fieldOptions.professional_situation.length === 0
+        )
+          return null;
+        return (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
+              Situação Profissional
+            </label>
+            <Select
+              value={
+                (getFilterValue("professional_situation") as string) || "all"
+              }
+              onValueChange={(value) =>
+                setFilterValue(
+                  "professional_situation",
+                  value === "all" ? undefined : value
+                )
+              }
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {fieldOptions.professional_situation
+                  .map((option) => {
+                    const val =
+                      "value" in option
+                        ? option.value
+                        : "code" in option
+                        ? option.code
+                        : undefined;
+                    const label =
+                      "label" in option
+                        ? option.label
+                        : "description" in option
+                        ? option.description
+                        : "";
+                    return { val, label, option };
+                  })
+                  .filter(
+                    (
+                      item
+                    ): item is {
+                      val: string;
+                      label: string;
+                      option: SpecialtyFieldOption;
+                    } => item.val !== undefined
+                  )
+                  .map((item) => (
+                    <SelectItem key={item.val} value={item.val}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        );
+
+      case "vaccination_plan":
+        if (!config.enabledFields.includes("vaccination_plan")) return null;
+        return (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
+              PNV Cumprido
+            </label>
+            <Select
+              value={
+                getFilterValue("vaccination_plan") === undefined
+                  ? "all"
+                  : getFilterValue("vaccination_plan")
+                  ? "yes"
+                  : "no"
+              }
+              onValueChange={(value) =>
+                setFilterValue(
+                  "vaccination_plan",
+                  value === "all" ? undefined : value === "yes" ? true : false
+                )
+              }
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="yes">Sim</SelectItem>
+                <SelectItem value="no">Não</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        );
+
+      case "alcohol":
+        if (!config.enabledFields.includes("alcohol")) return null;
+        return (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
+              Alcoól
+            </label>
+            <Select
+              value={
+                getFilterValue("alcohol") === undefined
+                  ? "all"
+                  : getFilterValue("alcohol")
+                  ? "yes"
+                  : "no"
+              }
+              onValueChange={(value) =>
+                setFilterValue(
+                  "alcohol",
+                  value === "all" ? undefined : value === "yes" ? true : false
+                )
+              }
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="yes">Sim</SelectItem>
+                <SelectItem value="no">Não</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        );
+
+      case "drugs":
+        if (!config.enabledFields.includes("drugs")) return null;
+        return (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
+              Drogas
+            </label>
+            <Select
+              value={
+                getFilterValue("drugs") === undefined
+                  ? "all"
+                  : getFilterValue("drugs")
+                  ? "yes"
+                  : "no"
+              }
+              onValueChange={(value) =>
+                setFilterValue(
+                  "drugs",
+                  value === "all" ? undefined : value === "yes" ? true : false
+                )
+              }
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="yes">Sim</SelectItem>
+                <SelectItem value="no">Não</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   // Render filter content (reusable for both Sheet and Popover)
   const renderFilterContent = () => {
     return (
@@ -303,928 +1287,31 @@ export function ConsultationFilters({
           </div>
         )}
 
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Year selector for multi-year specialties */}
-            {config.enabledFields.includes("year") &&
-              config.specialty &&
-              config.specialty.years > 1 && (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Ano
-                  </label>
-                  <Select
-                    value={
-                      (
-                        getFilterValue("year") as number | undefined
-                      )?.toString() || "all"
-                    }
-                    onValueChange={(value) =>
-                      setFilterValue(
-                        "year",
-                        value === "all" ? undefined : parseInt(value)
-                      )
-                    }
-                  >
-                    <SelectTrigger className="h-8">
-                      <SelectValue placeholder="Todos os anos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos os anos</SelectItem>
-                      {Array.from(
-                        { length: config.specialty.years },
-                        (_, i) => (
-                          <SelectItem key={i + 1} value={(i + 1).toString()}>
-                            {config.specialty?.code.toUpperCase()}.{i + 1}
-                          </SelectItem>
-                        )
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+        <div className="space-y-4">
+          {sectionOrder
+            .filter((sectionKey) => fieldsBySection[sectionKey]?.length > 0)
+            .map((sectionKey) => {
+              const fields = fieldsBySection[sectionKey];
+              const sectionLabel =
+                sectionKey === "_general"
+                  ? null
+                  : MGF_SECTION_LABELS[sectionKey] || sectionKey;
 
-            {/* Process number filter */}
-            {config.enabledFields.includes("processNumber") && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">
-                  Número de Processo
-                </label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={999999999}
-                  value={(getFilterValue("processNumber") as string) || ""}
-                  onChange={(e) =>
-                    setFilterValue("processNumber", e.target.value || undefined)
-                  }
-                  className="h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&input-placeholder]:text-muted-foreground"
-                />
-              </div>
-            )}
-
-            {/* Date range */}
-            {config.enabledFields.includes("dateRange") && (
-              <div className="space-y-1.5 sm:col-span-2">
-                <label className="text-xs font-medium text-muted-foreground">
-                  Data
-                </label>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <div className="flex-1">
-                    <DatePicker
-                      value={(getFilterValue("dateFrom") as string) || ""}
-                      onChange={(value) =>
-                        setFilterValue("dateFrom", value || undefined)
-                      }
-                      placeholder="De"
-                      id="date-from"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <DatePicker
-                      value={(getFilterValue("dateTo") as string) || ""}
-                      onChange={(value) =>
-                        setFilterValue("dateTo", value || undefined)
-                      }
-                      placeholder="Até"
-                      id="date-to"
-                    />
+              return (
+                <div key={sectionKey} className="space-y-3">
+                  {sectionLabel && (
+                    <div className="border-b pb-2">
+                      <h3 className="text-sm font-semibold text-foreground">
+                        {sectionLabel}
+                      </h3>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {fields.map((fieldKey) => renderField(fieldKey))}
                   </div>
                 </div>
-              </div>
-            )}
-
-            {/* Location selector */}
-            {config.enabledFields.includes("location") && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">
-                  Local
-                </label>
-                <Select
-                  value={(getFilterValue("location") as string) || "all"}
-                  onValueChange={(value) =>
-                    setFilterValue(
-                      "location",
-                      value === "all" ? undefined : value
-                    )
-                  }
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os locais</SelectItem>
-                    {fieldOptions.location
-                      .map((option) => {
-                        const val =
-                          "value" in option
-                            ? option.value
-                            : "code" in option
-                            ? option.code
-                            : undefined;
-                        const label =
-                          "label" in option
-                            ? option.label
-                            : "description" in option
-                            ? option.description
-                            : "";
-                        return { val, label, option };
-                      })
-                      .filter(
-                        (
-                          item
-                        ): item is {
-                          val: string;
-                          label: string;
-                          option: SpecialtyFieldOption;
-                        } => item.val !== undefined
-                      )
-                      .map((item) => (
-                        <SelectItem key={item.val} value={item.val}>
-                          {item.label}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {/* Internship selector - only shown when location is not 'unidade' */}
-            {shouldShowInternship && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">
-                  Estágio
-                </label>
-                <Select
-                  value={(getFilterValue("internship") as string) || "all"}
-                  onValueChange={(value) =>
-                    setFilterValue(
-                      "internship",
-                      value === "all" ? undefined : value
-                    )
-                  }
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os estágios</SelectItem>
-                    {fieldOptions.internship
-                      .map((option) => {
-                        const val =
-                          "value" in option
-                            ? option.value
-                            : "code" in option
-                            ? option.code
-                            : undefined;
-                        const label =
-                          "label" in option
-                            ? option.label
-                            : "description" in option
-                            ? option.description
-                            : "";
-                        return { val, label, option };
-                      })
-                      .filter(
-                        (
-                          item
-                        ): item is {
-                          val: string;
-                          label: string;
-                          option: SpecialtyFieldOption;
-                        } => item.val !== undefined
-                      )
-                      .map((item) => (
-                        <SelectItem key={item.val} value={item.val}>
-                          {item.label}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {/* Sex selector */}
-            {config.enabledFields.includes("sex") &&
-              fieldOptions.sex.length > 0 && (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Sexo
-                  </label>
-                  <Select
-                    value={(getFilterValue("sex") as string) || "all"}
-                    onValueChange={(value) =>
-                      setFilterValue("sex", value === "all" ? undefined : value)
-                    }
-                  >
-                    <SelectTrigger className="h-8">
-                      <SelectValue placeholder="Todos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      {fieldOptions.sex
-                        .map((option) => {
-                          const val =
-                            "value" in option
-                              ? option.value
-                              : "code" in option
-                              ? option.code
-                              : undefined;
-                          const label =
-                            "label" in option
-                              ? option.label
-                              : "description" in option
-                              ? option.description
-                              : "";
-                          return { val, label, option };
-                        })
-                        .filter(
-                          (
-                            item
-                          ): item is {
-                            val: string;
-                            label: string;
-                            option: SpecialtyFieldOption;
-                          } => item.val !== undefined
-                        )
-                        .map((item) => (
-                          <SelectItem key={item.val} value={item.val}>
-                            {item.label}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-            {/* Autonomy selector */}
-            {config.enabledFields.includes("autonomy") &&
-              fieldOptions.autonomy.length > 0 && (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Autonomia
-                  </label>
-                  <Select
-                    value={(getFilterValue("autonomy") as string) || "all"}
-                    onValueChange={(value) =>
-                      setFilterValue(
-                        "autonomy",
-                        value === "all" ? undefined : value
-                      )
-                    }
-                  >
-                    <SelectTrigger className="h-8">
-                      <SelectValue placeholder="Todos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas</SelectItem>
-                      {fieldOptions.autonomy
-                        .map((option) => {
-                          const val =
-                            "value" in option
-                              ? option.value
-                              : "code" in option
-                              ? option.code
-                              : undefined;
-                          const label =
-                            "label" in option
-                              ? option.label
-                              : "description" in option
-                              ? option.description
-                              : "";
-                          return { val, label, option };
-                        })
-                        .filter(
-                          (
-                            item
-                          ): item is {
-                            val: string;
-                            label: string;
-                            option: SpecialtyFieldOption;
-                          } => item.val !== undefined
-                        )
-                        .map((item) => (
-                          <SelectItem key={item.val} value={item.val}>
-                            {item.label}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-            {/* Age range */}
-            {config.enabledFields.includes("ageRange") && (
-              <div className="space-y-1.5 sm:col-span-2">
-                <label className="text-xs font-medium text-muted-foreground">
-                  Idade (anos)
-                </label>
-                <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    placeholder="Min"
-                    value={
-                      (getFilterValue("ageMin") as number | undefined) ?? ""
-                    }
-                    min={0}
-                    max={150}
-                    onChange={(e) =>
-                      setFilterValue(
-                        "ageMin",
-                        e.target.value ? parseInt(e.target.value) : undefined
-                      )
-                    }
-                    className="h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                  <Input
-                    type="number"
-                    placeholder="Máx"
-                    value={
-                      (getFilterValue("ageMax") as number | undefined) ?? ""
-                    }
-                    min={0}
-                    max={150}
-                    onChange={(e) =>
-                      setFilterValue(
-                        "ageMax",
-                        e.target.value ? parseInt(e.target.value) : undefined
-                      )
-                    }
-                    className="h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Type filter */}
-            {config.enabledFields.includes("type") &&
-              fieldOptions.type.length > 0 && (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Tipo de Consulta
-                  </label>
-                  <Select
-                    value={(getFilterValue("type") as string) || "all"}
-                    onValueChange={(value) =>
-                      setFilterValue(
-                        "type",
-                        value === "all" ? undefined : value
-                      )
-                    }
-                  >
-                    <SelectTrigger className="h-8">
-                      <SelectValue placeholder="Todos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      {fieldOptions.type
-                        .map((option) => {
-                          const val =
-                            "value" in option
-                              ? option.value
-                              : "code" in option
-                              ? option.code
-                              : undefined;
-                          const label =
-                            "label" in option
-                              ? option.label
-                              : "description" in option
-                              ? option.description
-                              : "";
-                          return { val, label, option };
-                        })
-                        .filter(
-                          (
-                            item
-                          ): item is {
-                            val: string;
-                            label: string;
-                            option: SpecialtyFieldOption;
-                          } => item.val !== undefined
-                        )
-                        .map((item) => (
-                          <SelectItem key={item.val} value={item.val}>
-                            {item.label}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-            {/* Presential filter */}
-            {config.enabledFields.includes("presential") && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">
-                  Presencial
-                </label>
-                <Select
-                  value={
-                    getFilterValue("presential") === undefined
-                      ? "all"
-                      : getFilterValue("presential")
-                      ? "yes"
-                      : "no"
-                  }
-                  onValueChange={(value) =>
-                    setFilterValue(
-                      "presential",
-                      value === "all"
-                        ? undefined
-                        : value === "yes"
-                        ? true
-                        : false
-                    )
-                  }
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="yes">Sim</SelectItem>
-                    <SelectItem value="no">Não</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {/* Smoker filter */}
-            {config.enabledFields.includes("smoker") &&
-              fieldOptions.smoker.length > 0 && (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Fumador
-                  </label>
-                  <Select
-                    value={(getFilterValue("smoker") as string) || "all"}
-                    onValueChange={(value) =>
-                      setFilterValue(
-                        "smoker",
-                        value === "all" ? undefined : value
-                      )
-                    }
-                  >
-                    <SelectTrigger className="h-8">
-                      <SelectValue placeholder="Todos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      {fieldOptions.smoker
-                        .map((option) => {
-                          const val =
-                            "value" in option
-                              ? option.value
-                              : "code" in option
-                              ? option.code
-                              : undefined;
-                          const label =
-                            "label" in option
-                              ? option.label
-                              : "description" in option
-                              ? option.description
-                              : "";
-                          return { val, label, option };
-                        })
-                        .filter(
-                          (
-                            item
-                          ): item is {
-                            val: string;
-                            label: string;
-                            option: SpecialtyFieldOption;
-                          } => item.val !== undefined
-                        )
-                        .map((item) => (
-                          <SelectItem key={item.val} value={item.val}>
-                            {item.label}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-            {/* Contraceptive filter */}
-            {config.enabledFields.includes("contraceptive") &&
-              fieldOptions.contraceptive.length > 0 && (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Contraceptivo
-                  </label>
-                  <Select
-                    value={(getFilterValue("contraceptive") as string) || "all"}
-                    onValueChange={(value) =>
-                      setFilterValue(
-                        "contraceptive",
-                        value === "all" ? undefined : value
-                      )
-                    }
-                  >
-                    <SelectTrigger className="h-8">
-                      <SelectValue placeholder="Todos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      {fieldOptions.contraceptive
-                        .map((option) => {
-                          const val =
-                            "value" in option
-                              ? option.value
-                              : "code" in option
-                              ? option.code
-                              : undefined;
-                          const label =
-                            "label" in option
-                              ? option.label
-                              : "description" in option
-                              ? option.description
-                              : "";
-                          return { val, label, option };
-                        })
-                        .filter(
-                          (
-                            item
-                          ): item is {
-                            val: string;
-                            label: string;
-                            option: SpecialtyFieldOption;
-                          } => item.val !== undefined
-                        )
-                        .map((item) => (
-                          <SelectItem key={item.val} value={item.val}>
-                            {item.label}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            {/* New contraceptive filter */}
-            {config.enabledFields.includes("new_contraceptive") &&
-              fieldOptions.new_contraceptive.length > 0 && (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Novo Contraceptivo
-                  </label>
-                  <Select
-                    value={
-                      (getFilterValue("new_contraceptive") as string) || "all"
-                    }
-                    onValueChange={(value) =>
-                      setFilterValue(
-                        "new_contraceptive",
-                        value === "all" ? undefined : value
-                      )
-                    }
-                  >
-                    <SelectTrigger className="h-8">
-                      <SelectValue placeholder="Todos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      {fieldOptions.new_contraceptive
-                        .map((option) => {
-                          const val =
-                            "value" in option
-                              ? option.value
-                              : "code" in option
-                              ? option.code
-                              : undefined;
-                          const label =
-                            "label" in option
-                              ? option.label
-                              : "description" in option
-                              ? option.description
-                              : "";
-                          return { val, label, option };
-                        })
-                        .filter(
-                          (
-                            item
-                          ): item is {
-                            val: string;
-                            label: string;
-                            option: SpecialtyFieldOption;
-                          } => item.val !== undefined
-                        )
-                        .map((item) => (
-                          <SelectItem key={item.val} value={item.val}>
-                            {item.label}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-            {/* Family type filter */}
-            {config.enabledFields.includes("family_type") &&
-              fieldOptions.family_type.length > 0 && (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Tipologia de Família
-                  </label>
-                  <Select
-                    value={(getFilterValue("family_type") as string) || "all"}
-                    onValueChange={(value) =>
-                      setFilterValue(
-                        "family_type",
-                        value === "all" ? undefined : value
-                      )
-                    }
-                  >
-                    <SelectTrigger className="h-8">
-                      <SelectValue placeholder="Todos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      {fieldOptions.family_type
-                        .map((option) => {
-                          const val =
-                            "value" in option
-                              ? option.value
-                              : "code" in option
-                              ? option.code
-                              : undefined;
-                          const label =
-                            "label" in option
-                              ? option.label
-                              : "description" in option
-                              ? option.description
-                              : "";
-                          return { val, label, option };
-                        })
-                        .filter(
-                          (
-                            item
-                          ): item is {
-                            val: string;
-                            label: string;
-                            option: SpecialtyFieldOption;
-                          } => item.val !== undefined
-                        )
-                        .map((item) => (
-                          <SelectItem key={item.val} value={item.val}>
-                            {item.label}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-            {/* School level filter */}
-            {config.enabledFields.includes("school_level") &&
-              fieldOptions.school_level.length > 0 && (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Escolaridade
-                  </label>
-                  <Select
-                    value={(getFilterValue("school_level") as string) || "all"}
-                    onValueChange={(value) =>
-                      setFilterValue(
-                        "school_level",
-                        value === "all" ? undefined : value
-                      )
-                    }
-                  >
-                    <SelectTrigger className="h-8">
-                      <SelectValue placeholder="Todos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      {fieldOptions.school_level
-                        .map((option) => {
-                          const val =
-                            "value" in option
-                              ? option.value
-                              : "code" in option
-                              ? option.code
-                              : undefined;
-                          const label =
-                            "label" in option
-                              ? option.label
-                              : "description" in option
-                              ? option.description
-                              : "";
-                          return { val, label, option };
-                        })
-                        .filter(
-                          (
-                            item
-                          ): item is {
-                            val: string;
-                            label: string;
-                            option: SpecialtyFieldOption;
-                          } => item.val !== undefined
-                        )
-                        .map((item) => (
-                          <SelectItem key={item.val} value={item.val}>
-                            {item.label}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-            {/* Profession filter - code-search */}
-            {config.enabledFields.includes("profession") && (
-              <div className="space-y-1.5 sm:col-span-2">
-                <label className="text-xs font-medium text-muted-foreground">
-                  Profissão
-                </label>
-                <div className="[&_label]:hidden [&_.space-y-2]:space-y-1.5 [&_input]:h-8 [&_button]:h-auto [&_button]:py-1">
-                  <CodeSearchField
-                    field={MGF_FIELDS.find((f) => f.key === "profession")!}
-                    value={(getFilterValue("profession") as string) || ""}
-                    onUpdate={(value) =>
-                      setFilterValue(
-                        "profession",
-                        typeof value === "string" && value ? value : undefined
-                      )
-                    }
-                    items={PROFESSIONS as CodeSearchItem[]}
-                    mode="single"
-                    codeMinWidth="4rem"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Vaccination plan filter */}
-            {config.enabledFields.includes("vaccination_plan") && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">
-                  PNV Cumprido
-                </label>
-                <Select
-                  value={
-                    getFilterValue("vaccination_plan") === undefined
-                      ? "all"
-                      : getFilterValue("vaccination_plan")
-                      ? "yes"
-                      : "no"
-                  }
-                  onValueChange={(value) =>
-                    setFilterValue(
-                      "vaccination_plan",
-                      value === "all"
-                        ? undefined
-                        : value === "yes"
-                        ? true
-                        : false
-                    )
-                  }
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="yes">Sim</SelectItem>
-                    <SelectItem value="no">Não</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {/* Professional situation filter */}
-            {config.enabledFields.includes("professional_situation") &&
-              fieldOptions.professional_situation &&
-              fieldOptions.professional_situation.length > 0 && (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Situação Profissional
-                  </label>
-                  <Select
-                    value={
-                      (getFilterValue("professional_situation") as string) ||
-                      "all"
-                    }
-                    onValueChange={(value) =>
-                      setFilterValue(
-                        "professional_situation",
-                        value === "all" ? undefined : value
-                      )
-                    }
-                  >
-                    <SelectTrigger className="h-8">
-                      <SelectValue placeholder="Todos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      {fieldOptions.professional_situation
-                        .map((option) => {
-                          const val =
-                            "value" in option
-                              ? option.value
-                              : "code" in option
-                              ? option.code
-                              : undefined;
-                          const label =
-                            "label" in option
-                              ? option.label
-                              : "description" in option
-                              ? option.description
-                              : "";
-                          return { val, label, option };
-                        })
-                        .filter(
-                          (
-                            item
-                          ): item is {
-                            val: string;
-                            label: string;
-                            option: SpecialtyFieldOption;
-                          } => item.val !== undefined
-                        )
-                        .map((item) => (
-                          <SelectItem key={item.val} value={item.val}>
-                            {item.label}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-            {/* Alcohol filter */}
-            {config.enabledFields.includes("alcohol") && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">
-                  Alcoól
-                </label>
-                <Select
-                  value={
-                    getFilterValue("alcohol") === undefined
-                      ? "all"
-                      : getFilterValue("alcohol")
-                      ? "yes"
-                      : "no"
-                  }
-                  onValueChange={(value) =>
-                    setFilterValue(
-                      "alcohol",
-                      value === "all"
-                        ? undefined
-                        : value === "yes"
-                        ? true
-                        : false
-                    )
-                  }
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="yes">Sim</SelectItem>
-                    <SelectItem value="no">Não</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {/* Drugs filter */}
-            {config.enabledFields.includes("drugs") && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">
-                  Drogas
-                </label>
-                <Select
-                  value={
-                    getFilterValue("drugs") === undefined
-                      ? "all"
-                      : getFilterValue("drugs")
-                      ? "yes"
-                      : "no"
-                  }
-                  onValueChange={(value) =>
-                    setFilterValue(
-                      "drugs",
-                      value === "all"
-                        ? undefined
-                        : value === "yes"
-                        ? true
-                        : false
-                    )
-                  }
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="yes">Sim</SelectItem>
-                    <SelectItem value="no">Não</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
+              );
+            })}
         </div>
       </>
     );
