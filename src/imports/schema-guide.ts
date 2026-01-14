@@ -1,5 +1,9 @@
 import type { SpecialtyField } from "@/constants";
-import { COMMON_CONSULTATION_FIELDS, MGF_FIELDS } from "@/constants";
+import {
+  COMMON_CONSULTATION_FIELDS,
+  MGF_FIELDS,
+  MGF_CONSULTATION_TYPE_SECTIONS,
+} from "@/constants";
 
 export interface SchemaFieldGuide extends SpecialtyField {
   description: string;
@@ -207,6 +211,23 @@ const FIELD_DOCUMENTATION: Record<
     validationRules: ["Cada nota separada por ';'"],
     notes: "Observações clínicas ou administrativas",
   },
+  own_list: {
+    description: "Se o paciente pertence à lista própria do médico",
+    acceptedFormats: ["Sim/Não", "S/N", "Yes/No", "Y/N", "true/false", "1/0"],
+    validationRules: [
+      "Obrigatório quando Local = 'Unidade de Saúde'",
+      "Apenas aplicável quando Local = 'Unidade de Saúde'",
+    ],
+    notes: "Determina se o campo 'Outra Lista' deve ser preenchido",
+  },
+  other_list: {
+    description: "Nome da lista quando o paciente não pertence à lista própria",
+    acceptedFormats: ["Texto livre"],
+    validationRules: [
+      "Apenas aplicável quando Local = 'Unidade de Saúde' e Lista Própria = 'Não'",
+    ],
+    notes: "Campo condicional - visível apenas quando Lista Própria é 'Não'",
+  },
 };
 
 // Helper function to merge field definition with documentation
@@ -241,6 +262,91 @@ export const MGF_FIELDS_GUIDE: SchemaSection = {
   fields: MGF_FIELDS.map(createSchemaFieldGuide),
 };
 
+// Type-specific fields documentation
+function createTypeSpecificFieldGuide(
+  typeKey: string,
+  _sectionKey: string,
+  field: SpecialtyField
+): SchemaFieldGuide {
+  const typeLabels: Record<string, string> = {
+    dm: "Diabetes",
+    hta: "Hipertensão Arterial",
+    sm: "Saúde Materna",
+  };
+
+  const typeLabel = typeLabels[typeKey] || typeKey.toUpperCase();
+
+  // Create documentation based on field type
+  const baseDocs: Omit<SchemaFieldGuide, keyof SpecialtyField> = {
+    description: `${field.label} (${typeLabel})`,
+    notes: `Campo específico para consultas do tipo '${typeLabel}'. Apenas visível quando Tipologia = '${typeLabel}'.`,
+  };
+
+  if (field.type === "number") {
+    baseDocs.acceptedFormats = ["Número"];
+    baseDocs.examples = ["1.2", "150", "45.5"];
+    baseDocs.validationRules = ["Deve ser um número válido"];
+  } else if (field.type === "text") {
+    baseDocs.acceptedFormats = ["Texto livre"];
+    baseDocs.examples = ["Exemplo de texto"];
+    baseDocs.validationRules = ["Texto opcional"];
+  } else if (field.type === "multi-select") {
+    baseDocs.acceptedFormats = ["Texto separado por ponto e vírgula"];
+    baseDocs.examples = field.options
+      ? [`${field.options[0]?.label}; ${field.options[1]?.label || ""}`]
+      : ["Opção 1; Opção 2"];
+    baseDocs.validationRules = [
+      "Cada opção separada por ';'",
+      "Deve corresponder a uma opção válida",
+    ];
+  } else if (field.type === "text-list") {
+    baseDocs.acceptedFormats = ["Texto separado por ponto e vírgula"];
+    baseDocs.examples = ["Item 1; Item 2; Item 3"];
+    baseDocs.validationRules = ["Cada item separado por ';'"];
+  } else if (field.type === "select") {
+    baseDocs.validationRules = ["Deve corresponder a uma opção válida"];
+    if (field.requiredWhen === "always") {
+      baseDocs.validationRules.push("Campo obrigatório");
+    }
+  }
+
+  return { ...field, ...baseDocs };
+}
+
+// Type-specific fields sections
+export function getTypeSpecificFieldsGuide(): SchemaSection[] {
+  const sections: SchemaSection[] = [];
+
+  Object.entries(MGF_CONSULTATION_TYPE_SECTIONS).forEach(
+    ([typeKey, typeSections]) => {
+      const typeLabels: Record<string, string> = {
+        dm: "Diabetes",
+        hta: "Hipertensão Arterial",
+        sm: "Saúde Materna",
+      };
+      const typeLabel = typeLabels[typeKey] || typeKey.toUpperCase();
+
+      typeSections.forEach((section) => {
+        const sectionLabels: Record<string, string> = {
+          exams: "Exames",
+          history: "Historial",
+        };
+        const sectionLabel = sectionLabels[section.key] || section.key;
+
+        sections.push({
+          title: `${typeLabel} - ${section.label}`,
+          description: `Campos específicos para consultas do tipo '${typeLabel}' na secção '${sectionLabel}'. Estes campos só são visíveis quando a Tipologia da consulta corresponde a '${typeLabel}'.`,
+          fields: section.fields.map((field) =>
+            createTypeSpecificFieldGuide(typeKey, section.key, field)
+          ),
+        });
+      });
+    }
+  );
+
+  return sections;
+}
+
 // Special validation rules
 export const VALIDATION_RULES_GUIDE = {
   locationLogic: {
@@ -250,6 +356,8 @@ export const VALIDATION_RULES_GUIDE = {
         condition: "Local = 'Unidade de Saúde'",
         requirements: [
           "✓ Campo 'Tipologia' é obrigatório",
+          "✓ Campo 'Lista Própria' é obrigatório",
+          "✓ Campo 'Outra Lista' é visível quando Lista Própria = 'Não'",
           "✗ Campo 'Estágio' deve estar vazio",
         ],
       },
@@ -258,6 +366,7 @@ export const VALIDATION_RULES_GUIDE = {
           "Local = 'Serviço de Urgência', 'Formação Complementar', etc.",
         requirements: [
           "✗ Campo 'Tipologia' deve estar vazio",
+          "✗ Campo 'Lista Própria' não é aplicável",
           "✓ Campo 'Estágio' é obrigatório",
         ],
       },
@@ -297,6 +406,7 @@ export function getSchemaGuideForSpecialty(
   switch (specialtyCode) {
     case "mgf":
       sections.push(MGF_FIELDS_GUIDE);
+      sections.push(...getTypeSpecificFieldsGuide());
       break;
     default:
       // Add other specialty guides here as they are implemented

@@ -47,7 +47,7 @@ export function TextField({
   }
 
   return (
-    <div>
+    <div className="space-y-2">
       <Label htmlFor={fieldId} className="text-sm font-medium">
         {field.label}
         {required && <span className="text-destructive ml-1">*</span>}

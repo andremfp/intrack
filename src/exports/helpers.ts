@@ -330,6 +330,18 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
     formatter: (value) => formatBoolean(value),
   },
   {
+    key: "own_list",
+    header: "Lista Própria",
+    source: "details",
+    formatter: (value) => formatBoolean(value),
+  },
+  {
+    key: "other_list",
+    header: "Outra Lista",
+    source: "details",
+    formatter: (value) => (value ? String(value) : null),
+  },
+  {
     key: "smoker",
     header: "Fumador",
     source: "column",

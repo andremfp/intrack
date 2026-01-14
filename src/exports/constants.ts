@@ -57,6 +57,8 @@ export const KEY_TO_HEADER_MAP: Record<string, string> = {
   vaccination_plan: "PNV Cumprido",
   type: "Tipologia",
   presential: "Presencial",
+  own_list: "Lista Própria",
+  other_list: "Outra Lista",
   smoker: "Fumador",
   chronic_diseases: "Doenças Crónicas",
   internship: "Estágio",

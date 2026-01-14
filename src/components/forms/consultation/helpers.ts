@@ -14,11 +14,24 @@ export function resolveTypeSections(typeValue: string | null | undefined) {
   return MGF_CONSULTATION_TYPE_SECTIONS[normalizedType] || [];
 }
 
-export function buildFieldRuleContext(formValues: FormValues): FieldRuleContext {
+export function buildFieldRuleContext(
+  formValues: FormValues
+): FieldRuleContext {
+  // Convert boolean string values to actual booleans
+  const ownListValue = formValues.own_list;
+  const ownListBoolean =
+    typeof ownListValue === "string" && ownListValue === "true"
+      ? true
+      : typeof ownListValue === "string" && ownListValue === "false"
+      ? false
+      : undefined;
+
   return {
-    location: typeof formValues.location === "string" ? formValues.location : "",
+    location:
+      typeof formValues.location === "string" ? formValues.location : "",
     sex: typeof formValues.sex === "string" ? formValues.sex : "",
     type: typeof formValues.type === "string" ? formValues.type : "",
+    own_list: ownListBoolean,
   };
 }
 
@@ -33,11 +46,17 @@ export function evaluateFieldRule(
   return rule(ctx);
 }
 
-export function isFieldVisible(field: SpecialtyField, ctx: FieldRuleContext): boolean {
+export function isFieldVisible(
+  field: SpecialtyField,
+  ctx: FieldRuleContext
+): boolean {
   return evaluateFieldRule(field.visibleWhen, ctx, true);
 }
 
-export function isFieldRequired(field: SpecialtyField, ctx: FieldRuleContext): boolean {
+export function isFieldRequired(
+  field: SpecialtyField,
+  ctx: FieldRuleContext
+): boolean {
   return evaluateFieldRule(field.requiredWhen, ctx, false);
 }
 
@@ -58,15 +77,13 @@ function getAllRequiredFields(
   ];
 
   resolveTypeSections(consultationType).forEach((section) => {
-    const sectionVisible = evaluateFieldRule(
-      section.visibleWhen,
-      ctx,
-      true
-    );
+    const sectionVisible = evaluateFieldRule(section.visibleWhen, ctx, true);
     if (!sectionVisible) return;
 
     section.fields
-      .filter((field) => isFieldRequired(field, ctx) && isFieldVisible(field, ctx))
+      .filter(
+        (field) => isFieldRequired(field, ctx) && isFieldVisible(field, ctx)
+      )
       .forEach((field) => requiredFields.push(field));
   });
 
@@ -137,14 +154,20 @@ export function validateForm(
       "Número de processo inválido",
       "O número de processo tem um máximo de 9 dígitos."
     );
-    return { key: "process_number", message: "O número de processo deve ser um número válido." };
+    return {
+      key: "process_number",
+      message: "O número de processo deve ser um número válido.",
+    };
   }
   if (processNumberNum === null || processNumberNum < 0) {
     toasts.error(
       "Número de processo inválido",
       "O número de processo deve ser um número válido."
     );
-    return { key: "process_number", message: "O número de processo deve ser um número válido." };
+    return {
+      key: "process_number",
+      message: "O número de processo deve ser um número válido.",
+    };
   }
 
   // Validate specialty year (>= 1)
@@ -176,14 +199,6 @@ function serializeFieldValue(
     return filteredItems.length > 0 ? filteredItems : null;
   }
 
-  if (field.type === "icpc2-codes") {
-    const filteredItems = (Array.isArray(value) ? value : [])
-      .map((item) => item.trim())
-      .filter((item) => item.length > 0);
-
-    return filteredItems.length > 0 ? filteredItems : null;
-  }
-
   if (field.type === "boolean") {
     // Empty string or empty array means null (optional field not selected)
     if (typeof value === "string" && value === "") {
@@ -201,7 +216,8 @@ function serializeFieldValue(
     return numValue !== null && Number.isFinite(numValue) ? numValue : null;
   }
 
-  if (field.type === "multi-select") { // array of strings
+  if (field.type === "multi-select") {
+    // array of strings
     const filteredItems = (Array.isArray(value) ? value : [])
       .map((item) => String(item).trim())
       .filter((item) => item.length > 0);
@@ -235,7 +251,10 @@ export function serializeFormValues(
 
   // Serialize specialty fields
   specialtyFields.forEach((field) => {
-    details[field.key] = serializeFieldValue(field, formValues[field.key] || "");
+    details[field.key] = serializeFieldValue(
+      field,
+      formValues[field.key] || ""
+    );
   });
 
   // Serialize type-specific section fields
@@ -257,7 +276,6 @@ export function serializeFormValues(
       }
 
       section.fields.forEach((field) => {
-
         nestedStructures[typeKey][section.key][field.key] = serializeFieldValue(
           field,
           formValues[field.key] || ""
@@ -266,7 +284,10 @@ export function serializeFormValues(
     } else {
       // Flat structure
       section.fields.forEach((field) => {
-        details[field.key] = serializeFieldValue(field, formValues[field.key] || "");
+        details[field.key] = serializeFieldValue(
+          field,
+          formValues[field.key] || ""
+        );
       });
     }
   });
@@ -276,11 +297,15 @@ export function serializeFormValues(
     const typeKey = consultationType.toLowerCase();
     const typeSections = nestedStructures[typeKey];
     if (typeSections) {
-      const includedSections: Record<string, Record<string, SpecialtyDetails[string]>> =
-        {};
+      const includedSections: Record<
+        string,
+        Record<string, SpecialtyDetails[string]>
+      > = {};
 
       Object.entries(typeSections).forEach(([sectionKey, sectionData]) => {
-        const hasValues = Object.values(sectionData).some((field) => field !== null);
+        const hasValues = Object.values(sectionData).some(
+          (field) => field !== null
+        );
         if (hasValues) {
           includedSections[sectionKey] = sectionData;
         }

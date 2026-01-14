@@ -62,6 +62,7 @@ export type FieldRuleContext = {
   location?: string;
   sex?: string;
   type?: string;
+  own_list?: boolean;
 };
 
 export type FieldRule =
@@ -158,7 +159,7 @@ export const MGF_SECTION_LABELS: Record<string, string> = {
 
 // MGF (Medicina Geral e Familiar) specialty fields
 export const MGF_FIELDS: SpecialtyField[] = [
-  // Tipo de Consulta
+  // Informação da Consulta
   {
     key: "location",
     label: "Local",
@@ -209,8 +210,23 @@ export const MGF_FIELDS: SpecialtyField[] = [
     key: "presential",
     label: "Presencial",
     type: "boolean",
-    defaultValue: true,
     requiredWhen: "always",
+    section: "consultation_info",
+  },
+  {
+    key: "own_list",
+    label: "Lista Própria",
+    type: "boolean",
+    requiredWhen: (ctx) => !!ctx.location && ctx.location === "unidade",
+    visibleWhen: (ctx) => ctx.location === "unidade",
+    section: "consultation_info",
+  },
+  {
+    key: "other_list",
+    label: "Outra Lista",
+    type: "text",
+    visibleWhen: (ctx) =>
+      !!ctx.location && ctx.location === "unidade" && ctx.own_list === false,
     section: "consultation_info",
   },
   {

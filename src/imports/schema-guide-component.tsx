@@ -24,7 +24,11 @@ import {
   FILE_FORMAT_GUIDE,
 } from "./schema-guide";
 import type { SchemaFieldGuide } from "./schema-guide";
-import { COMMON_CONSULTATION_FIELDS, MGF_FIELDS } from "@/constants";
+import {
+  COMMON_CONSULTATION_FIELDS,
+  MGF_FIELDS,
+  MGF_CONSULTATION_TYPE_SECTIONS,
+} from "@/constants";
 
 interface ImportSchemaGuideProps {
   specialtyCode: string;
@@ -139,13 +143,34 @@ export function ImportSchemaGuide({
 
                 {/* Options or Examples */}
                 {(() => {
+                  // Check all field sources for field definition
                   const allFields = [
                     ...COMMON_CONSULTATION_FIELDS,
                     ...MGF_FIELDS,
                   ];
-                  const fieldDefinition = allFields.find(
+
+                  // Also check type-specific fields
+                  let fieldDefinition = allFields.find(
                     (f) => f.key === field.key
                   );
+
+                  // If not found in regular fields, check type-specific sections
+                  if (!fieldDefinition) {
+                    for (const typeSections of Object.values(
+                      MGF_CONSULTATION_TYPE_SECTIONS
+                    )) {
+                      for (const section of typeSections) {
+                        const found = section.fields.find(
+                          (f) => f.key === field.key
+                        );
+                        if (found) {
+                          fieldDefinition = found;
+                          break;
+                        }
+                      }
+                      if (fieldDefinition) break;
+                    }
+                  }
 
                   // For select/combobox fields, show available options
                   if (
@@ -168,6 +193,35 @@ export function ImportSchemaGuide({
                             </Badge>
                           ))}
                         </div>
+                      </div>
+                    );
+                  }
+
+                  // For multi-select fields, show available options
+                  if (
+                    fieldDefinition?.options &&
+                    field.type === "multi-select"
+                  ) {
+                    return (
+                      <div>
+                        <h4 className="font-medium text-sm mb-2">
+                          Opções Disponíveis
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {fieldDefinition.options.map((option, index) => (
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="text-xs"
+                            >
+                              {option.label}
+                            </Badge>
+                          ))}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Múltiplas opções podem ser selecionadas, separadas por
+                          ponto e vírgula (;)
+                        </p>
                       </div>
                     );
                   }

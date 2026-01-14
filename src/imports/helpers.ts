@@ -27,6 +27,7 @@ import {
 import {
   COMMON_CONSULTATION_FIELDS,
   MGF_FIELDS,
+  MGF_CONSULTATION_TYPE_SECTIONS,
   getDefaultSpecialtyDetails,
 } from "@/constants";
 import type { FieldRule, FieldRuleContext, SpecialtyField } from "@/constants";
@@ -43,6 +44,7 @@ import {
   MAX_TEXT_LIST_ITEM_LENGTH,
   EXCEL_EPOCH,
   MS_PER_DAY,
+  parseTypeSpecificKey,
 } from "./constants";
 
 // ============================================================================
@@ -98,6 +100,17 @@ function getRuleContext(
       ? (consultation.details as Record<string, unknown>)
       : undefined;
 
+  // Extract own_list as boolean from details
+  const ownListValue = details?.own_list;
+  const ownListBoolean =
+    typeof ownListValue === "boolean"
+      ? ownListValue
+      : typeof ownListValue === "string" && ownListValue === "true"
+      ? true
+      : typeof ownListValue === "string" && ownListValue === "false"
+      ? false
+      : undefined;
+
   return {
     location:
       typeof consultation.location === "string"
@@ -106,6 +119,7 @@ function getRuleContext(
     sex: typeof consultation.sex === "string" ? consultation.sex : undefined,
     type:
       typeof details?.type === "string" ? (details.type as string) : undefined,
+    own_list: ownListBoolean,
   };
 }
 
@@ -257,6 +271,102 @@ function mapFieldValue(
     return parseSelectValue(fieldKey, rawValue);
   }
 
+  // Handle text fields (fallback for simple text fields)
+  if (field?.type === "text") {
+    if (rawValue === null || rawValue === undefined || rawValue === "") {
+      return null;
+    }
+    return String(rawValue).trim() || null;
+  }
+
+  // Handle type-specific fields (e.g., "dm_exams_creatinina")
+  const typeSpecificInfo = parseTypeSpecificKey(fieldKey);
+  if (typeSpecificInfo) {
+    const { typeKey, sectionKey, fieldKey: actualFieldKey } = typeSpecificInfo;
+    const typeSections = MGF_CONSULTATION_TYPE_SECTIONS[typeKey];
+    const section = typeSections?.find((s) => s.key === sectionKey);
+    const typeField = section?.fields.find((f) => f.key === actualFieldKey);
+
+    if (!typeField) return null;
+
+    // Handle different field types for type-specific fields
+    if (typeField.type === "number") {
+      return parseNumber(rawValue);
+    }
+    if (typeField.type === "text") {
+      if (rawValue === null || rawValue === undefined || rawValue === "") {
+        return null;
+      }
+      return String(rawValue).trim() || null;
+    }
+    if (typeField.type === "multi-select") {
+      return parseTextList(rawValue); // Multi-select stored as array
+    }
+    if (typeField.type === "text-list") {
+      return parseTextList(rawValue);
+    }
+    if (typeField.type === "select" || typeField.type === "combobox") {
+      // For type-specific select/combobox fields, we need to parse using the field's options
+      if (rawValue === null || rawValue === undefined || rawValue === "") {
+        return null;
+      }
+
+      const str = String(rawValue).trim();
+      if (!str) return null;
+
+      if (!typeField.options || typeField.options.length === 0) {
+        return str;
+      }
+
+      const normalize = (s: string) =>
+        s
+          .normalize("NFD")
+          .replace(/\p{Diacritic}/gu, "")
+          .toLowerCase()
+          .trim();
+
+      const lowerStr = str.toLowerCase();
+      const normalizedStr = normalize(str);
+
+      // Try exact match on label (case-insensitive)
+      const exactMatch = typeField.options.find(
+        (opt) => opt.label?.toLowerCase() === lowerStr
+      );
+      if (exactMatch?.value) return exactMatch.value;
+
+      // Try value match (case-insensitive)
+      const valueMatch = typeField.options.find(
+        (opt) => opt.value?.toLowerCase() === lowerStr
+      );
+      if (valueMatch?.value) return valueMatch.value;
+
+      // Try diacritic-insensitive match on label/value
+      const normalizedLabelMatch = typeField.options.find(
+        (opt) => opt.label && normalize(opt.label) === normalizedStr
+      );
+      if (normalizedLabelMatch?.value) return normalizedLabelMatch.value;
+
+      const normalizedValueMatch = typeField.options.find(
+        (opt) => opt.value && normalize(opt.value) === normalizedStr
+      );
+      if (normalizedValueMatch?.value) return normalizedValueMatch.value;
+
+      // Try partial match on label
+      const partialMatch = typeField.options.find((opt) =>
+        opt.label?.toLowerCase().includes(lowerStr)
+      );
+      if (partialMatch?.value) return partialMatch.value;
+
+      // Try partial match diacritic-insensitive
+      const normalizedPartialMatch = typeField.options.find(
+        (opt) => opt.label && normalize(opt.label).includes(normalizedStr)
+      );
+      if (normalizedPartialMatch?.value) return normalizedPartialMatch.value;
+
+      return null;
+    }
+  }
+
   return null;
 }
 
@@ -292,11 +402,41 @@ export function mapImportRowToConsultation(
     if (!fieldKey || fieldKey === "id") continue; // Skip unknown headers and ID
 
     const rawValue = row[header];
-    const source = getFieldSource(fieldKey);
     const mappedValue = mapFieldValue(fieldKey, rawValue, specialtyCode);
 
     if (mappedValue === null || mappedValue === undefined) continue;
 
+    // Check if this is a type-specific field
+    const typeSpecificInfo = parseTypeSpecificKey(fieldKey);
+    if (typeSpecificInfo) {
+      // Place in nested structure: details[type][section][field]
+      const {
+        typeKey,
+        sectionKey,
+        fieldKey: actualFieldKey,
+      } = typeSpecificInfo;
+      if (!consultation.details) {
+        consultation.details = getDefaultSpecialtyDetails(specialtyCode);
+      }
+      const details = consultation.details as Record<string, unknown>;
+
+      // Initialize nested structure if needed
+      if (!details[typeKey] || typeof details[typeKey] !== "object") {
+        details[typeKey] = {};
+      }
+      const typeData = details[typeKey] as Record<string, unknown>;
+
+      if (!typeData[sectionKey] || typeof typeData[sectionKey] !== "object") {
+        typeData[sectionKey] = {};
+      }
+      const sectionData = typeData[sectionKey] as Record<string, unknown>;
+
+      sectionData[actualFieldKey] = mappedValue;
+      continue;
+    }
+
+    // Handle regular fields (top-level or flat details)
+    const source = getFieldSource(fieldKey);
     if (source === "column") {
       // Top-level fields
       if (fieldKey === "date") {
@@ -319,7 +459,7 @@ export function mapImportRowToConsultation(
         consultation.favorite = mappedValue as boolean;
       }
     } else {
-      // Details fields
+      // Details fields (flat structure)
       if (!consultation.details) {
         consultation.details = getDefaultSpecialtyDetails(specialtyCode);
       }
