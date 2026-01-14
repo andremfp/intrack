@@ -607,7 +607,8 @@ type SupabaseWithDynamicFrom = typeof supabase & {
 export async function getConsultationMetrics(
   userId: string,
   filters?: ConsultationsFilters,
-  specialtyCode?: string
+  specialtyCode?: string,
+  excludeType?: string
 ): Promise<ApiResponse<ConsultationMetrics>> {
   try {
     // Build query with database-level filtering
@@ -662,6 +663,11 @@ export async function getConsultationMetrics(
 
     if (filters?.type) {
       query = query.eq("type", filters.type);
+    }
+
+    // Exclude specific type if requested (e.g., exclude 'AM' for general tab)
+    if (excludeType) {
+      query = query.neq("type", excludeType);
     }
 
     if (filters?.presential !== undefined) {

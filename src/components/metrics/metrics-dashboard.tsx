@@ -55,12 +55,17 @@ export function MetricsDashboard({
   }, [activeSubTab, specialty?.code]);
 
   // Use custom hook for metrics data fetching
+  // For general tab, exclude consultations with type 'AM'
+  const excludeType =
+    activeSubTab === TAB_CONSTANTS.METRICS_SUB_TABS.GENERAL ? "AM" : undefined;
+
   const { metrics, isLoading, error, retryLoadMetrics, loadMetrics } =
     useMetricsData({
       userId,
       specialty,
       filters,
       implicitFilters,
+      excludeType,
     });
 
   // Track whether any filters are currently active

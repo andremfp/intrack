@@ -15,15 +15,23 @@ async function fetchMetricsData({
 }): Promise<ConsultationMetrics> {
   // Extract parameters from query key
   // Note: filters and implicitFilters are stringified in the query key for stable comparison
-  const [, , userId, specialtyCode, filtersStr, implicitFiltersStr] =
-    queryKey as [
-      string,
-      string,
-      string,
-      string,
-      string, // stableStringify(filters)
-      string // stableStringify(implicitFilters)
-    ];
+  const [
+    ,
+    ,
+    userId,
+    specialtyCode,
+    filtersStr,
+    implicitFiltersStr,
+    excludeType,
+  ] = queryKey as [
+    string,
+    string,
+    string,
+    string,
+    string, // stableStringify(filters)
+    string, // stableStringify(implicitFilters)
+    string // excludeType (empty string if not provided)
+  ];
 
   // Parse the stringified filters back to objects
   const filters = JSON.parse(filtersStr) as Record<string, unknown>;
@@ -38,7 +46,8 @@ async function fetchMetricsData({
   const result = await getConsultationMetrics(
     userId,
     mergedFilters,
-    specialtyCode
+    specialtyCode,
+    excludeType || undefined
   );
 
   if (!result.success) {
@@ -57,6 +66,7 @@ export function useMetricsData({
   specialty,
   filters,
   implicitFilters = {},
+  excludeType,
 }: UseMetricsDataParams): UseMetricsDataReturn {
   const queryClient = useQueryClient();
   const specialtyCode = specialty?.code;
@@ -67,6 +77,7 @@ export function useMetricsData({
       specialtyCode: specialtyCode || "",
       filters,
       implicitFilters,
+      excludeType,
     }),
     queryFn: fetchMetricsData,
     enabled: !!(userId && specialtyCode),
@@ -80,6 +91,7 @@ export function useMetricsData({
         specialtyCode: specialtyCode || "",
         filters: filtersOverride ? { ...filters, ...filtersOverride } : filters,
         implicitFilters,
+        excludeType,
       }),
     });
   };

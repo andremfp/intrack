@@ -76,16 +76,19 @@ export const metrics = {
     specialtyCode,
     filters,
     implicitFilters,
+    excludeType,
   }: {
     userId: string;
     specialtyCode: string;
     filters: Record<string, unknown>;
     implicitFilters: Record<string, unknown>;
+    excludeType?: string;
   }) =>
     [
       ...metrics.prefix({ userId, specialtyCode }),
       stableStringify(filters),
       stableStringify(implicitFilters),
+      excludeType ?? "",
     ] as const,
 };
 
