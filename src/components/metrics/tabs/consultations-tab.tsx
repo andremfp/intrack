@@ -162,6 +162,18 @@ export function ConsultationsTab({
               getKey={(item) => item.vaccinationPlan}
               getLabel={(key) => (key === "sim" ? "Sim" : "Não")}
             />
+            <MetricCard
+              title="Alcoól"
+              data={metrics.byAlcohol}
+              getKey={(item) => item.alcohol}
+              getLabel={(key) => (key === "true" ? "Sim" : "Não")}
+            />
+            <MetricCard
+              title="Drogas"
+              data={metrics.byDrugs}
+              getKey={(item) => item.drugs}
+              getLabel={(key) => (key === "true" ? "Sim" : "Não")}
+            />
           </CollapsibleContent>
         </Collapsible>
       </div>

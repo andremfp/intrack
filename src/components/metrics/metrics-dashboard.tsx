@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Specialty } from "@/lib/api/specialties";
 import { useMetricsData } from "@/hooks/metrics/use-metrics-data";
 import { useFilters } from "@/hooks/filters/use-filters";
@@ -59,7 +59,7 @@ export function MetricsDashboard({
   const excludeType =
     activeSubTab === TAB_CONSTANTS.METRICS_SUB_TABS.GENERAL ? "AM" : undefined;
 
-  const { metrics, isLoading, error, retryLoadMetrics, loadMetrics } =
+  const { metrics, isLoading, isRefreshing, error, retryLoadMetrics, loadMetrics } =
     useMetricsData({
       userId,
       specialty,
@@ -77,12 +77,35 @@ export function MetricsDashboard({
     [filters]
   );
 
+  // Store the latest loadMetrics function in a ref to avoid stale closures
+  const loadMetricsRef = useRef(loadMetrics);
+  loadMetricsRef.current = loadMetrics;
+
   // Expose a refresh function to the parent so metrics can be reloaded
   // after side-effects like creating or editing consultations.
+  // Use a ref to store the callback and track the last onRefreshReady function
+  // to prevent calling it multiple times with the same parent callback
+  const refreshCallbackRef = useRef<(() => Promise<void>) | null>(null);
+  const lastOnRefreshReadyRef = useRef<typeof onRefreshReady>(undefined);
+  
+  // Create a stable refresh callback that uses the ref
+  if (!refreshCallbackRef.current) {
+    refreshCallbackRef.current = async () => {
+      return loadMetricsRef.current();
+    };
+  }
+
   useEffect(() => {
-    if (!onRefreshReady) return;
-    onRefreshReady(() => loadMetrics());
-  }, [onRefreshReady, loadMetrics]);
+    // Only call onRefreshReady if:
+    // 1. It's provided
+    // 2. It's a different function reference than the last time we called it
+    // This prevents calling it multiple times when the component remounts with the same callback
+    if (!onRefreshReady || lastOnRefreshReadyRef.current === onRefreshReady) {
+      return;
+    }
+    lastOnRefreshReadyRef.current = onRefreshReady;
+    onRefreshReady(refreshCallbackRef.current);
+  }, [onRefreshReady]);
 
   const handleExportExcel = async () => {
     if (!metrics) return;
@@ -163,6 +186,7 @@ export function MetricsDashboard({
         isExportingExcel={isExportingExcel}
         isExportDisabled={isMetricsEmpty}
         onRefresh={loadMetrics}
+        isRefreshing={isRefreshing}
       />
     );
   }
@@ -179,6 +203,7 @@ export function MetricsDashboard({
         isExportingExcel={isExportingExcel}
         isExportDisabled={isMetricsEmpty}
         onRefresh={loadMetrics}
+        isRefreshing={isRefreshing}
       />
     );
   }

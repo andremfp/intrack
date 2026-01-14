@@ -47,7 +47,9 @@ export function MetricsToolbar({
         <Button
           variant="outline"
           size="sm"
-          onClick={onRefresh}
+          onClick={() => {
+            onRefresh();
+          }}
           disabled={isRefreshing || isLoading}
           className="h-8"
           title="Atualizar métricas"

@@ -18,6 +18,7 @@ export interface UseMetricsDataParams {
 export interface UseMetricsDataReturn {
   metrics: ConsultationMetrics | null;
   isLoading: boolean;
+  isRefreshing: boolean;
   error: AppError | null;
   loadMetrics: (
     filtersOverride?: Partial<ConsultationsFilters>

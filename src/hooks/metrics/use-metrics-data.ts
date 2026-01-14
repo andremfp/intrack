@@ -71,41 +71,50 @@ export function useMetricsData({
   const queryClient = useQueryClient();
   const specialtyCode = specialty?.code;
 
+  const initialQueryKey = metrics.summary({
+    userId,
+    specialtyCode: specialtyCode || "",
+    filters,
+    implicitFilters,
+    excludeType,
+  });
+
   const query = useQuery({
-    queryKey: metrics.summary({
-      userId,
-      specialtyCode: specialtyCode || "",
-      filters,
-      implicitFilters,
-      excludeType,
-    }),
+    queryKey: initialQueryKey,
     queryFn: fetchMetricsData,
     enabled: !!(userId && specialtyCode),
   });
 
   const loadMetrics = async (filtersOverride?: Partial<typeof filters>) => {
-    // For manual refresh, invalidate the current query
-    await queryClient.invalidateQueries({
-      queryKey: metrics.summary({
+    // If filters are being overridden, we need to invalidate with the new key
+    // Otherwise, just refetch the current query directly
+    if (filtersOverride) {
+      const queryKey = metrics.summary({
         userId,
         specialtyCode: specialtyCode || "",
-        filters: filtersOverride ? { ...filters, ...filtersOverride } : filters,
+        filters: { ...filters, ...filtersOverride },
         implicitFilters,
         excludeType,
-      }),
-    });
+      });
+
+      await queryClient.invalidateQueries({ queryKey });
+      await queryClient.refetchQueries({ queryKey });
+    } else {
+      // Just refetch directly - this will force a network request even if data is fresh
+      // No need to invalidate first, as refetch() bypasses cache
+      await query.refetch({ cancelRefetch: false });
+    }
   };
 
   const retryLoadMetrics = async () => {
-    // For retry, invalidate and refetch
-    await queryClient.invalidateQueries({
-      queryKey: metrics.prefix({ userId, specialtyCode: specialtyCode || "" }),
-    });
+    // For retry, refetch the current query directly
+    await query.refetch();
   };
 
   return {
     metrics: query.data ?? null,
     isLoading: query.isLoading,
+    isRefreshing: query.isFetching,
     error: query.error as AppError | null,
     loadMetrics,
     retryLoadMetrics,

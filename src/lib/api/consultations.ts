@@ -621,6 +621,8 @@ export interface ConsultationMetrics {
   byPresential: Array<{ presential: string; count: number }>;
   bySmoker: Array<{ smoker: string; count: number }>;
   byVaccinationPlan: Array<{ vaccinationPlan: string; count: number }>;
+  byAlcohol: Array<{ alcohol: string; count: number }>;
+  byDrugs: Array<{ drugs: string; count: number }>;
   byFamilyType: Array<{ familyType: string; count: number }>;
   bySchoolLevel: Array<{ schoolLevel: string; count: number }>;
   byProfessionalSituation: Array<{
@@ -812,6 +814,8 @@ function getEmptyMetrics(): ConsultationMetrics {
     byPresential: [],
     bySmoker: [],
     byVaccinationPlan: [],
+    byAlcohol: [],
+    byDrugs: [],
     byFamilyType: [],
     bySchoolLevel: [],
     byProfessionalSituation: [],
@@ -862,6 +866,8 @@ function calculateMetrics(
   const presentialCounts = new Map<string, number>();
   const smokerCounts = new Map<string, number>();
   const vaccinationPlanCounts = new Map<string, number>();
+  const alcoholCounts = new Map<string, number>();
+  const drugsCounts = new Map<string, number>();
   const familyTypeCounts = new Map<string, number>();
   const schoolLevelCounts = new Map<string, number>();
   const professionalSituationCounts = new Map<string, number>();
@@ -928,6 +934,18 @@ function calculateMetrics(
     if (c.vaccination_plan !== null && c.vaccination_plan !== undefined) {
       const key = c.vaccination_plan ? "true" : "false";
       vaccinationPlanCounts.set(key, (vaccinationPlanCounts.get(key) || 0) + 1);
+    }
+
+    // Alcohol counting
+    if (c.alcohol !== null && c.alcohol !== undefined) {
+      const key = c.alcohol ? "true" : "false";
+      alcoholCounts.set(key, (alcoholCounts.get(key) || 0) + 1);
+    }
+
+    // Drugs counting
+    if (c.drugs !== null && c.drugs !== undefined) {
+      const key = c.drugs ? "true" : "false";
+      drugsCounts.set(key, (drugsCounts.get(key) || 0) + 1);
     }
 
     // Family type counting
@@ -1058,6 +1076,14 @@ function calculateMetrics(
     ([vaccinationPlan, count]) => ({ vaccinationPlan, count })
   );
 
+  const byAlcohol = Array.from(alcoholCounts.entries()).map(
+    ([alcohol, count]) => ({ alcohol, count })
+  );
+
+  const byDrugs = Array.from(drugsCounts.entries()).map(
+    ([drugs, count]) => ({ drugs, count })
+  );
+
   const byFamilyType = Array.from(familyTypeCounts.entries()).map(
     ([familyType, count]) => ({ familyType, count })
   );
@@ -1100,6 +1126,8 @@ function calculateMetrics(
     byPresential,
     bySmoker,
     byVaccinationPlan,
+    byAlcohol,
+    byDrugs,
     byFamilyType,
     bySchoolLevel,
     byProfessionalSituation,

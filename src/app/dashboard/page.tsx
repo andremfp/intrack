@@ -6,7 +6,7 @@ import { useSidebar } from "@/components/ui/sidebar-context";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { cn } from "@/utils/utils";
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useCallback } from "react";
 import type { Specialty } from "@/lib/api/specialties";
 import { SCROLLBAR_CLASSES, TAB_CONSTANTS } from "@/constants";
 import { useCachedUserProfile } from "@/hooks/user/use-cached-user-profile";
@@ -71,6 +71,19 @@ function DashboardContent() {
   useEffect(() => {
     updateInitShowSpecialtyModal(initShowSpecialtyModal);
   }, [initShowSpecialtyModal, updateInitShowSpecialtyModal]);
+
+  // Memoize refresh callbacks to prevent unnecessary re-renders
+  const handleConsultationsRefreshReady = useCallback((refresh: () => Promise<void>) => {
+    refreshConsultationsRef.current = refresh;
+  }, []);
+
+  const handleMetricsRefreshReady = useCallback((refresh: () => Promise<void>) => {
+    refreshMetricsRef.current = refresh;
+  }, []);
+
+  const handleReportsRefreshReady = useCallback((refresh: () => Promise<void>) => {
+    refreshReportsRef.current = refresh;
+  }, []);
 
   // Recover specialty details if the ID exists in the user profile but the cached specialty is missing
   useEffect(() => {
@@ -161,15 +174,9 @@ function DashboardContent() {
           activeReportSpecialtyCode={activeReportSpecialtyCode}
           onRowClick={handleRowClick}
           onAddConsultation={() => handleAddConsultation(activeSpecialtyYear)}
-          onConsultationsRefreshReady={(refresh) => {
-            refreshConsultationsRef.current = refresh;
-          }}
-          onMetricsRefreshReady={(refresh) => {
-            refreshMetricsRef.current = refresh;
-          }}
-          onReportsRefreshReady={(refresh) => {
-            refreshReportsRef.current = refresh;
-          }}
+          onConsultationsRefreshReady={handleConsultationsRefreshReady}
+          onMetricsRefreshReady={handleMetricsRefreshReady}
+          onReportsRefreshReady={handleReportsRefreshReady}
         />
       </SidebarInset>
       <ModalManager
