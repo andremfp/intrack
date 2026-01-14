@@ -41,6 +41,7 @@ async function seedUsers() {
       display_name: "João Silva",
       email: "test@example.com",
       specialty_id: specialtyData.id,
+      specialty_year: 1,
     });
 
     if (profileError) throw profileError;
