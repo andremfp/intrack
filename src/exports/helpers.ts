@@ -1,4 +1,4 @@
-import { COMMON_CONSULTATION_FIELDS, MGF_FIELDS, MGF_CONSULTATION_TYPE_SECTIONS, TAB_CONSTANTS, type SpecialtyField } from "@/constants";
+import { MGF_CONSULTATION_TYPE_SECTIONS, TAB_CONSTANTS } from "@/constants";
 import type { ReactElement } from "react";
 import type { DocumentProps } from "@react-pdf/renderer";
 import type {
@@ -22,6 +22,17 @@ import type {
   InternshipsSample,
   ProblemCount,
 } from "@/reports/report-types";
+import { commonFieldByKey, mgfFieldByKey } from "./constants";
+import {
+  formatBoolean,
+  formatWithOptions,
+  formatTextList,
+  formatIcpcCodes,
+  formatDate,
+  formatNumber,
+  getDetailsValue,
+  getTypeSpecificValue,
+} from "./mapping";
 
 function ensureFileExtension(filename: string, extension: string): string {
   if (!extension.startsWith(".")) {
@@ -40,7 +51,9 @@ function escapeCsvValue(value: ExportCell): string {
   if (value === null || value === undefined) return "";
 
   const raw =
-    typeof value === "string" || typeof value === "number" || typeof value === "boolean"
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
       ? String(value)
       : JSON.stringify(value);
 
@@ -193,83 +206,6 @@ export async function downloadReportPdfReact(options: {
   URL.revokeObjectURL(url);
 }
 
-const commonFieldByKey = new Map(
-  COMMON_CONSULTATION_FIELDS.map((field) => [field.key, field])
-);
-
-const mgfFieldByKey = new Map(MGF_FIELDS.map((field) => [field.key, field]));
-
-function getDetailsValue(consultation: ConsultationMGF, key: string): unknown {
-  if (!consultation.details || typeof consultation.details !== "object") {
-    return null;
-  }
-  return (consultation.details as Record<string, unknown>)[key] ?? null;
-}
-
-function getTypeSpecificValue(
-  consultation: ConsultationMGF,
-  type: string,
-  sectionKey: string,
-  fieldKey: string
-): unknown {
-  if (!consultation.details || typeof consultation.details !== "object") {
-    return null;
-  }
-  const details = consultation.details as Record<string, unknown>;
-  const typeKey = type.toLowerCase();
-  const typeData = details[typeKey] as
-    | Record<string, Record<string, unknown>>
-    | undefined;
-  if (!typeData) return null;
-  const sectionData = typeData[sectionKey] as Record<string, unknown> | undefined;
-  if (!sectionData) return null;
-  return sectionData[fieldKey] ?? null;
-}
-
-function formatBoolean(value: unknown): ConsultationExportCell {
-  if (value === null || value === undefined) return null;
-  if (typeof value === "boolean") return value ? "Sim" : "Não";
-  if (value === "true" || value === "false") {
-    return value === "true" ? "Sim" : "Não";
-  }
-  return null;
-}
-
-function formatWithOptions(
-  field: SpecialtyField | undefined,
-  value: unknown
-): ConsultationExportCell {
-  if (!field) {
-    if (value === null || value === undefined) return null;
-    return String(value);
-  }
-
-  if (value === null || value === undefined || value === "") return null;
-
-  if (!field.options || field.options.length === 0) {
-    return String(value);
-  }
-
-  const str = String(value);
-  const option = field.options.find((opt) => opt.value === str);
-  return option ? option.label : str;
-}
-
-function formatTextList(value: unknown): ConsultationExportCell {
-  if (!value) return null;
-
-  if (Array.isArray(value)) {
-    if (value.length === 0) return null;
-    return value.join("; ");
-  }
-
-  return String(value);
-}
-
-function formatIcpcCodes(value: unknown): ConsultationExportCell {
-  return formatTextList(value);
-}
-
 interface ExportColumnConfig {
   key: string;
   header: string;
@@ -294,38 +230,19 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
     key: "date",
     header: "Data",
     source: "column",
-    formatter: (value) => {
-      if (!value) return null;
-      try {
-        const date = new Date(String(value));
-        if (Number.isNaN(date.getTime())) return String(value);
-        return date.toISOString().split("T")[0];
-      } catch {
-        return String(value);
-      }
-    },
+    formatter: (value) => formatDate(value),
   },
   {
     key: "process_number",
     header: "Número de Processo",
     source: "column",
-    formatter: (value) =>
-      typeof value === "number"
-        ? value
-        : value
-        ? Number(value) || String(value)
-        : null,
+    formatter: (value) => formatNumber(value),
   },
   {
     key: "specialty_year",
     header: "Ano de Especialidade",
     source: "column",
-    formatter: (value) =>
-      typeof value === "number"
-        ? value
-        : value
-        ? Number(value) || String(value)
-        : null,
+    formatter: (value) => formatNumber(value),
   },
   {
     key: "favorite",
@@ -351,19 +268,13 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
     key: "sex",
     header: "Sexo",
     source: "column",
-    formatter: (value) =>
-      formatWithOptions(commonFieldByKey.get("sex"), value),
+    formatter: (value) => formatWithOptions(commonFieldByKey.get("sex"), value),
   },
   {
     key: "age",
     header: "Idade",
     source: "column",
-    formatter: (value) =>
-      typeof value === "number"
-        ? value
-        : value
-        ? Number(value) || String(value)
-        : null,
+    formatter: (value) => formatNumber(value),
   },
   {
     key: "age_unit",
@@ -385,13 +296,6 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
     source: "details",
     formatter: (value) =>
       formatWithOptions(mgfFieldByKey.get("school_level"), value),
-  },
-  {
-    key: "professional_area",
-    header: "Sector de Actividade",
-    source: "details",
-    formatter: (value) =>
-      formatWithOptions(mgfFieldByKey.get("professional_area"), value),
   },
   {
     key: "profession",
@@ -417,6 +321,18 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
     header: "Presencial",
     source: "column",
     formatter: (value) => formatBoolean(value),
+  },
+  {
+    key: "own_list",
+    header: "Lista Própria",
+    source: "details",
+    formatter: (value) => formatBoolean(value),
+  },
+  {
+    key: "other_list",
+    header: "Outra Lista",
+    source: "details",
+    formatter: (value) => (value ? String(value) : null),
   },
   {
     key: "smoker",
@@ -503,7 +419,11 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
     sectionKey: "exams",
     fieldKey: "creatinina",
     formatter: (value) =>
-      typeof value === "number" ? value : value ? Number(value) || String(value) : null,
+      typeof value === "number"
+        ? value
+        : value
+        ? Number(value) || String(value)
+        : null,
   },
   {
     key: "dm_exams_score2",
@@ -522,7 +442,11 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
     sectionKey: "exams",
     fieldKey: "albuminuria",
     formatter: (value) =>
-      typeof value === "number" ? value : value ? Number(value) || String(value) : null,
+      typeof value === "number"
+        ? value
+        : value
+        ? Number(value) || String(value)
+        : null,
   },
   {
     key: "dm_exams_ldl",
@@ -532,7 +456,11 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
     sectionKey: "exams",
     fieldKey: "ldl",
     formatter: (value) =>
-      typeof value === "number" ? value : value ? Number(value) || String(value) : null,
+      typeof value === "number"
+        ? value
+        : value
+        ? Number(value) || String(value)
+        : null,
   },
   {
     key: "dm_exams_hba1c",
@@ -542,7 +470,11 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
     sectionKey: "exams",
     fieldKey: "hba1c",
     formatter: (value) =>
-      typeof value === "number" ? value : value ? Number(value) || String(value) : null,
+      typeof value === "number"
+        ? value
+        : value
+        ? Number(value) || String(value)
+        : null,
   },
   {
     key: "dm_exams_tfg",
@@ -552,7 +484,11 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
     sectionKey: "exams",
     fieldKey: "tfg",
     formatter: (value) =>
-      typeof value === "number" ? value : value ? Number(value) || String(value) : null,
+      typeof value === "number"
+        ? value
+        : value
+        ? Number(value) || String(value)
+        : null,
   },
   {
     key: "dm_history_medicamentos",
@@ -581,7 +517,11 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
     sectionKey: "exams",
     fieldKey: "creatinina",
     formatter: (value) =>
-      typeof value === "number" ? value : value ? Number(value) || String(value) : null,
+      typeof value === "number"
+        ? value
+        : value
+        ? Number(value) || String(value)
+        : null,
   },
   {
     key: "hta_exams_score2",
@@ -600,7 +540,11 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
     sectionKey: "exams",
     fieldKey: "albuminuria",
     formatter: (value) =>
-      typeof value === "number" ? value : value ? Number(value) || String(value) : null,
+      typeof value === "number"
+        ? value
+        : value
+        ? Number(value) || String(value)
+        : null,
   },
   {
     key: "hta_exams_ldl",
@@ -610,7 +554,11 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
     sectionKey: "exams",
     fieldKey: "ldl",
     formatter: (value) =>
-      typeof value === "number" ? value : value ? Number(value) || String(value) : null,
+      typeof value === "number"
+        ? value
+        : value
+        ? Number(value) || String(value)
+        : null,
   },
   {
     key: "hta_exams_tfg",
@@ -620,7 +568,11 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
     sectionKey: "exams",
     fieldKey: "tfg",
     formatter: (value) =>
-      typeof value === "number" ? value : value ? Number(value) || String(value) : null,
+      typeof value === "number"
+        ? value
+        : value
+        ? Number(value) || String(value)
+        : null,
   },
   {
     key: "hta_history_medicamentos",
@@ -739,7 +691,6 @@ function formatSexForMetrics(sex: string): string {
   return labels[sex] ?? sex;
 }
 
-
 function formatPresentialCategory(value: string): string {
   if (value === "true") return "Presencial";
   if (value === "false") return "Remoto";
@@ -751,7 +702,10 @@ export function buildMetricsExportSheets(params: {
   metadataRows: ExportCell[][];
   activeTab: string;
 }): ExportSheet[] {
-  console.log("[buildMetricsExportSheets] Building metrics export sheets", params);
+  console.log(
+    "[buildMetricsExportSheets] Building metrics export sheets",
+    params
+  );
   const { metrics, metadataRows, activeTab } = params;
 
   const sheets: ExportSheet[] = [];
@@ -776,7 +730,9 @@ export function buildMetricsExportSheets(params: {
       ["Total de consultas", metrics.totalConsultations],
       [
         "Idade média",
-        Number.isFinite(metrics.averageAge) ? metrics.averageAge.toFixed(1) : null,
+        Number.isFinite(metrics.averageAge)
+          ? metrics.averageAge.toFixed(1)
+          : null,
       ],
     ];
     pushWithMetadata({
@@ -820,11 +776,7 @@ export function buildMetricsExportSheets(params: {
       pushWithMetadata({
         sheetName: "Tipologia",
         headers: ["Valor", "Label", "Consultas"],
-        rows: metrics.byType.map((item) => [
-          item.type,
-          item.label,
-          item.count,
-        ]),
+        rows: metrics.byType.map((item) => [item.type, item.label, item.count]),
       });
     }
 
@@ -859,7 +811,10 @@ export function buildMetricsExportSheets(params: {
         sheetName: "Escolaridade",
         headers: ["Categoria", "Consultas"],
         rows: metrics.bySchoolLevel.map((item) => [
-          formatWithOptions(mgfFieldByKey.get("school_level"), item.schoolLevel),
+          formatWithOptions(
+            mgfFieldByKey.get("school_level"),
+            item.schoolLevel
+          ),
           item.count,
         ]),
       });
@@ -897,7 +852,10 @@ export function buildMetricsExportSheets(params: {
         sheetName: "Contraceptivo",
         headers: ["Categoria", "Consultas"],
         rows: metrics.byContraceptive.map((item) => [
-          formatWithOptions(mgfFieldByKey.get("contraceptive"), item.contraceptive),
+          formatWithOptions(
+            mgfFieldByKey.get("contraceptive"),
+            item.contraceptive
+          ),
           item.count,
         ]),
       });
@@ -956,7 +914,6 @@ export function buildMetricsExportSheets(params: {
   return sheets;
 }
 
-
 interface ReportExportTableParams {
   reportData: MGFReportData;
   metadataRows: ExportCell[][];
@@ -990,12 +947,10 @@ const URGENCY_AUTONOMY_HEADERS = [
   "Consultas",
 ] satisfies (string | number)[];
 
-const FORMATION_HEADERS = [
-  "Formação",
-  "Detalhe",
-  "Valor",
-  "Extra",
-] satisfies (string | number)[];
+const FORMATION_HEADERS = ["Formação", "Detalhe", "Valor", "Extra"] satisfies (
+  | string
+  | number
+)[];
 
 export function buildReportExportMetadataRows(params: {
   specialtyCode?: string | null;
@@ -1013,7 +968,9 @@ export function buildReportExportMetadataRows(params: {
   ];
 }
 
-export function buildReportExportTable(params: ReportExportTableParams): ExportTable {
+export function buildReportExportTable(
+  params: ReportExportTableParams
+): ExportTable {
   const { reportData, metadataRows, reportLabel } = params;
   const rows: ExportRow[] = [];
 
@@ -1043,7 +1000,9 @@ export function buildReportExportTable(params: ReportExportTableParams): ExportT
   };
 }
 
-export function buildReportExportSheets(params: ReportExportSheetsParams): ExportSheet[] {
+export function buildReportExportSheets(
+  params: ReportExportSheetsParams
+): ExportSheet[] {
   const { reportData, metadataRows } = params;
   const sheets: ExportSheet[] = [];
 
@@ -1058,7 +1017,10 @@ export function buildReportExportSheets(params: ReportExportSheetsParams): Expor
 
   if (reportData.summary) {
     const summaryRows: ExportCell[][] = [];
-    summaryRows.push(["Total de consultas", reportData.summary.totalConsultations]);
+    summaryRows.push([
+      "Total de consultas",
+      reportData.summary.totalConsultations,
+    ]);
     summaryRows.push([
       "Consultas presenciais",
       reportData.summary.presentialCounts.presential,
@@ -1092,8 +1054,14 @@ export function buildReportExportSheets(params: ReportExportSheetsParams): Expor
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([autonomy, entry]) => {
           const presentialTrue = entry.presential.get(true)?.consultations ?? 0;
-          const presentialFalse = entry.presential.get(false)?.consultations ?? 0;
-          return [autonomy, presentialTrue, presentialFalse, entry.consultations];
+          const presentialFalse =
+            entry.presential.get(false)?.consultations ?? 0;
+          return [
+            autonomy,
+            presentialTrue,
+            presentialFalse,
+            entry.consultations,
+          ];
         }),
     });
 
@@ -1188,9 +1156,25 @@ export function buildReportExportSheets(params: ReportExportSheetsParams): Expor
     }
   }
 
-  if (reportData.internshipsSamples && reportData.internshipsSamples.length > 0) {
+  // Only create sheet if there are samples with actual data
+  if (
+    reportData.internshipsSamples &&
+    reportData.internshipsSamples.length > 0 &&
+    reportData.internshipsSamples.some(
+      (sample) =>
+        (sample.weeks?.length ?? 0) > 0 ||
+        Object.values(sample.autonomyCounts ?? {}).some((count) => count > 0)
+    )
+  ) {
     const rows: ExportCell[][] = [];
     reportData.internshipsSamples.forEach((sample) => {
+      // Only process samples with actual data
+      const hasWeeks = (sample.weeks?.length ?? 0) > 0;
+      const hasAutonomyCounts = Object.values(sample.autonomyCounts ?? {}).some(
+        (count) => count > 0
+      );
+      if (!hasWeeks && !hasAutonomyCounts) return;
+
       const totalConsultations = sample.weeks.reduce(
         (sum, week) => sum + week.consultations,
         0
@@ -1211,11 +1195,14 @@ export function buildReportExportSheets(params: ReportExportSheetsParams): Expor
           rows.push([sample.label, `Autonomia ${autonomy}`, count, ""]);
         });
     });
-    pushSheet({
-      sheetName: "Formações complementares",
-      headers: FORMATION_HEADERS,
-      rows,
-    });
+    // Only push sheet if there are rows
+    if (rows.length > 0) {
+      pushSheet({
+        sheetName: "Formações complementares",
+        headers: FORMATION_HEADERS,
+        rows,
+      });
+    }
   }
 
   if (reportData.topProblems && reportData.topProblems.length > 0) {
@@ -1278,7 +1265,9 @@ function addUnitSampleRows(rows: ExportRow[], breakdown: UnitSampleBreakdown) {
           .forEach(([type, count]) => {
             rows.push([
               "Unidade",
-              `Autonomia ${autonomy} - ${key ? "Presencial" : "Não presencial"} - Tipo: ${type}`,
+              `Autonomia ${autonomy} - ${
+                key ? "Presencial" : "Não presencial"
+              } - Tipo: ${type}`,
               count,
             ]);
           });
@@ -1364,11 +1353,7 @@ function addInternshipRows(rows: ExportRow[], samples?: InternshipsSample[]) {
     Object.entries(sample.autonomyCounts)
       .sort(([a], [b]) => a.localeCompare(b))
       .forEach(([autonomy, count]) => {
-        rows.push([
-          "Formações",
-          `Autonomia ${autonomy}`,
-          `${count} consultas`,
-        ]);
+        rows.push(["Formações", `Autonomia ${autonomy}`, `${count} consultas`]);
       });
   });
 }
@@ -1376,11 +1361,7 @@ function addInternshipRows(rows: ExportRow[], samples?: InternshipsSample[]) {
 function addTopProblemsRows(rows: ExportRow[], problems?: ProblemCount[]) {
   if (!problems || problems.length === 0) return;
   problems.forEach((problem) => {
-    rows.push([
-      "Problemas",
-      problem.code,
-      `${problem.count} consultas`,
-    ]);
+    rows.push(["Problemas", problem.code, `${problem.count} consultas`]);
   });
 }
 

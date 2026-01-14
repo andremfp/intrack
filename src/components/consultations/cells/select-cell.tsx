@@ -33,11 +33,12 @@ export function SelectCell({ value, options }: SelectCellProps) {
             {value}
           </Badge>
         </TooltipTrigger>
-        <TooltipContent side="top">
-          <p className="text-sm">{option.label}</p>
+        <TooltipContent side="top" className="max-w-[300px]">
+          <p className="text-sm whitespace-normal break-words">
+            {option.label}
+          </p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
 }
-

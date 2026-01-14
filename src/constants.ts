@@ -30,8 +30,8 @@ export const SPECIALTY_CODES = {
 } as const;
 
 // Import ICPC-2 codes
-export type { ICPC2Code } from "./icpc2-codes";
 import { MGF_ICPC2_CODES } from "./icpc2-codes";
+import { PROFESSIONS } from "./professions";
 import type { FilterFieldType } from "@/components/filters/types";
 
 // Common types
@@ -56,15 +56,19 @@ export type FieldType =
   | "combobox"
   | "number"
   | "text-list"
-  | "icpc2-codes";
+  | "code-search";
 
 export type FieldRuleContext = {
   location?: string;
   sex?: string;
   type?: string;
+  own_list?: boolean;
 };
 
-export type FieldRule = "always" | "never" | ((ctx: FieldRuleContext) => boolean);
+export type FieldRule =
+  | "always"
+  | "never"
+  | ((ctx: FieldRuleContext) => boolean);
 
 export interface SpecialtyField {
   key: string;
@@ -78,12 +82,14 @@ export interface SpecialtyField {
   units?: string;
   section?: string; // Optional section grouping for UI organization
   mainLocation?: string; // Main location for specialty (used for general metrics tab)
+  multiple?: boolean; // For code-search fields: true = multiple selection, false/undefined = single selection
 }
 
-export interface SpecialtyFieldOption {
-  value: string;
-  label: string;
-}
+// Traditional select/combobox options use value/label
+// Code-search options use code/description
+export type SpecialtyFieldOption =
+  | { value: string; label: string; code?: never; description?: never }
+  | { code: string; description: string; value?: never; label?: never };
 
 export interface ConstultationTypeSection {
   key: string;
@@ -113,8 +119,8 @@ export const COMMON_CONSULTATION_FIELDS: SpecialtyField[] = [
     type: "select",
     requiredWhen: "always",
     options: [
-      { value: "m", label: "Masculino" },
       { value: "f", label: "Feminino" },
+      { value: "m", label: "Masculino" },
       { value: "other", label: "Outro" },
     ],
   },
@@ -153,7 +159,7 @@ export const MGF_SECTION_LABELS: Record<string, string> = {
 
 // MGF (Medicina Geral e Familiar) specialty fields
 export const MGF_FIELDS: SpecialtyField[] = [
-  // Tipo de Consulta
+  // Informação da Consulta
   {
     key: "location",
     label: "Local",
@@ -175,10 +181,10 @@ export const MGF_FIELDS: SpecialtyField[] = [
     requiredWhen: "always",
     section: "consultation_info",
     options: [
-      { value: "parcial", label: "Parcial" },
-      { value: "total", label: "Total" },
       { value: "observada", label: "Observada" },
       { value: "ombro-a-ombro", label: "Ombro-a-ombro" },
+      { value: "parcial", label: "Parcial" },
+      { value: "total", label: "Total" },
     ],
   },
   {
@@ -204,8 +210,23 @@ export const MGF_FIELDS: SpecialtyField[] = [
     key: "presential",
     label: "Presencial",
     type: "boolean",
-    defaultValue: true,
     requiredWhen: "always",
+    section: "consultation_info",
+  },
+  {
+    key: "own_list",
+    label: "Lista Própria",
+    type: "boolean",
+    requiredWhen: (ctx) => !!ctx.location && ctx.location === "unidade",
+    visibleWhen: (ctx) => ctx.location === "unidade",
+    section: "consultation_info",
+  },
+  {
+    key: "other_list",
+    label: "Outra Lista",
+    type: "text",
+    visibleWhen: (ctx) =>
+      !!ctx.location && ctx.location === "unidade" && ctx.own_list === false,
     section: "consultation_info",
   },
   {
@@ -253,9 +274,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
     type: "select",
     visibleWhen: (ctx) => ctx.location === "unidade",
     section: "patient_info",
-    options: [
-      { value: "tipo1", label: "Tipo 1"},
-    ],
+    options: [{ value: "tipo1", label: "Tipo 1" }],
   },
   {
     key: "school_level",
@@ -264,33 +283,50 @@ export const MGF_FIELDS: SpecialtyField[] = [
     visibleWhen: (ctx) => ctx.location === "unidade",
     section: "patient_info",
     options: [
-      { value: "sem", label: "Sem Estudos"},
-      { value: "primario", label: "Ensino Primário"},
-      { value: "9ano", label: "9º Ano"},
-      { value: "secundario", label: "Ensino Secundário"},
-      { value: "superior", label: "Ensino Superior"},
-      { value: "mestrado", label: "Ensino Superior - Mestrado"},
-      { value: "doutoramento", label: "Ensino Superior - Doutoramento"},
-    ],
-  },
-  {
-    key: "professional_area",
-    label: "Sector de Actividade",
-    type: "select",
-    visibleWhen: (ctx) => ctx.location === "unidade",
-    section: "patient_info",
-    options: [
-      { value: "health", label: "Saúde"},
+      { value: "< 4 anos", label: "< 4 Anos" },
+      { value: "4 anos", label: "4 Anos" },
+      { value: "6 anos", label: "6 Anos" },
+      { value: "9 anos", label: "9 Anos" },
+      { value: "11 anos", label: "11 Anos" },
+      { value: "12 anos", label: "12 Anos" },
+      { value: "mestrado", label: "Mestrado" },
+      { value: "bacharelato", label: "Bacharelato" },
+      { value: "licenciatura", label: "Licenciatura" },
+      { value: "doutoramento", label: "Doutoramento" },
+      {
+        value: "curso_tecnologico",
+        label: "Curso Tecnológico/Profissional Nível III",
+      },
+      { value: "pos_graduacao", label: "Pós-graduação" },
+      {
+        value: "curso_esp_tecnologica",
+        label: "Curso de Especialização Tecnológica",
+      },
     ],
   },
   {
     key: "profession",
     label: "Profissão",
+    type: "code-search",
+    visibleWhen: (ctx) => ctx.location === "unidade",
+    section: "patient_info",
+    placeholder: "Pesquisar profissão",
+    options: PROFESSIONS,
+    multiple: false, // Single selection only
+  },
+  {
+    key: "professional_situation",
+    label: "Situação Profissional",
     type: "select",
     visibleWhen: (ctx) => ctx.location === "unidade",
     section: "patient_info",
     options: [
-      { value: "medicine", label: "Médicina"},
+      { value: "nao_activa", label: "Não Activa" },
+      { value: "activa", label: "Activa" },
+      { value: "reformado", label: "Reformado" },
+      { value: "estudante", label: "Estudante" },
+      { value: "N/A", label: "Não Aplicável" },
+      { value: "desconhecida", label: "Desconhecida" },
     ],
   },
   // História Clínica
@@ -303,6 +339,18 @@ export const MGF_FIELDS: SpecialtyField[] = [
       { value: "nao", label: "Não" },
       { value: "ex fumador", label: "Ex-fumador" },
     ],
+    section: "clinical_history",
+  },
+  {
+    key: "alcohol",
+    label: "Alcoól",
+    type: "boolean",
+    section: "clinical_history",
+  },
+  {
+    key: "drugs",
+    label: "Drogas",
+    type: "boolean",
     section: "clinical_history",
   },
   {
@@ -322,23 +370,29 @@ export const MGF_FIELDS: SpecialtyField[] = [
   {
     key: "problems",
     label: "Problemas",
-    type: "icpc2-codes",
+    type: "code-search",
     placeholder: "Pesquisar códigos ICPC-2",
     section: "diagnosis",
+    options: MGF_ICPC2_CODES,
+    multiple: true, // Multiple selection
   },
   {
     key: "diagnosis",
     label: "Diagnóstico",
-    type: "icpc2-codes",
+    type: "code-search",
     placeholder: "Pesquisar códigos ICPC-2",
     section: "diagnosis",
+    options: MGF_ICPC2_CODES,
+    multiple: true, // Multiple selection
   },
   {
     key: "new_diagnosis",
     label: "Novo Diagnóstico",
-    type: "icpc2-codes",
+    type: "code-search",
     placeholder: "Pesquisar códigos ICPC-2",
     section: "diagnosis",
+    options: MGF_ICPC2_CODES,
+    multiple: true, // Multiple selection
   },
   // Referenciação
   {
@@ -380,10 +434,12 @@ export const MGF_FIELDS: SpecialtyField[] = [
   {
     key: "referrence_motive",
     label: "Motivo da referenciação",
-    type: "icpc2-codes",
+    type: "code-search",
     placeholder: "Motivo da referenciação",
     section: "referral",
     visibleWhen: (ctx) => ctx.location === "unidade",
+    options: MGF_ICPC2_CODES,
+    multiple: true, // Multiple selection
   },
   // Planeamento Familiar
   {
@@ -447,180 +503,192 @@ export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
   string,
   ConstultationTypeSection[]
 > = {
-  dm: [{
-    key: "exams",
-    label: "Diabetes - Exames",
-    section: "type_specific",
-    fields: [
-      {
-        key: "creatinina",
-        label: "Creatinina",
-        type: "number",
-        units: "mg/dL",
-      },
-      {
-        key: "score2",
-        label: "Score2",
-        type: "text",
-        units: "",
-      },
-      {
-        key: "albuminuria",
-        label: "Albuminuria",
-        type: "number",
-        units: "mg/g",
-      },
-      {
-        key: "ldl",
-        label: "LDL",
-        type: "number",
-        units: "mg/dL",
-      },
-      {
-        key: "hba1c",
-        label: "HbA1C",
-        type: "number",
-        units: "%",
-      },
-      {
-        key: "tfg",
-        label: "TFG",
-        type: "number",
-        units: "mL/min",
-      },
-    ],
-  },
-  {
-    key: "history",
-    label: "Diabetes - Historial",
-    section: "type_specific",
-    fields: [
-      {
-        key: "medicamentos",
-        label: "Medicamentos",
-        type: "multi-select",
-        options: [
-          { value: "metformina", label: "Metformina" },
-          { value: "sulfonilureia", label: "Sulfonilureia" },
-          { value: "pioglitazona", label: "Pioglitazona" },
-          { value: "glipizida", label: "Glipizida" },
-          { value: "gliclazida", label: "Gliclazida" },
-          { value: "glimepirida", label: "Glimepirida" },
-        ],
-      },
-      {
-        key: "complicacoes",
-        label: "Complicações",
-        type: "multi-select",
-        options: [
-          { value: "microvasculares", label: "Microvasculares" },
-          { value: "macrovascular", label: "Macrovasculares" },
-        ],
-      },
-    ],
-  }],
-  hta: [{
-    key: "exams",
-    label: "Hipertensão Arterial - Exames",
-    section: "type_specific",
-    fields: [
-      {
-        key: "creatinina",
-        label: "Creatinina",
-        type: "number",
-        units: "mg/dL",
-      },
-      {
-        key: "score2",
-        label: "Score2",
-        type: "text",
-        units: "",
-      },
-      {
-        key: "albuminuria",
-        label: "Albuminuria",
-        type: "number",
-        units: "mg/g",
-      },
-      {
-        key: "ldl",
-        label: "LDL",
-        type: "number",
-        units: "mg/dL",
-      },
-      {
-        key: "tfg",
-        label: "TFG",
-        type: "number",
-        units: "mL/min",
-      },
-    ],
-  },
-  {
-    key: "history",
-    label: "Hipertensão Arterial - Historial",
-    section: "type_specific",
-    fields: [
-      {
-        key: "medicamentos",
-        label: "Medicamentos",
-        type: "multi-select",
-        options: [
-          { value: "beta-bloqueantes", label: "Beta-bloqueantes" },
-          { value: "diureticos", label: "Diureticos" },
-          { value: "inibidores-da-enzima-conversora", label: "Inibidores da enzima conversora" },
-          { value: "antagonistas-do-receptor-angiotensina-ii", label: "Antagonistas do receptor angiotensina II" },
-          { value: "outros", label: "Outros" },
-        ],
-      },
-      {
-        key: "complicacoes",
-        label: "Complicações",
-        type: "multi-select",
-        options: [
-          { value: "microvasculares", label: "Microvasculares" },
-          { value: "macrovascular", label: "Macrovasculares" },
-        ],
-      },
-    ],
-  }],
-  sm: [{
-    key: "history",
-    label: "Saúde Materna - Historial",
-    section: "type_specific",
-    visibleWhen: (ctx) => ctx.location === "unidade" && ctx.sex !== "m",
-    fields: [
-      {
-        key: "trimestre",
-        label: "Trimestre",
-        type: "select",
-        requiredWhen: "always",
-        options: [
-          { value: "1t", label: "1º Trimestre" },
-          { value: "2t", label: "2º Trimestre" },
-          { value: "3t", label: "3º Trimestre" },
-          { value: "pos", label: "Pós-parto" },
-        ],
-      },
-      {
-        key: "plano-vigilancia",
-        label: "Plano de Vigilância",
-        type: "multi-select",
-        options: [
-          { value: "analises", label: "Análises" },
-          { value: "eco1", label: "Ecografia 1º Trim." },
-          { value: "eco2", label: "Ecografia 2º Trim." },
-          { value: "eco3", label: "Ecografia 3º Trim." },
-        ],
-      },
-      {
-        key: "complicacoes",
-        label: "Complicações",
-        type: "text-list",
-        placeholder: "Digite uma complicação",
-      },
-    ],
-  }],
+  dm: [
+    {
+      key: "exams",
+      label: "Diabetes - Exames",
+      section: "type_specific",
+      fields: [
+        {
+          key: "creatinina",
+          label: "Creatinina",
+          type: "number",
+          units: "mg/dL",
+        },
+        {
+          key: "score2",
+          label: "Score2",
+          type: "text",
+          units: "",
+        },
+        {
+          key: "albuminuria",
+          label: "Albuminuria",
+          type: "number",
+          units: "mg/g",
+        },
+        {
+          key: "ldl",
+          label: "LDL",
+          type: "number",
+          units: "mg/dL",
+        },
+        {
+          key: "hba1c",
+          label: "HbA1C",
+          type: "number",
+          units: "%",
+        },
+        {
+          key: "tfg",
+          label: "TFG",
+          type: "number",
+          units: "mL/min",
+        },
+      ],
+    },
+    {
+      key: "history",
+      label: "Diabetes - Historial",
+      section: "type_specific",
+      fields: [
+        {
+          key: "medicamentos",
+          label: "Medicamentos",
+          type: "multi-select",
+          options: [
+            { value: "metformina", label: "Metformina" },
+            { value: "sulfonilureia", label: "Sulfonilureia" },
+            { value: "pioglitazona", label: "Pioglitazona" },
+            { value: "glipizida", label: "Glipizida" },
+            { value: "gliclazida", label: "Gliclazida" },
+            { value: "glimepirida", label: "Glimepirida" },
+          ],
+        },
+        {
+          key: "complicacoes",
+          label: "Complicações",
+          type: "multi-select",
+          options: [
+            { value: "microvasculares", label: "Microvasculares" },
+            { value: "macrovascular", label: "Macrovasculares" },
+          ],
+        },
+      ],
+    },
+  ],
+  hta: [
+    {
+      key: "exams",
+      label: "Hipertensão Arterial - Exames",
+      section: "type_specific",
+      fields: [
+        {
+          key: "creatinina",
+          label: "Creatinina",
+          type: "number",
+          units: "mg/dL",
+        },
+        {
+          key: "score2",
+          label: "Score2",
+          type: "text",
+          units: "",
+        },
+        {
+          key: "albuminuria",
+          label: "Albuminuria",
+          type: "number",
+          units: "mg/g",
+        },
+        {
+          key: "ldl",
+          label: "LDL",
+          type: "number",
+          units: "mg/dL",
+        },
+        {
+          key: "tfg",
+          label: "TFG",
+          type: "number",
+          units: "mL/min",
+        },
+      ],
+    },
+    {
+      key: "history",
+      label: "Hipertensão Arterial - Historial",
+      section: "type_specific",
+      fields: [
+        {
+          key: "medicamentos",
+          label: "Medicamentos",
+          type: "multi-select",
+          options: [
+            { value: "beta-bloqueantes", label: "Beta-bloqueantes" },
+            { value: "diureticos", label: "Diureticos" },
+            {
+              value: "inibidores-da-enzima-conversora",
+              label: "Inibidores da enzima conversora",
+            },
+            {
+              value: "antagonistas-do-receptor-angiotensina-ii",
+              label: "Antagonistas do receptor angiotensina II",
+            },
+            { value: "outros", label: "Outros" },
+          ],
+        },
+        {
+          key: "complicacoes",
+          label: "Complicações",
+          type: "multi-select",
+          options: [
+            { value: "microvasculares", label: "Microvasculares" },
+            { value: "macrovascular", label: "Macrovasculares" },
+          ],
+        },
+      ],
+    },
+  ],
+  sm: [
+    {
+      key: "history",
+      label: "Saúde Materna - Historial",
+      section: "type_specific",
+      visibleWhen: (ctx) => ctx.location === "unidade" && ctx.sex !== "m",
+      fields: [
+        {
+          key: "trimestre",
+          label: "Trimestre",
+          type: "select",
+          requiredWhen: "always",
+          options: [
+            { value: "1t", label: "1º Trimestre" },
+            { value: "2t", label: "2º Trimestre" },
+            { value: "3t", label: "3º Trimestre" },
+            { value: "pos", label: "Pós-parto" },
+          ],
+        },
+        {
+          key: "plano-vigilancia",
+          label: "Plano de Vigilância",
+          type: "multi-select",
+          options: [
+            { value: "analises", label: "Análises" },
+            { value: "eco1", label: "Ecografia 1º Trim." },
+            { value: "eco2", label: "Ecografia 2º Trim." },
+            { value: "eco3", label: "Ecografia 3º Trim." },
+          ],
+        },
+        {
+          key: "complicacoes",
+          label: "Complicações",
+          type: "text-list",
+          placeholder: "Digite uma complicação",
+        },
+      ],
+    },
+  ],
 };
 
 // Type for specialty details JSONB
@@ -629,7 +697,9 @@ export type SpecialtyDetails = Record<
   string | number | boolean | null | string[]
 >;
 
-const resolveFieldDefault = (field: SpecialtyField): SpecialtyDetails[string] => {
+const resolveFieldDefault = (
+  field: SpecialtyField
+): SpecialtyDetails[string] => {
   if (field.defaultValue !== undefined) {
     return field.defaultValue as SpecialtyDetails[string];
   }
@@ -637,7 +707,7 @@ const resolveFieldDefault = (field: SpecialtyField): SpecialtyDetails[string] =>
   if (
     field.type === "text-list" ||
     field.type === "multi-select" ||
-    field.type === "icpc2-codes"
+    field.type === "code-search"
   ) {
     return [] as string[];
   }
@@ -656,7 +726,6 @@ export function getDefaultSpecialtyDetails(
         return acc;
       }, {} as SpecialtyDetails);
 
-      
       return details;
     }
     default:
@@ -680,14 +749,18 @@ export function getSpecialtyMainLocation(specialtyCode: string): {
   label: string | undefined;
 } {
   const fields = getSpecialtyFields(specialtyCode);
-  const locationField = fields.find(field => field.key === "location");
+  const locationField = fields.find((field) => field.key === "location");
   const value = locationField?.mainLocation;
-  const label = locationField?.options?.find(option => option.value === value)?.label;
+  const label = locationField?.options?.find(
+    (option) => option.value === value
+  )?.label;
   return { value, label };
 }
 
 // Get display name for Consultations metrics tab (returns main location or default)
-export function getConsultationsTabDisplayName(specialtyCode?: string | null): string {
+export function getConsultationsTabDisplayName(
+  specialtyCode?: string | null
+): string {
   if (!specialtyCode) {
     return TAB_CONSTANTS.METRICS_SUB_TABS.CONSULTATIONS;
   }
@@ -732,8 +805,8 @@ export const CONSULTATIONS_ENABLED_FIELDS: FilterFieldType[] = [
   "new_contraceptive",
   "family_type",
   "school_level",
-  "professional_area",
   "profession",
+  "professional_situation",
   "vaccination_plan",
 ];
 
@@ -762,8 +835,8 @@ export const METRICS_CONSULTATIONS_ENABLED_FIELDS: FilterFieldType[] = [
   "presential",
   "family_type",
   "school_level",
-  "professional_area",
   "profession",
+  "professional_situation",
   "vaccination_plan",
   "smoker",
   "contraceptive",

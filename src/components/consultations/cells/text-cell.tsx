@@ -10,7 +10,11 @@ interface TextCellProps {
 }
 
 export function TextCell({ value }: TextCellProps) {
-  const displayValue = value || "-";
+  const fullValue = value || "-";
+  const displayValue =
+    fullValue === "-" || fullValue.length <= 10
+      ? fullValue
+      : `${fullValue.slice(0, 10)}...`;
 
   return (
     <TooltipProvider>
@@ -18,13 +22,12 @@ export function TextCell({ value }: TextCellProps) {
         <TooltipTrigger asChild>
           <span className="max-w-[200px] truncate block">{displayValue}</span>
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-[260px]">
+        <TooltipContent side="top" className="max-w-[300px]">
           <p className="text-sm whitespace-normal break-words leading-relaxed">
-            {displayValue}
+            {fullValue}
           </p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
 }
-

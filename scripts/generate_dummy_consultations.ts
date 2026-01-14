@@ -1,5 +1,6 @@
 import { writeFileSync } from "fs";
 import { MGF_ICPC2_CODES } from "../src/icpc2-codes.ts";
+import { PROFESSIONS } from "../src/professions.ts";
 
 const YEAR = Number(process.argv[2]);
 const SPECIALTY_YEAR = Number(process.argv[3]);
@@ -66,16 +67,28 @@ const SMOKER = ["sim", "nao", "ex fumador"] as const;
 const FAMILY_TYPES = [null, "tipo1"] as const;
 const SCHOOL_LEVELS = [
   null,
-  "sem",
-  "primario",
-  "9ano",
-  "secundario",
-  "superior",
+  "< 4 anos",
+  "4 anos",
+  "6 anos",
+  "9 anos",
+  "11 anos",
+  "12 anos",
   "mestrado",
+  "bacharelato",
+  "licenciatura",
   "doutoramento",
+  "curso_tecnologico",
+  "pos_graduacao",
+  "curso_esp_tecnologica",
 ] as const;
-const PROFESSIONAL_AREAS = [null, "health"] as const;
-const PROFESSIONS = [null, "medicine", "nursing", "pharmacy", "other"] as const;
+const PROFESSIONAL_SITUATIONS = [
+  null,
+  "nao_activa",
+  "activa",
+  "reformado",
+  "estudante",
+  "desconhecida",
+] as const;
 const CONTRACEPTIVES = [
   null,
   "coc",
@@ -116,6 +129,11 @@ function randomICPC2Codes(count: number = 1): string[] {
   return selected;
 }
 
+function randomProfession(): string {
+  const selected = random(PROFESSIONS);
+  return selected.code ?? "";
+}
+
 function isWeekday(d: Date): boolean {
   const day = d.getDay();
   return day !== 0 && day !== 6;
@@ -135,9 +153,9 @@ while (date.getFullYear() === YEAR) {
     const internship = location !== "unidade" ? random(INTERNSHIPS) : null;
     const family_type = location === "unidade" ? random(FAMILY_TYPES) : null;
     const school_level = location === "unidade" ? random(SCHOOL_LEVELS) : null;
-    const professional_area =
-      location === "unidade" ? random(PROFESSIONAL_AREAS) : null;
-    const profession = location === "unidade" ? random(PROFESSIONS) : null;
+    const professional_situation =
+      location === "unidade" ? random(PROFESSIONAL_SITUATIONS) : null;
+    const profession = location === "unidade" ? randomProfession() : null;
     const referrence = location === "unidade" ? random(INTERNSHIPS) : null;
 
     const sex = random(SEX);
@@ -151,9 +169,11 @@ while (date.getFullYear() === YEAR) {
       internship,
       family_type,
       school_level,
-      professional_area,
       profession,
+      professional_situation,
       smoker: random(SMOKER),
+      alcohol: randomBoolOrNull(),
+      drugs: randomBoolOrNull(),
       vaccination_plan: randomBoolOrNull(),
       chronic_diseases: [],
       problems: randomICPC2Codes(1),

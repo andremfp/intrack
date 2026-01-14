@@ -18,7 +18,7 @@ export type FilterFieldType =
   | "new_contraceptive"
   | "family_type"
   | "school_level"
-  | "professional_area"
+  | "professional_situation"
   | "profession"
   | "vaccination_plan";
 
@@ -45,7 +45,4 @@ export interface ConsultationFiltersProps {
 }
 
 // Sorting types (re-exported from sorting module for convenience)
-export type {
-  SortingConfig,
-  ConsultationSortingProps,
-} from "../sorting/types";
+export type { SortingConfig, ConsultationSortingProps } from "../sorting/types";

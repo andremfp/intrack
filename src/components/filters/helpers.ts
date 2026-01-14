@@ -105,7 +105,6 @@ function mapEnabledFieldsToSetterFields(
       case "new_contraceptive":
       case "family_type":
       case "school_level":
-      case "professional_area":
       case "profession":
       case "vaccination_plan":
         setterFields.push(field);
@@ -263,10 +262,6 @@ export function getFamilyTypeLabel(value: string): string {
 
 export function getSchoolLevelLabel(value: string): string {
   return getFieldLabel("school_level", value);
-}
-
-export function getProfessionalAreaLabel(value: string): string {
-  return getFieldLabel("professional_area", value);
 }
 
 export function getProfessionLabel(value: string): string {

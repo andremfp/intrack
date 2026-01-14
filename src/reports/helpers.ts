@@ -1,57 +1,109 @@
-import { SPECIALTY_CODES, TAB_CONSTANTS } from "@/constants";
-import {
-  MGF_REPORT_DEFINITIONS,
-  MGF_REPORT_CONFIGS,
-  type MGFReportDefinition,
-  type MGFReportKey,
-} from "@/reports/mgf/mgf-reports";
-import type { SpecialtyReportConfig } from "@/reports/report-types";
+import type { MGFReportData } from "./report-types";
+import type { SpecialtyReportConfig } from "./report-types";
+import { getMGFReportDefinition } from "./mgf/mgf-reports";
+import { MGF_REPORT_CONFIGS } from "./mgf/mgf-reports";
+import type { MGFReportKey } from "./mgf/mgf-reports";
 
-const REPORT_TAB_CONFIG: Record<string, MGFReportDefinition[]> = {
-  [SPECIALTY_CODES.MGF]: MGF_REPORT_DEFINITIONS,
-};
+/**
+ * Checks if a report has actual data to display/export.
+ * Returns true if the report contains any meaningful data.
+ */
+export function hasReportData(data?: MGFReportData): boolean {
+  if (!data) return false;
 
-export const REPORT_CONFIG_REGISTRY: Record<string, SpecialtyReportConfig[]> = {
-  [SPECIALTY_CODES.MGF]: MGF_REPORT_CONFIGS,
-};
+  const summary = data.summary;
+  const unitSampleBreakdown = data.unitSampleBreakdown;
+  const sampleWeeks = data.sampleWeeks;
+  const firstHalfWeeks = data.firstHalfWeeks;
+  const secondHalfWeeks = data.secondHalfWeeks;
 
+  const weekGroups = [sampleWeeks, firstHalfWeeks, secondHalfWeeks];
+  const hasWeekGroups = weekGroups.some((weeks) => weeks && weeks.length > 0);
+
+  const hasUnitSampleData =
+    hasWeekGroups ||
+    (summary?.totalConsultations ?? 0) > 0 ||
+    (unitSampleBreakdown?.totalConsultations ?? 0) > 0;
+
+  const urgencySelections = data.urgencySelection ?? [];
+  const topProblems = data.topProblems ?? [];
+  const allInternshipSamples = data.internshipsSamples ?? [];
+
+  const hasUrgencyData = Boolean(
+    urgencySelections.length || topProblems.length
+  );
+
+  // Check if any internship sample has actual data (weeks or autonomy counts)
+  const hasFormacaoData = allInternshipSamples.some(
+    (sample) =>
+      (sample.weeks?.length ?? 0) > 0 ||
+      Object.values(sample.autonomyCounts ?? {}).some((count) => count > 0)
+  );
+
+  return hasUnitSampleData || hasUrgencyData || hasFormacaoData;
+}
+
+/**
+ * Gets the report configuration for a given specialty and report key.
+ */
 export function getSpecialtyReportConfig(
-  specialtyCode?: string | null,
-  reportKey?: string
-): SpecialtyReportConfig | undefined {
-  if (!specialtyCode || !reportKey) {
-    return undefined;
+  specialtyCode: string,
+  reportKey: string
+): SpecialtyReportConfig | null {
+  // For now, only MGF is supported
+  if (specialtyCode === "mgf") {
+    return (
+      MGF_REPORT_CONFIGS.find(
+        (config) => config.reportKey === reportKey
+      ) ?? null
+    );
   }
-  const registry = REPORT_CONFIG_REGISTRY[specialtyCode];
-  return registry?.find((config) => config.reportKey === reportKey);
+  return null;
 }
 
-export function getReportsForSpecialty(specialtyCode?: string | null) {
-  if (!specialtyCode) {
-    return [];
-  }
-  return REPORT_TAB_CONFIG[specialtyCode] ?? [];
-}
-
+/**
+ * Gets the report definition (metadata) for a given specialty and report key.
+ */
 export function getReportTabDefinition(
-  specialtyCode?: string | null,
-  reportKey?: string
+  specialtyCode: string,
+  reportKey: string
 ) {
-  if (!specialtyCode || !reportKey) {
-    return undefined;
+  // For now, only MGF is supported
+  if (specialtyCode === "mgf") {
+    return getMGFReportDefinition(reportKey as MGFReportKey);
   }
-  const definitions = REPORT_TAB_CONFIG[specialtyCode];
-  return definitions?.find((definition) => definition.key === reportKey);
+  return null;
 }
 
-export function getReportTabDisplayName(
-  specialtyCode?: string | null,
-  reportKey?: string
-) {
-  const definition = getReportTabDefinition(specialtyCode, reportKey);
-  return definition?.label ?? TAB_CONSTANTS.MAIN_TABS.REPORTS;
+/**
+ * Gets all reports available for a given specialty.
+ */
+export function getReportsForSpecialty(specialtyCode: string) {
+  // For now, only MGF is supported
+  if (specialtyCode === "mgf") {
+    return MGF_REPORT_CONFIGS.map((config) => ({
+      key: config.reportKey,
+      label: getMGFReportDefinition(config.reportKey)?.label || config.reportKey,
+    }));
+  }
+  return [];
 }
 
-export function getReportTabKey(specialtyCode: string, reportKey: MGFReportKey | string) {
-  return `${TAB_CONSTANTS.MAIN_TABS.REPORTS}.${specialtyCode}.${reportKey}`;
+/**
+ * Gets the tab key for a report.
+ */
+export function getReportTabKey(specialtyCode: string, reportKey: string): string {
+  return `Relatórios.${specialtyCode}.${reportKey}`;
+}
+
+/**
+ * Gets the display name for a report tab.
+ */
+export function getReportTabDisplayName(specialtyCode: string, reportKey: string): string {
+  // For now, only MGF is supported
+  if (specialtyCode === "mgf") {
+    const definition = getMGFReportDefinition(reportKey as MGFReportKey);
+    return definition?.label || reportKey;
+  }
+  return reportKey;
 }

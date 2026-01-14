@@ -10,6 +10,7 @@ interface MetricsToolbarProps {
   totalConsultations: number;
   onExportExcel?: () => void;
   isExportingExcel?: boolean;
+  isExportDisabled?: boolean;
   onRefresh?: () => void;
   isRefreshing?: boolean;
 }
@@ -24,6 +25,7 @@ export function MetricsToolbar({
   totalConsultations,
   onExportExcel,
   isExportingExcel = false,
+  isExportDisabled = false,
   onRefresh,
   isRefreshing = false,
 }: MetricsToolbarProps) {
@@ -38,6 +40,7 @@ export function MetricsToolbar({
           onExportExcel={onExportExcel}
           isExportingExcel={isExportingExcel}
           isLoading={isLoading}
+          disabled={isExportDisabled}
         />
       )}
       {onRefresh && (

@@ -60,8 +60,10 @@ export function SelectField({
           </SelectTrigger>
           <SelectContent>
             {field.options
-              ?.slice()
-              .sort((a, b) => a.label.localeCompare(b.label))
+              ?.filter(
+                (option): option is { value: string; label: string } =>
+                  "value" in option && option.value !== undefined
+              )
               .map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}

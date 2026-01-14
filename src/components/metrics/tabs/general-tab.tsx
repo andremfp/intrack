@@ -19,6 +19,7 @@ export function GeneralTab({
   getSexLabel,
   onExportExcel,
   isExportingExcel,
+  isExportDisabled,
   onRefresh,
   isRefreshing,
 }: GeneralTabProps) {
@@ -77,6 +78,7 @@ export function GeneralTab({
         totalConsultations={metrics.totalConsultations}
         onExportExcel={onExportExcel}
         isExportingExcel={isExportingExcel}
+        isExportDisabled={isExportDisabled}
         onRefresh={onRefresh}
         isRefreshing={isRefreshing}
       />

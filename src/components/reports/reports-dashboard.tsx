@@ -8,7 +8,7 @@ import type { ReactElement } from "react";
 import type { DocumentProps } from "@react-pdf/renderer";
 import { useReportsData } from "@/hooks/reports/use-reports";
 import type { MGFReportKey } from "@/reports/mgf/mgf-reports";
-import { getReportTabDefinition } from "@/reports/helpers";
+import { getReportTabDefinition, hasReportData } from "@/reports/helpers";
 import {
   buildReportExportMetadataRows,
   buildReportExportSheets,
@@ -256,7 +256,8 @@ export function ReportsDashboard({
     return <p className="text-sm text-destructive">Relatório inválido.</p>;
   }
 
-  const isExportMenuBusy = isLoading || !data || isCheckingRateLimit;
+  const hasData = hasReportData(data ?? undefined);
+  const isExportMenuBusy = isLoading || !data || isCheckingRateLimit || !hasData;
 
   return (
     <div
@@ -281,6 +282,7 @@ export function ReportsDashboard({
               isExportingExcel={isExportingExcel}
               isPrinting={isPrinting}
               isLoading={isExportMenuBusy}
+              disabled={!hasData}
             />
             <Button
               variant="outline"
@@ -337,7 +339,7 @@ export function ReportsDashboard({
         </div>
       )}
 
-      {SpecialtySections && (
+      {SpecialtySections && !error && (
         <SpecialtySections data={data} specialtyCode={specialtyCode} />
       )}
     </div>

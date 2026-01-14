@@ -1,11 +1,7 @@
-// ICPC-2 Code structure
-export interface ICPC2Code {
-  code: string;
-  description: string;
-}
+import type { SpecialtyFieldOption } from "./constants";
 
 // MGF ICPC-2 Codes - Complete list
-export const MGF_ICPC2_CODES: ICPC2Code[] = [
+export const MGF_ICPC2_CODES: SpecialtyFieldOption[] = [
   // A - General and Unspecified
   { code: "A01", description: "Dor generalizada / múltipla" },
   { code: "A02", description: "Arrepios" },

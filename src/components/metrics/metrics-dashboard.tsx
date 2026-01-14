@@ -141,6 +141,9 @@ export function MetricsDashboard({
     );
   }
 
+  // Check if metrics are empty (empty state condition)
+  const isMetricsEmpty = !metrics || metrics.totalConsultations === 0;
+
   // Render content based on activeSubTab
   if (activeSubTab === TAB_CONSTANTS.METRICS_SUB_TABS.GENERAL) {
     return (
@@ -153,6 +156,7 @@ export function MetricsDashboard({
         getSexLabel={getSexLabel}
         onExportExcel={handleExportExcel}
         isExportingExcel={isExportingExcel}
+        isExportDisabled={isMetricsEmpty}
         onRefresh={loadMetrics}
       />
     );
@@ -168,6 +172,7 @@ export function MetricsDashboard({
         hasActiveFilters={hasActiveFilters}
         onExportExcel={handleExportExcel}
         isExportingExcel={isExportingExcel}
+        isExportDisabled={isMetricsEmpty}
         onRefresh={loadMetrics}
       />
     );

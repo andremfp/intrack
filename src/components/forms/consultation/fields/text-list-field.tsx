@@ -41,6 +41,7 @@ export function TextListField({
                 onUpdate(newList);
               }}
               placeholder={field.placeholder}
+              maxLength={100}
               className="min-w-0"
             />
             {listValue.length > 1 && (

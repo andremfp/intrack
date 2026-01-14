@@ -47,8 +47,10 @@ export function MultiSelectField({
         </MultiSelectTrigger>
         <MultiSelectContent className={SCROLLBAR_CLASSES}>
           {field.options
-            ?.slice()
-            .sort((a, b) => a.label.localeCompare(b.label))
+            ?.filter(
+              (option): option is { value: string; label: string } =>
+                "value" in option && option.value !== undefined
+            )
             .map((option) => (
               <MultiSelectItem key={option.value} value={option.value}>
                 {option.label}

@@ -63,8 +63,10 @@ export function CommonFieldCell({
                 {displayLabel}
               </Badge>
             </TooltipTrigger>
-            <TooltipContent side="top">
-              <p className="text-sm">{fullLabel}</p>
+            <TooltipContent side="top" className="max-w-[300px]">
+              <p className="text-sm whitespace-normal break-words">
+                {fullLabel}
+              </p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -90,8 +92,10 @@ export function CommonFieldCell({
             <TooltipTrigger asChild>
               <span className="cursor-help">{displayText}</span>
             </TooltipTrigger>
-            <TooltipContent side="top">
-              <p className="text-sm">{fullLabel}</p>
+            <TooltipContent side="top" className="max-w-[300px]">
+              <p className="text-sm whitespace-normal break-words">
+                {fullLabel}
+              </p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

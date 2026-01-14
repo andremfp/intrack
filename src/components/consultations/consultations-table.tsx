@@ -187,7 +187,7 @@ export function ConsultationsTable({
         isDeleteMode={isDeleteMode}
         selectedIds={selectedIds}
         isLoading={isLoading}
-        isEmpty={false}
+        isEmpty={totalCount === 0}
         hasActiveFilters={hasActiveFilters}
         onAddConsultation={onAddConsultation}
         onBulkDelete={onBulkDelete}
@@ -289,7 +289,7 @@ export function ConsultationsTable({
                     <TableCell
                       key={field.key}
                       className={
-                        field.type === "icpc2-codes" ||
+                        field.type === "code-search" ||
                         field.type === "text-list"
                           ? "max-w-[200px] overflow-hidden"
                           : ""
