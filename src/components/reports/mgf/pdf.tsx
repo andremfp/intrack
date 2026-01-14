@@ -601,7 +601,7 @@ function buildReportPageBodies(props: {
         (sample.weeks?.length ?? 0) > 0 ||
         Object.values(sample.autonomyCounts ?? {}).some((count) => count > 0)
     );
-  if (hasInternshipData) {
+  if (hasInternshipData && report.internshipsSamples) {
     // Filter out samples with no data before paginating
     const samplesWithData = report.internshipsSamples.filter(
       (sample) =>

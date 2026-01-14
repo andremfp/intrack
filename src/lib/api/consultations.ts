@@ -43,7 +43,6 @@ export type ConsultationsFilters = {
   new_contraceptive?: string;
   family_type?: string;
   school_level?: string;
-  professional_area?: string;
   profession?: string;
   vaccination_plan?: string;
 };
@@ -643,13 +642,6 @@ export async function getConsultationMetrics(
 
     if (filters?.school_level) {
       query = query.eq("details->>school_level", filters.school_level);
-    }
-
-    if (filters?.professional_area) {
-      query = query.eq(
-        "details->>professional_area",
-        filters.professional_area
-      );
     }
 
     if (filters?.profession) {

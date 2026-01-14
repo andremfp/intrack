@@ -298,13 +298,6 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
       formatWithOptions(mgfFieldByKey.get("school_level"), value),
   },
   {
-    key: "professional_area",
-    header: "Sector de Actividade",
-    source: "details",
-    formatter: (value) =>
-      formatWithOptions(mgfFieldByKey.get("professional_area"), value),
-  },
-  {
     key: "profession",
     header: "Profissão",
     source: "details",

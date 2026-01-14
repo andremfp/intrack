@@ -74,3 +74,36 @@ export function getReportTabDefinition(
   }
   return null;
 }
+
+/**
+ * Gets all reports available for a given specialty.
+ */
+export function getReportsForSpecialty(specialtyCode: string) {
+  // For now, only MGF is supported
+  if (specialtyCode === "mgf") {
+    return MGF_REPORT_CONFIGS.map((config) => ({
+      key: config.reportKey,
+      label: getMGFReportDefinition(config.reportKey)?.label || config.reportKey,
+    }));
+  }
+  return [];
+}
+
+/**
+ * Gets the tab key for a report.
+ */
+export function getReportTabKey(specialtyCode: string, reportKey: string): string {
+  return `Relatórios.${specialtyCode}.${reportKey}`;
+}
+
+/**
+ * Gets the display name for a report tab.
+ */
+export function getReportTabDisplayName(specialtyCode: string, reportKey: string): string {
+  // For now, only MGF is supported
+  if (specialtyCode === "mgf") {
+    const definition = getMGFReportDefinition(reportKey as MGFReportKey);
+    return definition?.label || reportKey;
+  }
+  return reportKey;
+}

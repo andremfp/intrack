@@ -202,7 +202,6 @@ export function ConsultationFilters({
       "smoker",
       "family_type",
       "school_level",
-      "professional_area",
       "profession",
       "vaccination_plan",
     ];
@@ -408,11 +407,36 @@ export function ConsultationFilters({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos os locais</SelectItem>
-                    {fieldOptions.location.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
+                    {fieldOptions.location
+                      .map((option) => {
+                        const val =
+                          "value" in option
+                            ? option.value
+                            : "code" in option
+                            ? option.code
+                            : undefined;
+                        const label =
+                          "label" in option
+                            ? option.label
+                            : "description" in option
+                            ? option.description
+                            : "";
+                        return { val, label, option };
+                      })
+                      .filter(
+                        (
+                          item
+                        ): item is {
+                          val: string;
+                          label: string;
+                          option: SpecialtyFieldOption;
+                        } => item.val !== undefined
+                      )
+                      .map((item) => (
+                        <SelectItem key={item.val} value={item.val}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -438,11 +462,36 @@ export function ConsultationFilters({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos os estágios</SelectItem>
-                    {fieldOptions.internship.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
+                    {fieldOptions.internship
+                      .map((option) => {
+                        const val =
+                          "value" in option
+                            ? option.value
+                            : "code" in option
+                            ? option.code
+                            : undefined;
+                        const label =
+                          "label" in option
+                            ? option.label
+                            : "description" in option
+                            ? option.description
+                            : "";
+                        return { val, label, option };
+                      })
+                      .filter(
+                        (
+                          item
+                        ): item is {
+                          val: string;
+                          label: string;
+                          option: SpecialtyFieldOption;
+                        } => item.val !== undefined
+                      )
+                      .map((item) => (
+                        <SelectItem key={item.val} value={item.val}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -466,11 +515,36 @@ export function ConsultationFilters({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
-                      {fieldOptions.sex.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
+                      {fieldOptions.sex
+                        .map((option) => {
+                          const val =
+                            "value" in option
+                              ? option.value
+                              : "code" in option
+                              ? option.code
+                              : undefined;
+                          const label =
+                            "label" in option
+                              ? option.label
+                              : "description" in option
+                              ? option.description
+                              : "";
+                          return { val, label, option };
+                        })
+                        .filter(
+                          (
+                            item
+                          ): item is {
+                            val: string;
+                            label: string;
+                            option: SpecialtyFieldOption;
+                          } => item.val !== undefined
+                        )
+                        .map((item) => (
+                          <SelectItem key={item.val} value={item.val}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -497,11 +571,36 @@ export function ConsultationFilters({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todas</SelectItem>
-                      {fieldOptions.autonomy.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
+                      {fieldOptions.autonomy
+                        .map((option) => {
+                          const val =
+                            "value" in option
+                              ? option.value
+                              : "code" in option
+                              ? option.code
+                              : undefined;
+                          const label =
+                            "label" in option
+                              ? option.label
+                              : "description" in option
+                              ? option.description
+                              : "";
+                          return { val, label, option };
+                        })
+                        .filter(
+                          (
+                            item
+                          ): item is {
+                            val: string;
+                            label: string;
+                            option: SpecialtyFieldOption;
+                          } => item.val !== undefined
+                        )
+                        .map((item) => (
+                          <SelectItem key={item.val} value={item.val}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -571,11 +670,36 @@ export function ConsultationFilters({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
-                      {fieldOptions.type.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
+                      {fieldOptions.type
+                        .map((option) => {
+                          const val =
+                            "value" in option
+                              ? option.value
+                              : "code" in option
+                              ? option.code
+                              : undefined;
+                          const label =
+                            "label" in option
+                              ? option.label
+                              : "description" in option
+                              ? option.description
+                              : "";
+                          return { val, label, option };
+                        })
+                        .filter(
+                          (
+                            item
+                          ): item is {
+                            val: string;
+                            label: string;
+                            option: SpecialtyFieldOption;
+                          } => item.val !== undefined
+                        )
+                        .map((item) => (
+                          <SelectItem key={item.val} value={item.val}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -639,11 +763,36 @@ export function ConsultationFilters({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
-                      {fieldOptions.smoker.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
+                      {fieldOptions.smoker
+                        .map((option) => {
+                          const val =
+                            "value" in option
+                              ? option.value
+                              : "code" in option
+                              ? option.code
+                              : undefined;
+                          const label =
+                            "label" in option
+                              ? option.label
+                              : "description" in option
+                              ? option.description
+                              : "";
+                          return { val, label, option };
+                        })
+                        .filter(
+                          (
+                            item
+                          ): item is {
+                            val: string;
+                            label: string;
+                            option: SpecialtyFieldOption;
+                          } => item.val !== undefined
+                        )
+                        .map((item) => (
+                          <SelectItem key={item.val} value={item.val}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -670,11 +819,36 @@ export function ConsultationFilters({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
-                      {fieldOptions.contraceptive.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
+                      {fieldOptions.contraceptive
+                        .map((option) => {
+                          const val =
+                            "value" in option
+                              ? option.value
+                              : "code" in option
+                              ? option.code
+                              : undefined;
+                          const label =
+                            "label" in option
+                              ? option.label
+                              : "description" in option
+                              ? option.description
+                              : "";
+                          return { val, label, option };
+                        })
+                        .filter(
+                          (
+                            item
+                          ): item is {
+                            val: string;
+                            label: string;
+                            option: SpecialtyFieldOption;
+                          } => item.val !== undefined
+                        )
+                        .map((item) => (
+                          <SelectItem key={item.val} value={item.val}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -702,11 +876,36 @@ export function ConsultationFilters({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
-                      {fieldOptions.new_contraceptive.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
+                      {fieldOptions.new_contraceptive
+                        .map((option) => {
+                          const val =
+                            "value" in option
+                              ? option.value
+                              : "code" in option
+                              ? option.code
+                              : undefined;
+                          const label =
+                            "label" in option
+                              ? option.label
+                              : "description" in option
+                              ? option.description
+                              : "";
+                          return { val, label, option };
+                        })
+                        .filter(
+                          (
+                            item
+                          ): item is {
+                            val: string;
+                            label: string;
+                            option: SpecialtyFieldOption;
+                          } => item.val !== undefined
+                        )
+                        .map((item) => (
+                          <SelectItem key={item.val} value={item.val}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -733,11 +932,36 @@ export function ConsultationFilters({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
-                      {fieldOptions.family_type.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
+                      {fieldOptions.family_type
+                        .map((option) => {
+                          const val =
+                            "value" in option
+                              ? option.value
+                              : "code" in option
+                              ? option.code
+                              : undefined;
+                          const label =
+                            "label" in option
+                              ? option.label
+                              : "description" in option
+                              ? option.description
+                              : "";
+                          return { val, label, option };
+                        })
+                        .filter(
+                          (
+                            item
+                          ): item is {
+                            val: string;
+                            label: string;
+                            option: SpecialtyFieldOption;
+                          } => item.val !== undefined
+                        )
+                        .map((item) => (
+                          <SelectItem key={item.val} value={item.val}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -764,44 +988,36 @@ export function ConsultationFilters({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
-                      {fieldOptions.school_level.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-            {/* Professional area filter */}
-            {config.enabledFields.includes("professional_area") &&
-              fieldOptions.professional_area.length > 0 && (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Sector de Actividade
-                  </label>
-                  <Select
-                    value={
-                      (getFilterValue("professional_area") as string) || "all"
-                    }
-                    onValueChange={(value) =>
-                      setFilterValue(
-                        "professional_area",
-                        value === "all" ? undefined : value
-                      )
-                    }
-                  >
-                    <SelectTrigger className="h-8">
-                      <SelectValue placeholder="Todos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      {fieldOptions.professional_area.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
+                      {fieldOptions.school_level
+                        .map((option) => {
+                          const val =
+                            "value" in option
+                              ? option.value
+                              : "code" in option
+                              ? option.code
+                              : undefined;
+                          const label =
+                            "label" in option
+                              ? option.label
+                              : "description" in option
+                              ? option.description
+                              : "";
+                          return { val, label, option };
+                        })
+                        .filter(
+                          (
+                            item
+                          ): item is {
+                            val: string;
+                            label: string;
+                            option: SpecialtyFieldOption;
+                          } => item.val !== undefined
+                        )
+                        .map((item) => (
+                          <SelectItem key={item.val} value={item.val}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -828,11 +1044,36 @@ export function ConsultationFilters({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
-                      {fieldOptions.profession.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
+                      {fieldOptions.profession
+                        .map((option) => {
+                          const val =
+                            "value" in option
+                              ? option.value
+                              : "code" in option
+                              ? option.code
+                              : undefined;
+                          const label =
+                            "label" in option
+                              ? option.label
+                              : "description" in option
+                              ? option.description
+                              : "";
+                          return { val, label, option };
+                        })
+                        .filter(
+                          (
+                            item
+                          ): item is {
+                            val: string;
+                            label: string;
+                            option: SpecialtyFieldOption;
+                          } => item.val !== undefined
+                        )
+                        .map((item) => (
+                          <SelectItem key={item.val} value={item.val}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>

@@ -19,6 +19,7 @@ export function GeneralTab({
   getSexLabel,
   onExportExcel,
   isExportingExcel,
+  isExportDisabled,
   onRefresh,
   isRefreshing,
 }: GeneralTabProps) {

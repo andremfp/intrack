@@ -27,12 +27,8 @@ export function getFieldValue(
 
   // ICPC-2 code fields: form works with string[]
   // Note: This is legacy - actual field type is "code-search" with multiple=true
-  if (field.type === "icpc2-codes") {
-    if (Array.isArray(databaseValue)) {
-      return databaseValue;
-    }
-    return [];
-  }
+  // Legacy: icpc2-codes type has been replaced by code-search with multiple=true
+  // This check is no longer needed as the type doesn't exist anymore
 
   // Code-search fields: can be single (string) or multiple (array)
   // Multiple mode: ICPC2 codes (problems, diagnosis, etc.)
@@ -63,9 +59,7 @@ export function getFieldValue(
       return databaseValue;
     }
     // No value: use default if provided, otherwise empty string for optional fields
-    return field.defaultValue !== undefined
-      ? String(field.defaultValue)
-      : "";
+    return field.defaultValue !== undefined ? String(field.defaultValue) : "";
   }
 
   // Multi-select fields: stored as array of strings in DB, need array for form
@@ -133,7 +127,8 @@ export function initializeFormValues(
   // These are stored directly in details object: details.type, details.presential, etc.
   // Examples: type, presential, diagnosis, problems, contraceptive
   // ============================================================================
-  const detailsJsonb = (editingConsultation?.details as Record<string, unknown>) || {};
+  const detailsJsonb =
+    (editingConsultation?.details as Record<string, unknown>) || {};
 
   specialtyFields.forEach((field) => {
     // Skip if already initialized

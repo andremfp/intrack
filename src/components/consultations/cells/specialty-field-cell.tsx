@@ -20,7 +20,21 @@ export function SpecialtyFieldCell({ value, field }: SpecialtyFieldCellProps) {
       return <BooleanCell value={value as boolean} />;
     case "select":
     case "combobox":
-      return <SelectCell value={String(value)} options={field.options} />;
+      // Convert SpecialtyFieldOption[] to { value: string; label: string }[]
+      const selectOptions = field.options
+        ?.map((opt) => {
+          if ("value" in opt && opt.value) {
+            return { value: opt.value, label: opt.label };
+          }
+          if ("code" in opt && opt.code) {
+            return { value: opt.code, label: opt.description };
+          }
+          return { value: "", label: "" };
+        })
+        .filter((opt) => opt.value !== "") as
+        | { value: string; label: string }[]
+        | undefined;
+      return <SelectCell value={String(value)} options={selectOptions} />;
     case "text-list":
       return <TextListCell value={value} />;
     case "code-search":

@@ -256,7 +256,7 @@ export function ReportsDashboard({
     return <p className="text-sm text-destructive">Relatório inválido.</p>;
   }
 
-  const hasData = hasReportData(data);
+  const hasData = hasReportData(data ?? undefined);
   const isExportMenuBusy = isLoading || !data || isCheckingRateLimit || !hasData;
 
   return (

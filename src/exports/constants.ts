@@ -50,7 +50,6 @@ export const KEY_TO_HEADER_MAP: Record<string, string> = {
   family_type: "Tipologia de Família",
   school_level: "Escolaridade",
   professional_situation: "Situação Profissional",
-  professional_area: "Sector de Actividade",
   profession: "Profissão",
   alcohol: "Alcoól",
   drugs: "Drogas",
