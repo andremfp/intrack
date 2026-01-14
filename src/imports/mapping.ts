@@ -369,7 +369,7 @@ export function parseIcpcCodes(
  *
  * Validation: STRICT - returns null if code is invalid
  *
- * Returns: string (formatted as "CODE - Description") | null
+ * Returns: string (code only, e.g., "2655.0") | null
  */
 export function parseProfessionCode(value: unknown): string | null {
   if (value === null || value === undefined || value === "") return null;
@@ -382,10 +382,9 @@ export function parseProfessionCode(value: unknown): string | null {
   const code = match ? match[1] : str.trim();
   const codeSet = new Set(PROFESSIONS.map((p) => p.code));
 
-  // Only return valid codes
+  // Only return valid codes (just the code, not "CODE - Description")
   if (codeSet.has(code)) {
-    const professionData = PROFESSIONS.find((p) => p.code === code);
-    return professionData ? `${code} - ${professionData.description}` : code;
+    return code;
   }
 
   // Invalid code - return null to indicate parsing failure

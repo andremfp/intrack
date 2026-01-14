@@ -34,6 +34,12 @@ import {
   type FiltersRecord,
 } from "./helpers";
 import type { SpecialtyFieldOption } from "@/constants";
+import {
+  CodeSearchField,
+  type CodeSearchItem,
+} from "@/components/forms/consultation/fields/code-search-field";
+import { PROFESSIONS } from "@/professions";
+import { MGF_FIELDS } from "@/constants";
 
 /**
  * Filter component specialized to consultations filters.
@@ -203,6 +209,7 @@ export function ConsultationFilters({
       "family_type",
       "school_level",
       "profession",
+      "professional_situation",
       "vaccination_plan",
     ];
 
@@ -1023,18 +1030,83 @@ export function ConsultationFilters({
                 </div>
               )}
 
-            {/* Profession filter */}
-            {config.enabledFields.includes("profession") &&
-              fieldOptions.profession.length > 0 && (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Profissão
-                  </label>
-                  <Select
-                    value={(getFilterValue("profession") as string) || "all"}
-                    onValueChange={(value) =>
+            {/* Profession filter - code-search */}
+            {config.enabledFields.includes("profession") && (
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="text-xs font-medium text-muted-foreground">
+                  Profissão
+                </label>
+                <div className="[&_label]:hidden [&_.space-y-2]:space-y-1.5 [&_input]:h-8 [&_button]:h-auto [&_button]:py-1">
+                  <CodeSearchField
+                    field={MGF_FIELDS.find((f) => f.key === "profession")!}
+                    value={(getFilterValue("profession") as string) || ""}
+                    onUpdate={(value) =>
                       setFilterValue(
                         "profession",
+                        typeof value === "string" && value ? value : undefined
+                      )
+                    }
+                    items={PROFESSIONS as CodeSearchItem[]}
+                    mode="single"
+                    codeMinWidth="4rem"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Vaccination plan filter */}
+            {config.enabledFields.includes("vaccination_plan") && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">
+                  PNV Cumprido
+                </label>
+                <Select
+                  value={
+                    getFilterValue("vaccination_plan") === undefined
+                      ? "all"
+                      : getFilterValue("vaccination_plan")
+                      ? "yes"
+                      : "no"
+                  }
+                  onValueChange={(value) =>
+                    setFilterValue(
+                      "vaccination_plan",
+                      value === "all"
+                        ? undefined
+                        : value === "yes"
+                        ? true
+                        : false
+                    )
+                  }
+                >
+                  <SelectTrigger className="h-8">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="yes">Sim</SelectItem>
+                    <SelectItem value="no">Não</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Professional situation filter */}
+            {config.enabledFields.includes("professional_situation") &&
+              fieldOptions.professional_situation &&
+              fieldOptions.professional_situation.length > 0 && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Situação Profissional
+                  </label>
+                  <Select
+                    value={
+                      (getFilterValue("professional_situation") as string) ||
+                      "all"
+                    }
+                    onValueChange={(value) =>
+                      setFilterValue(
+                        "professional_situation",
                         value === "all" ? undefined : value
                       )
                     }
@@ -1044,7 +1116,7 @@ export function ConsultationFilters({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
-                      {fieldOptions.profession
+                      {fieldOptions.professional_situation
                         .map((option) => {
                           const val =
                             "value" in option
@@ -1079,23 +1151,60 @@ export function ConsultationFilters({
                 </div>
               )}
 
-            {/* Vaccination plan filter */}
-            {config.enabledFields.includes("vaccination_plan") && (
+            {/* Alcohol filter */}
+            {config.enabledFields.includes("alcohol") && (
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">
-                  PNV Cumprido
+                  Alcoól
                 </label>
                 <Select
                   value={
-                    getFilterValue("vaccination_plan") === undefined
+                    getFilterValue("alcohol") === undefined
                       ? "all"
-                      : getFilterValue("vaccination_plan")
+                      : getFilterValue("alcohol")
                       ? "yes"
                       : "no"
                   }
                   onValueChange={(value) =>
                     setFilterValue(
-                      "vaccination_plan",
+                      "alcohol",
+                      value === "all"
+                        ? undefined
+                        : value === "yes"
+                        ? true
+                        : false
+                    )
+                  }
+                >
+                  <SelectTrigger className="h-8">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="yes">Sim</SelectItem>
+                    <SelectItem value="no">Não</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Drugs filter */}
+            {config.enabledFields.includes("drugs") && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">
+                  Drogas
+                </label>
+                <Select
+                  value={
+                    getFilterValue("drugs") === undefined
+                      ? "all"
+                      : getFilterValue("drugs")
+                      ? "yes"
+                      : "no"
+                  }
+                  onValueChange={(value) =>
+                    setFilterValue(
+                      "drugs",
                       value === "all"
                         ? undefined
                         : value === "yes"

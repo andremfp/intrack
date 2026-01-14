@@ -44,7 +44,10 @@ export type ConsultationsFilters = {
   family_type?: string;
   school_level?: string;
   profession?: string;
-  vaccination_plan?: string;
+  professional_situation?: string;
+  vaccination_plan?: boolean;
+  alcohol?: boolean;
+  drugs?: boolean;
 };
 
 async function ensureOperationAllowed(
@@ -386,6 +389,21 @@ export async function getMGFConsultations(
         filters.new_contraceptive
       );
     }
+    if (filters.professional_situation) {
+      query = query.eq(
+        "details->>professional_situation",
+        filters.professional_situation
+      );
+    }
+    if (filters.profession) {
+      query = query.eq("details->>profession", filters.profession);
+    }
+    if (filters.alcohol !== undefined) {
+      query = query.eq("alcohol", filters.alcohol);
+    }
+    if (filters.drugs !== undefined) {
+      query = query.eq("drugs", filters.drugs);
+    }
   }
 
   // Apply sorting (default to date descending)
@@ -546,6 +564,21 @@ export async function getMGFConsultationsForExport(
         filters.new_contraceptive
       );
     }
+    if (filters.professional_situation) {
+      query = query.eq(
+        "details->>professional_situation",
+        filters.professional_situation
+      );
+    }
+    if (filters.profession) {
+      query = query.eq("details->>profession", filters.profession);
+    }
+    if (filters.alcohol !== undefined) {
+      query = query.eq("alcohol", filters.alcohol);
+    }
+    if (filters.drugs !== undefined) {
+      query = query.eq("drugs", filters.drugs);
+    }
   }
 
   const sortField = sorting?.field || "date";
@@ -646,11 +679,28 @@ export async function getConsultationMetrics(
     }
 
     if (filters?.profession) {
-      query = query.eq("details->>profession", filters.profession);
+      // Profession can be stored as just the code (from forms) or "CODE - Description" (from imports)
+      // Use ilike with pattern to match both formats
+      query = query.ilike("details->>profession", `${filters.profession}%`);
     }
 
-    if (filters?.vaccination_plan) {
-      query = query.eq("details->>vaccination_plan", filters.vaccination_plan);
+    if (filters?.vaccination_plan !== undefined) {
+      query = query.eq("vaccination_plan", filters.vaccination_plan);
+    }
+
+    if (filters?.professional_situation) {
+      query = query.eq(
+        "details->>professional_situation",
+        filters.professional_situation
+      );
+    }
+
+    if (filters?.alcohol !== undefined) {
+      query = query.eq("alcohol", filters.alcohol);
+    }
+
+    if (filters?.drugs !== undefined) {
+      query = query.eq("drugs", filters.drugs);
     }
 
     if (filters?.sex) {

@@ -20,7 +20,9 @@ export type FilterFieldType =
   | "school_level"
   | "professional_situation"
   | "profession"
-  | "vaccination_plan";
+  | "vaccination_plan"
+  | "alcohol"
+  | "drugs";
 
 // UI configuration for filter display - specifies which filters to show and how
 export interface FilterUIConfig {

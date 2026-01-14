@@ -808,6 +808,8 @@ export const CONSULTATIONS_ENABLED_FIELDS: FilterFieldType[] = [
   "profession",
   "professional_situation",
   "vaccination_plan",
+  "alcohol",
+  "drugs",
 ];
 
 /**
@@ -841,24 +843,8 @@ export const METRICS_CONSULTATIONS_ENABLED_FIELDS: FilterFieldType[] = [
   "smoker",
   "contraceptive",
   "new_contraceptive",
-];
-
-/**
- * Enabled filter fields for MetricsDashboard - ICPC2Tab
- */
-export const METRICS_ICPC2_ENABLED_FIELDS: FilterFieldType[] = [
-  "year",
-  "location",
-  "internship",
-  "sex",
-  "autonomy",
-  "ageRange",
-  "dateRange",
-  "type",
-  "presential",
-  "smoker",
-  "contraceptive",
-  "new_contraceptive",
+  "alcohol",
+  "drugs",
 ];
 
 /**
