@@ -1,9 +1,18 @@
+/**
+ * IMPORT PROCESSING MODULE
+ * ========================
+ *
+ * This module handles:
+ * 1. File parsing (CSV/XLSX)
+ * 2. Value mapping (raw values → consultation structure)
+ * 3. Validation (business rules, constraints, required fields)
+ *
+ * Flow:
+ * parseCsvFile/parseXlsxFile → mapImportRowToConsultation → validateImportRow
+ */
+
 import type { ConsultationInsert } from "@/lib/api/consultations";
-import type {
-  ImportRow,
-  ValidationError,
-  ImportPreviewData,
-} from "./types";
+import type { ImportRow, ValidationError, ImportPreviewData } from "./types";
 import {
   mapHeaderToKey,
   parseBoolean,
@@ -12,6 +21,7 @@ import {
   parseSelectValue,
   parseTextList,
   parseIcpcCodes,
+  parseProfessionCode,
   getFieldSource,
 } from "./mapping";
 import {
@@ -29,9 +39,15 @@ import {
   MAX_AGE,
   MIN_SPECIALTY_YEAR,
   MAX_PROCESS_NUMBER_DIGITS,
+  MAX_TEXT_FIELD_LENGTH,
+  MAX_TEXT_LIST_ITEM_LENGTH,
   EXCEL_EPOCH,
   MS_PER_DAY,
 } from "./constants";
+
+// ============================================================================
+// FIELD LOOKUP
+// ============================================================================
 
 /**
  * Gets a field definition by key from either common or specialty fields
@@ -39,6 +55,10 @@ import {
 export function getFieldByKey(fieldKey: string): SpecialtyField | undefined {
   return commonFieldByKey.get(fieldKey) || mgfFieldByKey.get(fieldKey);
 }
+
+// ============================================================================
+// UTILITIES
+// ============================================================================
 
 /**
  * Converts Excel serial date number to JavaScript Date
@@ -48,6 +68,13 @@ export function excelSerialToDate(serial: number): Date {
   return new Date(EXCEL_EPOCH.getTime() + serial * MS_PER_DAY);
 }
 
+// ============================================================================
+// FIELD RULE EVALUATION
+// ============================================================================
+
+/**
+ * Evaluates field visibility/requirement rules based on consultation context
+ */
 function evaluateRule(
   rule: FieldRule | undefined,
   ctx: FieldRuleContext,
@@ -73,9 +100,12 @@ function getRuleContext(
 
   return {
     location:
-      typeof consultation.location === "string" ? consultation.location : undefined,
+      typeof consultation.location === "string"
+        ? consultation.location
+        : undefined,
     sex: typeof consultation.sex === "string" ? consultation.sex : undefined,
-    type: typeof details?.type === "string" ? (details.type as string) : undefined,
+    type:
+      typeof details?.type === "string" ? (details.type as string) : undefined,
   };
 }
 
@@ -83,12 +113,16 @@ function isFieldVisible(field: SpecialtyField, ctx: FieldRuleContext): boolean {
   return evaluateRule(field.visibleWhen, ctx, true);
 }
 
-function isFieldRequired(field: SpecialtyField, ctx: FieldRuleContext): boolean {
+function isFieldRequired(
+  field: SpecialtyField,
+  ctx: FieldRuleContext
+): boolean {
   return evaluateRule(field.requiredWhen, ctx, false);
 }
 
 /**
- * Validates a select field value against its options
+ * Validates a select/combobox field value against its options
+ * Used by validateLocationAndInternship for location/type/internship validation
  */
 export function validateSelectValue(
   field: SpecialtyField,
@@ -113,7 +147,8 @@ export function validateSelectValue(
 }
 
 /**
- * Gets a value from consultation (top-level or details)
+ * Gets a value from consultation structure (top-level or details)
+ * Helper for validation functions
  */
 function getConsultationValue(
   consultation: Partial<ConsultationInsert>,
@@ -140,6 +175,10 @@ function getConsultationValue(
   return undefined;
 }
 
+// ============================================================================
+// FILE PARSING
+// ============================================================================
+
 /**
  * Checks if a row is empty (all values are null, empty, or whitespace)
  */
@@ -150,6 +189,158 @@ function isRowEmpty(row: ImportRow): boolean {
     return false;
   });
 }
+
+// ============================================================================
+// VALUE MAPPING
+// ============================================================================
+
+/**
+ * Maps a field value based on its type
+ *
+ * Field type routing:
+ * - ICPC_CODE_FIELDS → parseIcpcCodes()
+ * - fieldKey === "profession" → parseProfessionCode()
+ * - TEXT_LIST_FIELDS → parseTextList()
+ * - type: "boolean" → parseBoolean()
+ * - fieldKey: "date" → parseDate()
+ * - fieldKey: "process_number" | "age" → parseNumber()
+ * - fieldKey: "specialty_year" → parseNumber() with >= 1 check
+ * - type: "select" | "combobox" → parseSelectValue()
+ *
+ * Returns: parsed value | null
+ */
+function mapFieldValue(
+  fieldKey: string,
+  rawValue: unknown,
+  specialtyCode: string
+): unknown {
+  const field = getFieldByKey(fieldKey);
+
+  // Handle ICPC-2 code fields
+  if (ICPC_CODE_FIELDS.has(fieldKey)) {
+    return parseIcpcCodes(rawValue, specialtyCode);
+  }
+
+  // Handle profession code field (single field, pattern: digits.digit, e.g., 5230.2)
+  if (fieldKey === "profession") {
+    return parseProfessionCode(rawValue);
+  }
+
+  // Handle text list fields
+  if (TEXT_LIST_FIELDS.has(fieldKey)) {
+    return parseTextList(rawValue);
+  }
+
+  // Handle boolean fields
+  if (field?.type === "boolean") {
+    return parseBoolean(rawValue);
+  }
+
+  // Handle date fields
+  if (fieldKey === "date") {
+    return parseDate(rawValue);
+  }
+
+  // Handle number fields
+  if (fieldKey === "process_number" || fieldKey === "age") {
+    return parseNumber(rawValue);
+  }
+
+  // Handle specialty_year with special logic
+  if (fieldKey === "specialty_year") {
+    const num = parseNumber(rawValue);
+    return num !== null && num >= 1 ? num : null;
+  }
+
+  // Handle select/combobox fields
+  if (field?.type === "select" || field?.type === "combobox") {
+    return parseSelectValue(fieldKey, rawValue);
+  }
+
+  return null;
+}
+
+/**
+ * Maps an import row to a ConsultationInsert structure
+ *
+ * Process:
+ * 1. For each header, map to field key
+ * 2. Parse raw value based on field type
+ * 3. Place in correct location (top-level vs details)
+ * 4. Set defaults (specialty_year, favorite)
+ */
+export function mapImportRowToConsultation(
+  row: ImportRow,
+  headers: string[],
+  userId: string,
+  specialtyId: string,
+  specialtyCode: string,
+  defaultSpecialtyYear: number
+): Partial<ConsultationInsert> {
+  const consultation: Partial<ConsultationInsert> = {
+    user_id: userId,
+    specialty_id: specialtyId,
+    details: getDefaultSpecialtyDetails(specialtyCode),
+  };
+
+  // Process each header
+  for (const header of headers) {
+    // Skip empty headers
+    if (!header || header.trim() === "") continue;
+
+    const fieldKey = mapHeaderToKey(header);
+    if (!fieldKey || fieldKey === "id") continue; // Skip unknown headers and ID
+
+    const rawValue = row[header];
+    const source = getFieldSource(fieldKey);
+    const mappedValue = mapFieldValue(fieldKey, rawValue, specialtyCode);
+
+    if (mappedValue === null || mappedValue === undefined) continue;
+
+    if (source === "column") {
+      // Top-level fields
+      if (fieldKey === "date") {
+        consultation.date = mappedValue as string;
+      } else if (fieldKey === "process_number") {
+        consultation.process_number = mappedValue as number;
+      } else if (fieldKey === "specialty_year") {
+        consultation.specialty_year = mappedValue as number;
+      } else if (fieldKey === "location") {
+        consultation.location = mappedValue as string;
+      } else if (fieldKey === "autonomy") {
+        consultation.autonomy = mappedValue as string;
+      } else if (fieldKey === "sex") {
+        consultation.sex = mappedValue as string;
+      } else if (fieldKey === "age") {
+        consultation.age = mappedValue as number;
+      } else if (fieldKey === "age_unit") {
+        consultation.age_unit = mappedValue as string;
+      } else if (fieldKey === "favorite") {
+        consultation.favorite = mappedValue as boolean;
+      }
+    } else {
+      // Details fields
+      if (!consultation.details) {
+        consultation.details = getDefaultSpecialtyDetails(specialtyCode);
+      }
+      (consultation.details as Record<string, unknown>)[fieldKey] = mappedValue;
+    }
+  }
+
+  // Set defaults
+  if (!consultation.specialty_year) {
+    consultation.specialty_year = defaultSpecialtyYear;
+  }
+  if (consultation.favorite === undefined) {
+    consultation.favorite = false;
+  }
+
+  return consultation;
+}
+
+// ============================================================================
+// VALIDATION
+// ============================================================================
 
 /**
  * Validates that fields not visible for the row's context are not populated.
@@ -268,7 +459,9 @@ export async function parseCsvFile(file: File): Promise<{
       } catch (error) {
         reject(
           new Error(
-            `Erro ao processar CSV: ${error instanceof Error ? error.message : "Erro desconhecido"}`
+            `Erro ao processar CSV: ${
+              error instanceof Error ? error.message : "Erro desconhecido"
+            }`
           )
         );
       }
@@ -339,7 +532,7 @@ export async function parseXlsxFile(file: File): Promise<{
             headerIndexMap.set(header, index);
           }
         });
-        
+
         const rows: ImportRow[] = [];
 
         for (let i = 1; i < jsonData.length; i++) {
@@ -361,7 +554,9 @@ export async function parseXlsxFile(file: File): Promise<{
       } catch (error) {
         reject(
           new Error(
-            `Erro ao processar ficheiro: ${error instanceof Error ? error.message : "Erro desconhecido"}`
+            `Erro ao processar ficheiro: ${
+              error instanceof Error ? error.message : "Erro desconhecido"
+            }`
           )
         );
       }
@@ -375,131 +570,11 @@ export async function parseXlsxFile(file: File): Promise<{
   });
 }
 
-
-/**
- * Maps a field value based on its type and source
- */
-function mapFieldValue(
-  fieldKey: string,
-  rawValue: unknown,
-  specialtyCode: string
-): unknown {
-  const field = getFieldByKey(fieldKey);
-
-  // Handle ICPC-2 code fields
-  if (ICPC_CODE_FIELDS.has(fieldKey)) {
-    return parseIcpcCodes(rawValue, specialtyCode);
-  }
-
-  // Handle text list fields
-  if (TEXT_LIST_FIELDS.has(fieldKey)) {
-    return parseTextList(rawValue);
-  }
-
-  // Handle boolean fields
-  if (field?.type === "boolean") {
-    return parseBoolean(rawValue);
-  }
-
-  // Handle date fields
-  if (fieldKey === "date") {
-    return parseDate(rawValue);
-  }
-
-  // Handle number fields
-  if (fieldKey === "process_number" || fieldKey === "age") {
-    return parseNumber(rawValue);
-  }
-
-  // Handle specialty_year with special logic
-  if (fieldKey === "specialty_year") {
-    const num = parseNumber(rawValue);
-    return num !== null && num >= 1 ? num : null;
-  }
-
-  // Handle select/combobox fields
-  if (field?.type === "select" || field?.type === "combobox") {
-    return parseSelectValue(fieldKey, rawValue);
-  }
-
-  return null;
-}
-
-/**
- * Maps an import row to a ConsultationInsert structure
- */
-export function mapImportRowToConsultation(
-  row: ImportRow,
-  headers: string[],
-  userId: string,
-  specialtyId: string,
-  specialtyCode: string,
-  defaultSpecialtyYear: number
-): Partial<ConsultationInsert> {
-  const consultation: Partial<ConsultationInsert> = {
-    user_id: userId,
-    specialty_id: specialtyId,
-    details: getDefaultSpecialtyDetails(specialtyCode),
-  };
-
-  // Process each header
-  for (const header of headers) {
-    // Skip empty headers
-    if (!header || header.trim() === "") continue;
-
-    const fieldKey = mapHeaderToKey(header);
-    if (!fieldKey || fieldKey === "id") continue; // Skip unknown headers and ID
-
-    const rawValue = row[header];
-    const source = getFieldSource(fieldKey);
-    const mappedValue = mapFieldValue(fieldKey, rawValue, specialtyCode);
-
-    if (mappedValue === null || mappedValue === undefined) continue;
-
-    if (source === "column") {
-      // Top-level fields
-      if (fieldKey === "date") {
-        consultation.date = mappedValue as string;
-      } else if (fieldKey === "process_number") {
-        consultation.process_number = mappedValue as number;
-      } else if (fieldKey === "specialty_year") {
-        consultation.specialty_year = mappedValue as number;
-      } else if (fieldKey === "location") {
-        consultation.location = mappedValue as string;
-      } else if (fieldKey === "autonomy") {
-        consultation.autonomy = mappedValue as string;
-      } else if (fieldKey === "sex") {
-        consultation.sex = mappedValue as string;
-      } else if (fieldKey === "age") {
-        consultation.age = mappedValue as number;
-      } else if (fieldKey === "age_unit") {
-        consultation.age_unit = mappedValue as string;
-      } else if (fieldKey === "favorite") {
-        consultation.favorite = mappedValue as boolean;
-      }
-    } else {
-      // Details fields
-      if (!consultation.details) {
-        consultation.details = getDefaultSpecialtyDetails(specialtyCode);
-      }
-      (consultation.details as Record<string, unknown>)[fieldKey] = mappedValue;
-    }
-  }
-
-  // Set defaults
-  if (!consultation.specialty_year) {
-    consultation.specialty_year = defaultSpecialtyYear;
-  }
-  if (consultation.favorite === undefined) {
-    consultation.favorite = false;
-  }
-
-  return consultation;
-}
-
-
 /**
  * Validates required fields
+ *
+ * Checks all fields marked as required (requiredWhen rule) that are visible
+ * in the current context. Reports missing values.
  */
 function validateRequiredFields(
   consultation: Partial<ConsultationInsert>,
@@ -537,6 +612,11 @@ function validateRequiredFields(
 
 /**
  * Validates numeric field constraints
+ *
+ * Validates:
+ * - age: 0-150 range
+ * - process_number: non-negative, max 9 digits
+ * - specialty_year: >= 1
  */
 function validateNumericConstraints(
   consultation: Partial<ConsultationInsert>,
@@ -564,7 +644,9 @@ function validateNumericConstraints(
         message: "O número de processo deve ser não negativo",
       });
     }
-    if (String(consultation.process_number).length > MAX_PROCESS_NUMBER_DIGITS) {
+    if (
+      String(consultation.process_number).length > MAX_PROCESS_NUMBER_DIGITS
+    ) {
       errors.push({
         rowIndex,
         field: "process_number",
@@ -589,6 +671,8 @@ function validateNumericConstraints(
 
 /**
  * Validates date format
+ *
+ * Ensures date is a valid Date object (not NaN)
  */
 function validateDate(
   consultation: Partial<ConsultationInsert>,
@@ -612,6 +696,10 @@ function validateDate(
 
 /**
  * Validates select/combobox field values
+ *
+ * Checks:
+ * 1. If raw value was provided but parsing failed (returned null)
+ * 2. If parsed value exists in field options
  */
 function validateSelectFields(
   consultation: Partial<ConsultationInsert>,
@@ -642,7 +730,10 @@ function validateSelectFields(
           rawValue !== "" &&
           (value === null || value === undefined || value === "")
         ) {
-          const validOptions = field.options.map((opt) => opt.label).join(", ");
+          const validOptions = field.options
+            .map((opt) => opt.label)
+            .filter((label): label is string => label !== undefined)
+            .join(", ");
           errors.push({
             rowIndex,
             field: field.key,
@@ -657,9 +748,16 @@ function validateSelectFields(
     if (value === null || value === undefined || value === "") continue;
 
     // Validate against options
-    const validValues = new Set(field.options.map((opt) => opt.value));
+    const validValues = new Set(
+      field.options
+        .map((opt) => opt.value)
+        .filter((val): val is string => val !== undefined)
+    );
     if (typeof value === "string" && !validValues.has(value)) {
-      const validOptions = field.options.map((opt) => opt.label).join(", ");
+      const validOptions = field.options
+        .map((opt) => opt.label)
+        .filter((label): label is string => label !== undefined)
+        .join(", ");
       errors.push({
         rowIndex,
         field: field.key,
@@ -672,7 +770,196 @@ function validateSelectFields(
 }
 
 /**
+ * Validates code-search field values (profession, ICPC codes, etc.)
+ *
+ * Since parsing validates codes strictly (returns null if invalid), we check:
+ * 1. If raw value was provided but parsing failed (returned null)
+ * 2. If profession field received an array (should be single value only)
+ */
+function validateCodeSearchFields(
+  consultation: Partial<ConsultationInsert>,
+  rowIndex: number,
+  specialtyFields: SpecialtyField[],
+  rawRow?: ImportRow,
+  headers?: string[]
+): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const allFields = [...COMMON_CONSULTATION_FIELDS, ...specialtyFields];
+  const ctx = getRuleContext(consultation);
+
+  for (const field of allFields) {
+    if (field.type !== "code-search") continue;
+    if (!field.options || field.options.length === 0) continue;
+    if (!isFieldVisible(field, ctx)) continue;
+
+    const value = getConsultationValue(consultation, field.key);
+
+    // Check if raw value was provided but parsing failed (returned null)
+    if (rawRow && headers) {
+      const header = headers.find((h) => mapHeaderToKey(h) === field.key);
+      if (header) {
+        const rawValue = rawRow[header];
+        if (
+          rawValue !== null &&
+          rawValue !== undefined &&
+          rawValue !== "" &&
+          (value === null || value === undefined || value === "")
+        ) {
+          errors.push({
+            rowIndex,
+            field: field.key,
+            message: `Valor inválido para ${field.label}: "${rawValue}". Forneça um código válido.`,
+          });
+          continue;
+        }
+      }
+    }
+
+    // Profession field only supports single selection (not array)
+    if (field.key === "profession" && Array.isArray(value)) {
+      errors.push({
+        rowIndex,
+        field: field.key,
+        message: `${field.label} não suporta múltipla seleção. Forneça apenas um valor.`,
+      });
+    }
+  }
+
+  return errors;
+}
+
+/**
+ * Validates text field values
+ *
+ * Checks:
+ * - Text fields must not exceed MAX_TEXT_FIELD_LENGTH (20 characters)
+ */
+function validateTextFields(
+  consultation: Partial<ConsultationInsert>,
+  rowIndex: number,
+  specialtyFields: SpecialtyField[]
+): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const allFields = [...COMMON_CONSULTATION_FIELDS, ...specialtyFields];
+  const ctx = getRuleContext(consultation);
+
+  for (const field of allFields) {
+    if (field.type !== "text") continue;
+    if (!isFieldVisible(field, ctx)) continue;
+
+    const value = getConsultationValue(consultation, field.key);
+    if (typeof value === "string" && value.length > MAX_TEXT_FIELD_LENGTH) {
+      errors.push({
+        rowIndex,
+        field: field.key,
+        message: `${field.label} não pode exceder ${MAX_TEXT_FIELD_LENGTH} caracteres. Valor fornecido: ${value.length} caracteres.`,
+      });
+    }
+  }
+
+  return errors;
+}
+
+/**
+ * Validates text list field values
+ *
+ * Checks:
+ * - Each item in text list must not exceed MAX_TEXT_LIST_ITEM_LENGTH (100 characters)
+ */
+function validateTextListFields(
+  consultation: Partial<ConsultationInsert>,
+  rowIndex: number,
+  specialtyFields: SpecialtyField[]
+): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const allFields = [...COMMON_CONSULTATION_FIELDS, ...specialtyFields];
+  const ctx = getRuleContext(consultation);
+
+  for (const field of allFields) {
+    if (!TEXT_LIST_FIELDS.has(field.key)) continue;
+    if (!isFieldVisible(field, ctx)) continue;
+
+    const value = getConsultationValue(consultation, field.key);
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (
+          typeof item === "string" &&
+          item.length > MAX_TEXT_LIST_ITEM_LENGTH
+        ) {
+          errors.push({
+            rowIndex,
+            field: field.key,
+            message: `Cada item em ${field.label} não pode exceder ${MAX_TEXT_LIST_ITEM_LENGTH} caracteres. Item fornecido: ${item.length} caracteres.`,
+          });
+        }
+      }
+    }
+  }
+
+  return errors;
+}
+
+/**
+ * Validates boolean field values
+ *
+ * Checks if raw value was provided but parsing failed (returned null).
+ * parseBoolean() already handles conversion, so we just detect parsing failures.
+ */
+function validateBooleanFields(
+  consultation: Partial<ConsultationInsert>,
+  rowIndex: number,
+  specialtyFields: SpecialtyField[],
+  rawRow?: ImportRow,
+  headers?: string[]
+): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const allFields = [...COMMON_CONSULTATION_FIELDS, ...specialtyFields];
+  const ctx = getRuleContext(consultation);
+
+  for (const field of allFields) {
+    if (field.type !== "boolean") continue;
+    if (!isFieldVisible(field, ctx)) continue;
+
+    const value = getConsultationValue(consultation, field.key);
+
+    // Check if raw value was provided but parsing failed
+    if (rawRow && headers) {
+      const header = headers.find((h) => mapHeaderToKey(h) === field.key);
+      if (header) {
+        const rawValue = rawRow[header];
+        if (
+          rawValue !== null &&
+          rawValue !== undefined &&
+          rawValue !== "" &&
+          (value === null || value === undefined)
+        ) {
+          errors.push({
+            rowIndex,
+            field: field.key,
+            message: `Valor inválido para ${field.label}: "${rawValue}". Use "Sim"/"Não", "S"/"N", "true"/"false", ou "1"/"0".`,
+          });
+        }
+      }
+    }
+
+    // Note: We don't validate the boolean value itself since parseBoolean
+    // already handles conversion and returns null for invalid values
+  }
+
+  return errors;
+}
+
+/**
  * Validates a single consultation row
+ *
+ * Runs all validation checks in order:
+ * 1. Visibility constraints (fields not visible shouldn't have values)
+ * 2. Required fields (all required fields must have values)
+ * 3. Numeric constraints (age, process_number, specialty_year ranges)
+ * 4. Date format validation
+ * 5. Select/combobox field validation
+ * 6. Code-search field validation (ICPC codes, profession)
+ * 7. Boolean field validation
  */
 export function validateImportRow(
   consultation: Partial<ConsultationInsert>,
@@ -687,11 +974,41 @@ export function validateImportRow(
   errors.push(
     ...validateVisibilityConstraints(consultation, rowIndex, specialtyFields)
   );
-  errors.push(...validateRequiredFields(consultation, rowIndex, specialtyFields));
+  errors.push(
+    ...validateRequiredFields(consultation, rowIndex, specialtyFields)
+  );
   errors.push(...validateNumericConstraints(consultation, rowIndex));
   errors.push(...validateDate(consultation, rowIndex));
   errors.push(
-    ...validateSelectFields(consultation, rowIndex, specialtyFields, rawRow, headers)
+    ...validateSelectFields(
+      consultation,
+      rowIndex,
+      specialtyFields,
+      rawRow,
+      headers
+    )
+  );
+  errors.push(
+    ...validateCodeSearchFields(
+      consultation,
+      rowIndex,
+      specialtyFields,
+      rawRow,
+      headers
+    )
+  );
+  errors.push(
+    ...validateBooleanFields(
+      consultation,
+      rowIndex,
+      specialtyFields,
+      rawRow,
+      headers
+    )
+  );
+  errors.push(...validateTextFields(consultation, rowIndex, specialtyFields));
+  errors.push(
+    ...validateTextListFields(consultation, rowIndex, specialtyFields)
   );
 
   return errors;
@@ -699,6 +1016,11 @@ export function validateImportRow(
 
 /**
  * Validates all import rows and returns preview data
+ *
+ * Process:
+ * 1. Map each row to consultation structure
+ * 2. Validate each consultation
+ * 3. Return preview with errors and summary statistics
  */
 export function validateImportData(
   rows: ImportRow[],
@@ -715,7 +1037,7 @@ export function validateImportData(
   for (let i = 0; i < rows.length; i++) {
     const rowIndex = i + 1; // 1-based for display
     const row = rows[i];
-    
+
     const consultation = mapImportRowToConsultation(
       row,
       headers,
@@ -724,7 +1046,7 @@ export function validateImportData(
       specialtyCode,
       defaultSpecialtyYear
     );
-    
+
     const errors = validateImportRow(
       consultation,
       rowIndex,
@@ -753,4 +1075,3 @@ export function validateImportData(
     },
   };
 }
-
