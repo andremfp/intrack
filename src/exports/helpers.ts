@@ -1188,9 +1188,25 @@ export function buildReportExportSheets(params: ReportExportSheetsParams): Expor
     }
   }
 
-  if (reportData.internshipsSamples && reportData.internshipsSamples.length > 0) {
+  // Only create sheet if there are samples with actual data
+  if (
+    reportData.internshipsSamples &&
+    reportData.internshipsSamples.length > 0 &&
+    reportData.internshipsSamples.some(
+      (sample) =>
+        (sample.weeks?.length ?? 0) > 0 ||
+        Object.values(sample.autonomyCounts ?? {}).some((count) => count > 0)
+    )
+  ) {
     const rows: ExportCell[][] = [];
     reportData.internshipsSamples.forEach((sample) => {
+      // Only process samples with actual data
+      const hasWeeks = (sample.weeks?.length ?? 0) > 0;
+      const hasAutonomyCounts = Object.values(sample.autonomyCounts ?? {}).some(
+        (count) => count > 0
+      );
+      if (!hasWeeks && !hasAutonomyCounts) return;
+
       const totalConsultations = sample.weeks.reduce(
         (sum, week) => sum + week.consultations,
         0
@@ -1211,11 +1227,14 @@ export function buildReportExportSheets(params: ReportExportSheetsParams): Expor
           rows.push([sample.label, `Autonomia ${autonomy}`, count, ""]);
         });
     });
-    pushSheet({
-      sheetName: "Formações complementares",
-      headers: FORMATION_HEADERS,
-      rows,
-    });
+    // Only push sheet if there are rows
+    if (rows.length > 0) {
+      pushSheet({
+        sheetName: "Formações complementares",
+        headers: FORMATION_HEADERS,
+        rows,
+      });
+    }
   }
 
   if (reportData.topProblems && reportData.topProblems.length > 0) {

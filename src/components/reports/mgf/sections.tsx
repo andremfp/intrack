@@ -19,23 +19,31 @@ export default function MGFReportSections({ data }: MGFReportSectionsProps) {
 
   const hasUnitSampleData =
     hasWeekGroups ||
-    Boolean(summary) ||
-    Boolean(unitSampleBreakdown?.totalConsultations);
+    (summary?.totalConsultations ?? 0) > 0 ||
+    (unitSampleBreakdown?.totalConsultations ?? 0) > 0;
 
   const urgencySelections = data?.urgencySelection ?? [];
   const topProblems = data?.topProblems ?? [];
-  const internshipSamples = data?.internshipsSamples ?? [];
+  const allInternshipSamples = data?.internshipsSamples ?? [];
 
   const hasUrgencyData = Boolean(
     urgencySelections.length || topProblems.length
   );
-  const hasFormacaoData = Boolean(internshipSamples.length);
+  // Filter out samples with no data (empty weeks and no autonomy counts)
+  const internshipSamples = allInternshipSamples.filter(
+    (sample) =>
+      (sample.weeks?.length ?? 0) > 0 ||
+      Object.values(sample.autonomyCounts ?? {}).some((count) => count > 0)
+  );
+  const hasFormacaoData = internshipSamples.length > 0;
   const hasReportData = hasUnitSampleData || hasUrgencyData || hasFormacaoData;
 
   if (!hasReportData) {
     return (
-      <div className="rounded-lg border border-border/50 p-4 text-sm text-muted-foreground">
-        Ainda não há dados disponíveis para exibir neste relatório.
+      <div className="flex min-h-[40vh] items-center justify-center rounded-lg border border-border/50 p-8 text-center">
+        <p className="text-sm text-muted-foreground">
+          Ainda não há dados disponíveis para exibir neste relatório.
+        </p>
       </div>
     );
   }
@@ -65,4 +73,3 @@ export default function MGFReportSections({ data }: MGFReportSectionsProps) {
     </>
   );
 }
-

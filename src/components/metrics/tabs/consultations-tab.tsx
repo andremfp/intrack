@@ -23,6 +23,7 @@ export function ConsultationsTab({
   hasActiveFilters,
   onExportExcel,
   isExportingExcel,
+  isExportDisabled,
   onRefresh,
   isRefreshing,
 }: MetricsTabProps) {
@@ -76,6 +77,7 @@ export function ConsultationsTab({
         totalConsultations={metrics.totalConsultations}
         onExportExcel={onExportExcel}
         isExportingExcel={isExportingExcel}
+        isExportDisabled={isExportDisabled}
         onRefresh={onRefresh}
         isRefreshing={isRefreshing}
       />

@@ -95,6 +95,7 @@ export function TableToolbar({
                 isExportingCsv={isExportingCsv}
                 isExportingExcel={isExportingExcel}
                 isLoading={isLoading}
+                disabled={isEmpty}
               />
             ) : null}
             {onRefresh && (

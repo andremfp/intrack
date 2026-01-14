@@ -84,6 +84,7 @@ export interface MetricsTabProps {
   hasActiveFilters?: boolean;
   onExportExcel?: () => void;
   isExportingExcel?: boolean;
+  isExportDisabled?: boolean;
   onRefresh?: () => void;
   isRefreshing?: boolean;
 }

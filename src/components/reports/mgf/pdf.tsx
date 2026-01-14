@@ -592,9 +592,24 @@ function buildReportPageBodies(props: {
   }
 
   // Internships pages
-  if (report.internshipsSamples && report.internshipsSamples.length > 0) {
+  // Only render if there are samples with actual data (weeks or autonomy counts)
+  const hasInternshipData =
+    report.internshipsSamples &&
+    report.internshipsSamples.length > 0 &&
+    report.internshipsSamples.some(
+      (sample) =>
+        (sample.weeks?.length ?? 0) > 0 ||
+        Object.values(sample.autonomyCounts ?? {}).some((count) => count > 0)
+    );
+  if (hasInternshipData) {
+    // Filter out samples with no data before paginating
+    const samplesWithData = report.internshipsSamples.filter(
+      (sample) =>
+        (sample.weeks?.length ?? 0) > 0 ||
+        Object.values(sample.autonomyCounts ?? {}).some((count) => count > 0)
+    );
     const internshipChunks = paginateByCost(
-      report.internshipsSamples,
+      samplesWithData,
       (sample) =>
         6 +
         (sample.weeks?.length ?? 0) +

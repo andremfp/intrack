@@ -21,6 +21,7 @@ interface ExportMenuProps {
   isExportingExcel?: boolean;
   isPrinting?: boolean;
   isLoading?: boolean;
+  disabled?: boolean;
   className?: string;
   buttonLabel?: string;
 }
@@ -33,6 +34,7 @@ export function ExportMenu({
   isExportingExcel = false,
   isPrinting = false,
   isLoading = false,
+  disabled = false,
   className,
   buttonLabel = "Exportar",
 }: ExportMenuProps) {
@@ -60,7 +62,7 @@ export function ExportMenu({
         <Button
           variant="outline"
           size="sm"
-          disabled={isLoading || isExporting}
+          disabled={disabled || isLoading || isExporting}
           className={`h-8 ${className ?? ""}`}
         >
           {isExporting ? (
@@ -82,7 +84,7 @@ export function ExportMenu({
             <button
               type="button"
               onClick={handleCsv}
-              disabled={isExportingCsv || isLoading}
+              disabled={disabled || isExportingCsv || isLoading}
               className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isExportingCsv ? (
@@ -101,7 +103,7 @@ export function ExportMenu({
             <button
               type="button"
               onClick={handleExcel}
-              disabled={isExportingExcel || isLoading}
+              disabled={disabled || isExportingExcel || isLoading}
               className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isExportingExcel ? (
@@ -121,7 +123,7 @@ export function ExportMenu({
             <button
               type="button"
               onClick={handlePdf}
-              disabled={isPrinting || isLoading}
+              disabled={disabled || isPrinting || isLoading}
               className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isPrinting ? (

@@ -187,7 +187,7 @@ export function ConsultationsTable({
         isDeleteMode={isDeleteMode}
         selectedIds={selectedIds}
         isLoading={isLoading}
-        isEmpty={false}
+        isEmpty={totalCount === 0}
         hasActiveFilters={hasActiveFilters}
         onAddConsultation={onAddConsultation}
         onBulkDelete={onBulkDelete}

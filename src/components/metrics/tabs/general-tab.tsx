@@ -77,6 +77,7 @@ export function GeneralTab({
         totalConsultations={metrics.totalConsultations}
         onExportExcel={onExportExcel}
         isExportingExcel={isExportingExcel}
+        isExportDisabled={isExportDisabled}
         onRefresh={onRefresh}
         isRefreshing={isRefreshing}
       />
