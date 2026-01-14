@@ -168,7 +168,7 @@ export function CodeSearchField<T extends CodeSearchItem>({
         <div
           className={`flex ${
             isMultiple ? "flex-wrap gap-1.5" : "items-center gap-1.5"
-          } p-2 border rounded-md bg-muted/50`}
+          } p-2 border rounded-md bg-muted/50 min-w-0`}
         >
           {selectedItems.map((item, idx) => {
             if (isMultiple) {
@@ -202,17 +202,17 @@ export function CodeSearchField<T extends CodeSearchItem>({
                   type="button"
                   variant="secondary"
                   size="sm"
-                  className="h-auto py-1 px-2 text-xs flex-1 justify-start"
+                  className="h-auto py-1 px-2 text-xs flex-1 justify-start min-w-0"
                   onClick={handleClear}
                 >
-                  <div className="flex items-center gap-1 min-w-0 flex-1">
+                  <div className="flex items-center gap-1 min-w-0 flex-1 overflow-hidden">
                     <span className="font-mono font-semibold flex-shrink-0">
                       {item.code}
                     </span>
                     <span className="text-muted-foreground flex-shrink-0">
                       -
                     </span>
-                    <span className="flex-1 truncate text-left">
+                    <span className="flex-1 truncate text-left min-w-0">
                       {item.description}
                     </span>
                     <IconX className="h-3 w-3 ml-1 flex-shrink-0" />

@@ -40,6 +40,7 @@ import {
 } from "@/components/forms/consultation/fields/code-search-field";
 import { PROFESSIONS } from "@/professions";
 import { MGF_FIELDS, MGF_SECTION_LABELS } from "@/constants";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 
 /**
  * Filter component specialized to consultations filters.
@@ -324,6 +325,67 @@ export function ConsultationFilters({
     ]
   );
 
+  // Helper function to normalize SpecialtyFieldOption[] to ComboboxOption[]
+  const normalizeOptions = useMemo(
+    () =>
+      (options: SpecialtyFieldOption[]): ComboboxOption[] => {
+        return options
+          .map((option) => {
+            const val =
+              "value" in option
+                ? option.value
+                : "code" in option
+                ? option.code
+                : undefined;
+            const label =
+              "label" in option
+                ? option.label
+                : "description" in option
+                ? option.description
+                : "";
+            return { val, label };
+          })
+          .filter(
+            (item): item is { val: string; label: string } =>
+              item.val !== undefined && item.label !== undefined
+          )
+          .map((item) => ({ value: item.val, label: item.label }));
+      },
+    []
+  );
+
+  // Helper component for combobox filter
+  const ComboboxFilter = ({
+    label,
+    options,
+    placeholder,
+    value,
+    onChange,
+    allLabel = "Todos",
+  }: {
+    label: string;
+    options: SpecialtyFieldOption[];
+    placeholder?: string;
+    value: string | undefined;
+    onChange: (value: string | undefined) => void;
+    allLabel?: string;
+  }) => {
+    const normalizedOptions = normalizeOptions(options);
+
+    return (
+      <Combobox
+        options={normalizedOptions}
+        value={value}
+        onSelect={onChange}
+        placeholder={allLabel}
+        searchPlaceholder={placeholder || `Pesquisar ${label.toLowerCase()}...`}
+        buttonClassName="h-8"
+        showAllOption={true}
+        allOptionLabel={allLabel}
+      />
+    );
+  };
+
   // Helper function to render a single field
   const renderField = (fieldKey: string) => {
     switch (fieldKey) {
@@ -519,52 +581,13 @@ export function ConsultationFilters({
             <label className="text-xs font-medium text-muted-foreground">
               Estágio
             </label>
-            <Select
-              value={(getFilterValue("internship") as string) || "all"}
-              onValueChange={(value) =>
-                setFilterValue(
-                  "internship",
-                  value === "all" ? undefined : value
-                )
-              }
-            >
-              <SelectTrigger className="h-8">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os estágios</SelectItem>
-                {fieldOptions.internship
-                  .map((option) => {
-                    const val =
-                      "value" in option
-                        ? option.value
-                        : "code" in option
-                        ? option.code
-                        : undefined;
-                    const label =
-                      "label" in option
-                        ? option.label
-                        : "description" in option
-                        ? option.description
-                        : "";
-                    return { val, label, option };
-                  })
-                  .filter(
-                    (
-                      item
-                    ): item is {
-                      val: string;
-                      label: string;
-                      option: SpecialtyFieldOption;
-                    } => item.val !== undefined
-                  )
-                  .map((item) => (
-                    <SelectItem key={item.val} value={item.val}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
+            <ComboboxFilter
+              label="Estágio"
+              options={fieldOptions.internship}
+              value={getFilterValue("internship") as string | undefined}
+              onChange={(value) => setFilterValue("internship", value)}
+              allLabel="Todos os estágios"
+            />
           </div>
         );
 
@@ -841,52 +864,12 @@ export function ConsultationFilters({
             <label className="text-xs font-medium text-muted-foreground">
               Contraceptivo
             </label>
-            <Select
-              value={(getFilterValue("contraceptive") as string) || "all"}
-              onValueChange={(value) =>
-                setFilterValue(
-                  "contraceptive",
-                  value === "all" ? undefined : value
-                )
-              }
-            >
-              <SelectTrigger className="h-8">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {fieldOptions.contraceptive
-                  .map((option) => {
-                    const val =
-                      "value" in option
-                        ? option.value
-                        : "code" in option
-                        ? option.code
-                        : undefined;
-                    const label =
-                      "label" in option
-                        ? option.label
-                        : "description" in option
-                        ? option.description
-                        : "";
-                    return { val, label, option };
-                  })
-                  .filter(
-                    (
-                      item
-                    ): item is {
-                      val: string;
-                      label: string;
-                      option: SpecialtyFieldOption;
-                    } => item.val !== undefined
-                  )
-                  .map((item) => (
-                    <SelectItem key={item.val} value={item.val}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
+            <ComboboxFilter
+              label="Contraceptivo"
+              options={fieldOptions.contraceptive}
+              value={getFilterValue("contraceptive") as string | undefined}
+              onChange={(value) => setFilterValue("contraceptive", value)}
+            />
           </div>
         );
 
@@ -901,52 +884,12 @@ export function ConsultationFilters({
             <label className="text-xs font-medium text-muted-foreground">
               Novo Contraceptivo
             </label>
-            <Select
-              value={(getFilterValue("new_contraceptive") as string) || "all"}
-              onValueChange={(value) =>
-                setFilterValue(
-                  "new_contraceptive",
-                  value === "all" ? undefined : value
-                )
-              }
-            >
-              <SelectTrigger className="h-8">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {fieldOptions.new_contraceptive
-                  .map((option) => {
-                    const val =
-                      "value" in option
-                        ? option.value
-                        : "code" in option
-                        ? option.code
-                        : undefined;
-                    const label =
-                      "label" in option
-                        ? option.label
-                        : "description" in option
-                        ? option.description
-                        : "";
-                    return { val, label, option };
-                  })
-                  .filter(
-                    (
-                      item
-                    ): item is {
-                      val: string;
-                      label: string;
-                      option: SpecialtyFieldOption;
-                    } => item.val !== undefined
-                  )
-                  .map((item) => (
-                    <SelectItem key={item.val} value={item.val}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
+            <ComboboxFilter
+              label="Novo Contraceptivo"
+              options={fieldOptions.new_contraceptive}
+              value={getFilterValue("new_contraceptive") as string | undefined}
+              onChange={(value) => setFilterValue("new_contraceptive", value)}
+            />
           </div>
         );
 
@@ -961,52 +904,12 @@ export function ConsultationFilters({
             <label className="text-xs font-medium text-muted-foreground">
               Tipologia de Família
             </label>
-            <Select
-              value={(getFilterValue("family_type") as string) || "all"}
-              onValueChange={(value) =>
-                setFilterValue(
-                  "family_type",
-                  value === "all" ? undefined : value
-                )
-              }
-            >
-              <SelectTrigger className="h-8">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {fieldOptions.family_type
-                  .map((option) => {
-                    const val =
-                      "value" in option
-                        ? option.value
-                        : "code" in option
-                        ? option.code
-                        : undefined;
-                    const label =
-                      "label" in option
-                        ? option.label
-                        : "description" in option
-                        ? option.description
-                        : "";
-                    return { val, label, option };
-                  })
-                  .filter(
-                    (
-                      item
-                    ): item is {
-                      val: string;
-                      label: string;
-                      option: SpecialtyFieldOption;
-                    } => item.val !== undefined
-                  )
-                  .map((item) => (
-                    <SelectItem key={item.val} value={item.val}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
+            <ComboboxFilter
+              label="Tipologia de Família"
+              options={fieldOptions.family_type}
+              value={getFilterValue("family_type") as string | undefined}
+              onChange={(value) => setFilterValue("family_type", value)}
+            />
           </div>
         );
 
@@ -1021,52 +924,12 @@ export function ConsultationFilters({
             <label className="text-xs font-medium text-muted-foreground">
               Escolaridade
             </label>
-            <Select
-              value={(getFilterValue("school_level") as string) || "all"}
-              onValueChange={(value) =>
-                setFilterValue(
-                  "school_level",
-                  value === "all" ? undefined : value
-                )
-              }
-            >
-              <SelectTrigger className="h-8">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {fieldOptions.school_level
-                  .map((option) => {
-                    const val =
-                      "value" in option
-                        ? option.value
-                        : "code" in option
-                        ? option.code
-                        : undefined;
-                    const label =
-                      "label" in option
-                        ? option.label
-                        : "description" in option
-                        ? option.description
-                        : "";
-                    return { val, label, option };
-                  })
-                  .filter(
-                    (
-                      item
-                    ): item is {
-                      val: string;
-                      label: string;
-                      option: SpecialtyFieldOption;
-                    } => item.val !== undefined
-                  )
-                  .map((item) => (
-                    <SelectItem key={item.val} value={item.val}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
+            <ComboboxFilter
+              label="Escolaridade"
+              options={fieldOptions.school_level}
+              value={getFilterValue("school_level") as string | undefined}
+              onChange={(value) => setFilterValue("school_level", value)}
+            />
           </div>
         );
 

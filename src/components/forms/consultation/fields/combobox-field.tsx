@@ -1,23 +1,7 @@
 import * as React from "react";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Check, ChevronsUpDown } from "lucide-react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import { cn } from "@/utils/utils";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import type { SpecialtyField } from "@/constants";
-import { SCROLLBAR_CLASSES } from "@/constants";
 
 interface ComboboxFieldProps {
   field: SpecialtyField;
@@ -37,16 +21,33 @@ export function ComboboxField({
   const fieldId = field.key;
   const isInvalid = Boolean(errorMessage);
   const stringValue = typeof value === "string" ? value : "";
-  const [open, setOpen] = React.useState(false);
   const required =
     isRequired !== undefined ? isRequired : field.requiredWhen === "always";
 
-  const selectedOption = field.options?.find(
-    (option): option is { value: string; label: string } =>
-      "value" in option &&
-      option.value !== undefined &&
-      "label" in option &&
-      option.value === stringValue
+  // Normalize options from SpecialtyFieldOption[] to ComboboxOption[]
+  const options: ComboboxOption[] = React.useMemo(() => {
+    return (
+      field.options
+        ?.filter(
+          (option): option is { value: string; label: string } =>
+            "value" in option &&
+            option.value !== undefined &&
+            "label" in option &&
+            option.label !== undefined
+        )
+        .map((option) => ({
+          value: option.value,
+          label: option.label,
+        })) || []
+    );
+  }, [field.options]);
+
+  const handleSelect = React.useCallback(
+    (selectedValue: string | undefined) => {
+      // Convert undefined to empty string for form fields (to clear selection)
+      onUpdate(selectedValue === undefined ? "" : selectedValue);
+    },
+    [onUpdate]
   );
 
   return (
@@ -55,95 +56,17 @@ export function ComboboxField({
         {field.label}
         {required && <span className="text-destructive ml-1">*</span>}
       </Label>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className={cn(
-              "w-full justify-between",
-              !stringValue && "text-muted-foreground"
-            )}
-            aria-invalid={isInvalid || undefined}
-            aria-describedby={isInvalid ? `${fieldId}-error` : undefined}
-          >
-            {selectedOption?.label ||
-              field.placeholder ||
-              `Selecionar ${field.label}`}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent
-          className="w-[var(--radix-popover-trigger-width)] p-0"
-          align="start"
-        >
-          <Command
-            filter={(value, search) => {
-              // Find the option that matches the value
-              const option = field.options?.find(
-                (opt): opt is { value: string; label: string } =>
-                  "value" in opt &&
-                  opt.value !== undefined &&
-                  "label" in opt &&
-                  opt.value === value
-              );
-              if (!option) return 0;
-
-              // Search by label (description) instead of value
-              const searchLower = search.toLowerCase();
-              const labelLower = option.label.toLowerCase();
-
-              if (labelLower.includes(searchLower)) {
-                return 1;
-              }
-              return 0;
-            }}
-          >
-            <CommandInput
-              placeholder={
-                field.placeholder || `Pesquisar ${field.label.toLowerCase()}...`
-              }
-              className="h-9"
-            />
-            <CommandList className={SCROLLBAR_CLASSES}>
-              <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>
-              <CommandGroup>
-                {field.options
-                  ?.filter(
-                    (option): option is { value: string; label: string } =>
-                      "value" in option &&
-                      option.value !== undefined &&
-                      "label" in option &&
-                      option.label !== undefined
-                  )
-                  .map((option) => (
-                    <CommandItem
-                      key={option.value}
-                      value={option.value}
-                      onSelect={(currentValue) => {
-                        onUpdate(
-                          currentValue === stringValue ? "" : currentValue
-                        );
-                        setOpen(false);
-                      }}
-                    >
-                      {option.label}
-                      <Check
-                        className={cn(
-                          "ml-auto h-4 w-4",
-                          stringValue === option.value
-                            ? "opacity-100"
-                            : "opacity-0"
-                        )}
-                      />
-                    </CommandItem>
-                  ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+      <Combobox
+        options={options}
+        value={stringValue}
+        onSelect={handleSelect}
+        placeholder={field.placeholder || `Selecionar ${field.label}`}
+        searchPlaceholder={
+          field.placeholder || `Pesquisar ${field.label.toLowerCase()}...`
+        }
+        buttonClassName={isInvalid ? "border-destructive" : undefined}
+        disabled={false}
+      />
       {isInvalid && (
         <p id={`${fieldId}-error`} className="text-xs text-destructive mt-1">
           {errorMessage}
