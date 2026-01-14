@@ -6,6 +6,13 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   IconMail,
   IconStethoscope,
   IconX,
@@ -14,6 +21,7 @@ import {
   IconCheck,
   IconTrash,
   IconAlertCircle,
+  IconCalendar,
 } from "@tabler/icons-react";
 import { toasts } from "@/utils/toasts";
 import { updateUser, deleteUserAccount } from "@/lib/api/users";
@@ -38,6 +46,10 @@ export function ProfileModal({
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(user?.data.display_name || "");
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingYear, setIsSavingYear] = useState(false);
+  const [selectedYear, setSelectedYear] = useState<string>(
+    user?.data.specialty_year?.toString() || ""
+  );
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
@@ -51,6 +63,13 @@ export function ProfileModal({
       document.body.style.overflow = originalOverflow;
     };
   }, []);
+
+  // Update selectedYear when user changes
+  useEffect(() => {
+    if (user?.data.specialty_year) {
+      setSelectedYear(user.data.specialty_year.toString());
+    }
+  }, [user?.data.specialty_year]);
 
   if (!user || !specialty) return null;
 
@@ -110,6 +129,43 @@ export function ProfileModal({
   const handleCancelEdit = () => {
     setEditedName(user.data.display_name || "");
     setIsEditingName(false);
+  };
+
+  const handleYearChange = async (newYear: string) => {
+    const yearNumber = parseInt(newYear, 10);
+    if (!yearNumber || yearNumber === user.data.specialty_year) {
+      return;
+    }
+
+    setIsSavingYear(true);
+
+    const result = await updateUser({
+      userId: user.data.user_id,
+      specialtyYear: yearNumber,
+    });
+
+    setIsSavingYear(false);
+
+    if (!result.success) {
+      toasts.apiError(result.error, "Erro ao atualizar ano");
+      // Revert to original year on error
+      setSelectedYear(user.data.specialty_year?.toString() || "");
+      return;
+    }
+
+    // Update successful
+    setSelectedYear(newYear);
+    toasts.success("Ano atualizado com sucesso!");
+
+    // Notify parent to refresh user data
+    const updatedUser: UserData = {
+      ...user,
+      data: {
+        ...user.data,
+        specialty_year: yearNumber,
+      },
+    };
+    onUserUpdated(updatedUser);
   };
 
   const handleDeleteAccount = async () => {
@@ -271,6 +327,45 @@ export function ProfileModal({
                 <p className="text-sm font-medium font-mono">
                   {specialty.code}
                 </p>
+              </div>
+            </div>
+
+            {/* Specialty Year */}
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 pr-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center">
+                <IconCalendar className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-muted-foreground mb-1">
+                  Ano da Especialidade
+                </p>
+                <Select
+                  value={selectedYear}
+                  onValueChange={handleYearChange}
+                  disabled={isSavingYear}
+                >
+                  <SelectTrigger className="h-9 w-full">
+                    <SelectValue placeholder="Seleciona o ano..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {specialty.years > 0 ? (
+                      Array.from(
+                        { length: specialty.years },
+                        (_, i) => i + 1
+                      ).map((year) => (
+                        <SelectItem key={year} value={year.toString()}>
+                          <div className="flex items-center gap-2">
+                            {year}º Ano
+                          </div>
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="" disabled>
+                        Nenhum ano disponível
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

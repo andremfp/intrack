@@ -121,15 +121,22 @@ export async function upsertUser(): Promise<ApiResponse<UserData>> {
 export async function updateUser({
   userId,
   specialtyId,
+  specialtyYear,
   displayName,
 }: {
   userId: string;
   specialtyId?: string;
+  specialtyYear?: number;
   displayName?: string;
 }): Promise<ApiResponse<void>> {
-  const updateData: { specialty_id?: string; display_name?: string } = {};
+  const updateData: {
+    specialty_id?: string;
+    specialty_year?: number;
+    display_name?: string;
+  } = {};
 
   if (specialtyId !== undefined) updateData.specialty_id = specialtyId;
+  if (specialtyYear !== undefined) updateData.specialty_year = specialtyYear;
   if (displayName !== undefined) updateData.display_name = displayName;
 
   if (Object.keys(updateData).length === 0) {
@@ -153,7 +160,9 @@ export async function checkUserHasEmailAuth(
 ): Promise<ApiResponse<boolean>> {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_LOCAL_SUPABASE_URL}/functions/v1/check-user-provider`,
+      `${
+        import.meta.env.VITE_LOCAL_SUPABASE_URL
+      }/functions/v1/check-user-provider`,
       {
         method: "POST",
         headers: {
