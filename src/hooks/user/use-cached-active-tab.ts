@@ -39,26 +39,36 @@ export function useCachedActiveTab(userProfile?: UserData | null) {
     return TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS;
   });
 
-  // Update tab when user profile loads (e.g., after login)
+  // Update tab when user profile loads or specialty year changes
   useEffect(() => {
-    // Only check if we're on the base consultations tab
-    if (activeTab !== TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS) {
-      return;
-    }
-
     // Use provided userProfile or fall back to cache
     const profile = userProfile || userCache.getUserProfile();
     const userSpecialtyYear = profile?.data.specialty_year;
 
-    // Update if we have a specialty year and we're still on the base consultations tab
-    if (
-      userSpecialtyYear &&
-      userSpecialtyYear >= 1 &&
-      activeTab === TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS
-    ) {
-      const expectedTab = `${TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS}.${userSpecialtyYear}`;
-      setActiveTabState(expectedTab);
-      userCache.setActiveTab(expectedTab);
+    // If we're on a consultations tab (base or year-specific)
+    if (activeTab.startsWith(TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS)) {
+      // If it's a year-specific tab, extract the year
+      if (activeTab.startsWith(`${TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS}.`)) {
+        const currentYear = parseInt(activeTab.split(".")[1]);
+        // If user's specialty year changed, update the tab
+        if (
+          userSpecialtyYear &&
+          userSpecialtyYear >= 1 &&
+          currentYear !== userSpecialtyYear
+        ) {
+          const expectedTab = `${TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS}.${userSpecialtyYear}`;
+          setActiveTabState(expectedTab);
+          userCache.setActiveTab(expectedTab);
+        }
+      } else {
+        // We're on the base consultations tab
+        // Update if we have a specialty year
+        if (userSpecialtyYear && userSpecialtyYear >= 1) {
+          const expectedTab = `${TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS}.${userSpecialtyYear}`;
+          setActiveTabState(expectedTab);
+          userCache.setActiveTab(expectedTab);
+        }
+      }
     }
   }, [activeTab, userProfile]);
 
