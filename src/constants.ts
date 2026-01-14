@@ -326,6 +326,18 @@ export const MGF_FIELDS: SpecialtyField[] = [
     section: "clinical_history",
   },
   {
+    key: "alcohol",
+    label: "Alcoól",
+    type: "boolean",
+    section: "clinical_history",
+  },
+  {
+    key: "drugs",
+    label: "Drogas",
+    type: "boolean",
+    section: "clinical_history",
+  },
+  {
     key: "vaccination_plan",
     label: "PNV Cumprido",
     type: "boolean",

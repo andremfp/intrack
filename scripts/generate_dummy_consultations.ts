@@ -172,6 +172,8 @@ while (date.getFullYear() === YEAR) {
       profession,
       professional_situation,
       smoker: random(SMOKER),
+      alcohol: randomBoolOrNull(),
+      drugs: randomBoolOrNull(),
       vaccination_plan: randomBoolOrNull(),
       chronic_diseases: [],
       problems: randomICPC2Codes(1),
