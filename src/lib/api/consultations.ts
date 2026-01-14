@@ -623,6 +623,10 @@ export interface ConsultationMetrics {
   byVaccinationPlan: Array<{ vaccinationPlan: string; count: number }>;
   byFamilyType: Array<{ familyType: string; count: number }>;
   bySchoolLevel: Array<{ schoolLevel: string; count: number }>;
+  byProfessionalSituation: Array<{
+    professionalSituation: string;
+    count: number;
+  }>;
   byContraceptive: Array<{ contraceptive: string; count: number }>;
   byNewContraceptive: Array<{ newContraceptive: string; count: number }>;
   byDiagnosis: Array<{ code: string; count: number }>;
@@ -810,6 +814,7 @@ function getEmptyMetrics(): ConsultationMetrics {
     byVaccinationPlan: [],
     byFamilyType: [],
     bySchoolLevel: [],
+    byProfessionalSituation: [],
     byContraceptive: [],
     byNewContraceptive: [],
     byDiagnosis: [],
@@ -859,6 +864,7 @@ function calculateMetrics(
   const vaccinationPlanCounts = new Map<string, number>();
   const familyTypeCounts = new Map<string, number>();
   const schoolLevelCounts = new Map<string, number>();
+  const professionalSituationCounts = new Map<string, number>();
   const contraceptiveCounts = new Map<string, number>();
   const newContraceptiveCounts = new Map<string, number>();
   const diagnosisCounts = new Map<string, number>();
@@ -937,6 +943,17 @@ function calculateMetrics(
       schoolLevelCounts.set(
         c.school_level,
         (schoolLevelCounts.get(c.school_level) || 0) + 1
+      );
+    }
+
+    // Professional situation counting
+    if (
+      c.professional_situation !== null &&
+      c.professional_situation !== undefined
+    ) {
+      professionalSituationCounts.set(
+        c.professional_situation,
+        (professionalSituationCounts.get(c.professional_situation) || 0) + 1
       );
     }
 
@@ -1049,6 +1066,10 @@ function calculateMetrics(
     ([schoolLevel, count]) => ({ schoolLevel, count })
   );
 
+  const byProfessionalSituation = Array.from(
+    professionalSituationCounts.entries()
+  ).map(([professionalSituation, count]) => ({ professionalSituation, count }));
+
   const byContraceptive = Array.from(contraceptiveCounts.entries())
     .map(([contraceptive, count]) => ({ contraceptive, count }))
     .sort((a, b) => b.count - a.count);
@@ -1081,6 +1102,7 @@ function calculateMetrics(
     byVaccinationPlan,
     byFamilyType,
     bySchoolLevel,
+    byProfessionalSituation,
     byContraceptive,
     byNewContraceptive,
     byDiagnosis,

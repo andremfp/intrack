@@ -128,6 +128,12 @@ export function ConsultationsTab({
               getKey={(item) => item.schoolLevel}
               getLabel={(key) => getFieldLabel("school_level", key)}
             />
+            <MetricCard
+              title="Situação Profissional"
+              data={metrics.byProfessionalSituation}
+              getKey={(item) => item.professionalSituation}
+              getLabel={(key) => getFieldLabel("professional_situation", key)}
+            />
           </CollapsibleContent>
         </Collapsible>
       </div>
