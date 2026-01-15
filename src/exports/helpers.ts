@@ -741,15 +741,6 @@ export function buildMetricsExportSheets(params: {
       rows: resumoRows,
     });
 
-    // Consultas por mês
-    if (metrics.byMonth.length > 0) {
-      pushWithMetadata({
-        sheetName: "Consultas por mês",
-        headers: ["Mês", "Consultas"],
-        rows: metrics.byMonth.map((item) => [item.month, item.count]),
-      });
-    }
-
     // Sexo
     if (metrics.bySex.length > 0) {
       pushWithMetadata({

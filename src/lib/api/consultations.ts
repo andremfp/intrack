@@ -615,7 +615,6 @@ export async function getMGFConsultationsForExport(
 export interface ConsultationMetrics {
   totalConsultations: number;
   averageAge: number;
-  byMonth: Array<{ month: string; count: number }>;
   bySex: Array<{ sex: string; count: number }>;
   byAgeRange: Array<{ range: string; count: number }>;
   byType: Array<{ type: string; label: string; count: number }>;
@@ -813,11 +812,187 @@ export async function getConsultationMetrics(
   }
 }
 
+export interface TimeSeriesDataPoint {
+  date: string; // YYYY-MM-DD format
+  count: number;
+}
+
+/**
+ * Fetch timeseries data aggregated by day for consultations.
+ * This is optimized for chart display with date range filtering.
+ */
+export async function getConsultationTimeSeries(
+  userId: string,
+  filters?: ConsultationsFilters,
+  specialtyCode?: string,
+  excludeType?: string
+): Promise<ApiResponse<TimeSeriesDataPoint[]>> {
+  try {
+    // Build query with database-level filtering
+    const viewName = specialtyCode
+      ? `consultations_${specialtyCode}`
+      : "consultations_mgf";
+
+    // Use typed client that allows dynamic view names
+    const typedSupabase = supabase as SupabaseWithDynamicFrom;
+    let query = typedSupabase
+      .from(viewName)
+      .select("date")
+      .eq("user_id", userId);
+
+    // Apply date range filters from filters object
+    if (filters?.dateFrom) {
+      query = query.gte("date", filters.dateFrom);
+    }
+    if (filters?.dateTo) {
+      query = query.lte("date", filters.dateTo);
+    }
+
+    // Convert year to specialtyYear for API compatibility
+    const specialtyYear = filters?.year;
+    if (specialtyYear !== undefined) {
+      query = query.eq("specialty_year", specialtyYear);
+    }
+
+    if (filters?.location) {
+      query = query.eq("location", filters.location);
+    }
+
+    if (filters?.internship) {
+      query = query.ilike("details->>internship", filters.internship);
+    }
+
+    if (filters?.family_type) {
+      query = query.eq("details->>family_type", filters.family_type);
+    }
+
+    if (filters?.school_level) {
+      query = query.eq("details->>school_level", filters.school_level);
+    }
+
+    if (filters?.profession) {
+      query = query.ilike("details->>profession", `${filters.profession}%`);
+    }
+
+    if (filters?.vaccination_plan !== undefined) {
+      query = query.eq("vaccination_plan", filters.vaccination_plan);
+    }
+
+    if (filters?.professional_situation) {
+      query = query.eq(
+        "details->>professional_situation",
+        filters.professional_situation
+      );
+    }
+
+    if (filters?.alcohol !== undefined) {
+      query = query.eq("alcohol", filters.alcohol);
+    }
+
+    if (filters?.drugs !== undefined) {
+      query = query.eq("drugs", filters.drugs);
+    }
+
+    if (filters?.sex) {
+      query = query.eq("sex", filters.sex);
+    }
+
+    if (filters?.autonomy) {
+      query = query.eq("autonomy", filters.autonomy);
+    }
+
+    if (filters?.type) {
+      query = query.eq("type", filters.type);
+    }
+
+    // Exclude specific type if requested
+    if (excludeType) {
+      query = query.neq("type", excludeType);
+    }
+
+    if (filters?.presential !== undefined) {
+      query = query.eq("presential", filters.presential);
+    }
+
+    if (filters?.smoker) {
+      query = query.eq("smoker", filters.smoker);
+    }
+
+    // Age filtering with unit conversion to years
+    if (filters?.ageMin !== undefined || filters?.ageMax !== undefined) {
+      const conditions: string[] = [];
+
+      let yearsCondition = "age_unit.eq.years";
+      if (filters.ageMin !== undefined) {
+        yearsCondition += `,age.gte.${filters.ageMin}`;
+      }
+      if (filters.ageMax !== undefined) {
+        yearsCondition += `,age.lte.${filters.ageMax}`;
+      }
+      conditions.push(`and(${yearsCondition})`);
+
+      let monthsCondition = "age_unit.eq.months";
+      if (filters.ageMin !== undefined) {
+        monthsCondition += `,age.gte.${filters.ageMin * 12}`;
+      }
+      if (filters.ageMax !== undefined) {
+        monthsCondition += `,age.lte.${filters.ageMax * 12}`;
+      }
+      conditions.push(`and(${monthsCondition})`);
+
+      let weeksCondition = "age_unit.eq.weeks";
+      if (filters.ageMin !== undefined) {
+        weeksCondition += `,age.gte.${Math.floor(filters.ageMin * 52.1429)}`;
+      }
+      if (filters.ageMax !== undefined) {
+        weeksCondition += `,age.lte.${Math.ceil(filters.ageMax * 52.1429)}`;
+      }
+      conditions.push(`and(${weeksCondition})`);
+
+      let daysCondition = "age_unit.eq.days";
+      if (filters.ageMin !== undefined) {
+        daysCondition += `,age.gte.${Math.floor(filters.ageMin * 365.25)}`;
+      }
+      if (filters.ageMax !== undefined) {
+        daysCondition += `,age.lte.${Math.ceil(filters.ageMax * 365.25)}`;
+      }
+      conditions.push(`and(${daysCondition})`);
+
+      query = query.or(conditions.join(","));
+    }
+
+    const { data, error } = await query;
+
+    if (error) return failure(error, "getConsultationTimeSeries");
+    if (!data) return success([]);
+
+    // Aggregate by day
+    const dayCounts = new Map<string, number>();
+    (data as Array<{ date: string }>).forEach((c) => {
+      if (c.date) {
+        // Normalize date to YYYY-MM-DD format
+        const dateStr = c.date.split("T")[0];
+        dayCounts.set(dateStr, (dayCounts.get(dateStr) || 0) + 1);
+      }
+    });
+
+    // Convert to array and sort by date
+    const timeSeriesData: TimeSeriesDataPoint[] = Array.from(
+      dayCounts.entries()
+    )
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    return success(timeSeriesData);
+  } catch (error) {
+    return failure(error as Error, "getConsultationTimeSeries");
+  }
+}
+
 function getEmptyMetrics(): ConsultationMetrics {
   return {
     totalConsultations: 0,
     averageAge: 0,
-    byMonth: [],
     bySex: [],
     byAgeRange: [],
     byType: [],
@@ -878,7 +1053,6 @@ function calculateMetrics(
   ];
 
   // Initialize all maps for counting
-  const monthCounts = new Map<string, number>();
   const sexCounts = new Map<string, number>();
   const typeCounts = new Map<string, number>();
   const presentialCounts = new Map<string, number>();
@@ -914,15 +1088,6 @@ function calculateMetrics(
         b.max !== undefined ? age >= b.min && age <= b.max : age >= b.min
       );
       if (bucket) bucket.count += 1;
-    }
-
-    // Month grouping
-    if (c.date) {
-      const date = new Date(c.date);
-      const monthKey = `${date.getFullYear()}-${String(
-        date.getMonth() + 1
-      ).padStart(2, "0")}`;
-      monthCounts.set(monthKey, (monthCounts.get(monthKey) || 0) + 1);
     }
 
     // Sex counting
@@ -1104,10 +1269,6 @@ function calculateMetrics(
     .filter((b) => b.count > 0)
     .map((b) => ({ range: b.label, count: b.count }));
 
-  const byMonth = Array.from(monthCounts.entries())
-    .map(([month, count]) => ({ month, count }))
-    .sort((a, b) => a.month.localeCompare(b.month));
-
   const bySex = Array.from(sexCounts.entries()).map(([sex, count]) => ({
     sex,
     count,
@@ -1220,7 +1381,6 @@ function calculateMetrics(
     totalConsultations,
     averageAge,
     byAgeRange,
-    byMonth,
     bySex,
     byType,
     byPresential,

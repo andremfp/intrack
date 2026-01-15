@@ -1170,7 +1170,9 @@ export function ConsultationFilters({
                     </div>
                   )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {fields.map((fieldKey) => renderField(fieldKey))}
+                    {fields.map((fieldKey) => (
+                      <div key={fieldKey}>{renderField(fieldKey)}</div>
+                    ))}
                   </div>
                 </div>
               );

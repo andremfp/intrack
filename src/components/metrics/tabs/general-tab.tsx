@@ -11,6 +11,7 @@ import { EmptyMetricsState } from "../empty-metrics-state";
 import { MetricsToolbar } from "../metrics-toolbar";
 
 export function GeneralTab({
+  userId,
   specialty,
   filters,
   setFilter,
@@ -22,6 +23,8 @@ export function GeneralTab({
   isExportDisabled,
   onRefresh,
   isRefreshing,
+  implicitFilters,
+  excludeType,
 }: GeneralTabProps) {
   // Get the data fields that correspond to enabled filter fields for this tab
   const enabledDataFields = useMemo(
@@ -112,7 +115,13 @@ export function GeneralTab({
 
       {/* Time series chart - takes remaining space */}
       <div className="flex-1 min-h-0 relative" ref={timeSeriesRef}>
-        <TimeSeriesChart data={metrics.byMonth} />
+        <TimeSeriesChart
+          userId={userId}
+          specialty={specialty}
+          filters={filters}
+          implicitFilters={implicitFilters}
+          excludeType={excludeType}
+        />
       </div>
     </div>
   );

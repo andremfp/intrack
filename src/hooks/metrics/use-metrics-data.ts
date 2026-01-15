@@ -89,26 +89,56 @@ export function useMetricsData({
     // If filters are being overridden, we need to invalidate with the new key
     // Otherwise, just refetch the current query directly
     if (filtersOverride) {
-      const queryKey = metrics.summary({
+      const mergedFilters = { ...filters, ...filtersOverride };
+      const summaryQueryKey = metrics.summary({
         userId,
         specialtyCode: specialtyCode || "",
-        filters: { ...filters, ...filtersOverride },
+        filters: mergedFilters,
+        implicitFilters,
+        excludeType,
+      });
+      const timeseriesQueryKey = metrics.timeseries({
+        userId,
+        specialtyCode: specialtyCode || "",
+        filters: mergedFilters,
         implicitFilters,
         excludeType,
       });
 
-      await queryClient.invalidateQueries({ queryKey });
-      await queryClient.refetchQueries({ queryKey });
+      await queryClient.invalidateQueries({ queryKey: summaryQueryKey });
+      await queryClient.refetchQueries({ queryKey: summaryQueryKey });
+      await queryClient.invalidateQueries({ queryKey: timeseriesQueryKey });
+      await queryClient.refetchQueries({ queryKey: timeseriesQueryKey });
     } else {
       // Just refetch directly - this will force a network request even if data is fresh
       // No need to invalidate first, as refetch() bypasses cache
       await query.refetch({ cancelRefetch: false });
+
+      // Also refetch timeseries data with current filters
+      const timeseriesQueryKey = metrics.timeseries({
+        userId,
+        specialtyCode: specialtyCode || "",
+        filters,
+        implicitFilters,
+        excludeType,
+      });
+      await queryClient.refetchQueries({ queryKey: timeseriesQueryKey });
     }
   };
 
   const retryLoadMetrics = async () => {
     // For retry, refetch the current query directly
     await query.refetch();
+
+    // Also refetch timeseries data
+    const timeseriesQueryKey = metrics.timeseries({
+      userId,
+      specialtyCode: specialtyCode || "",
+      filters,
+      implicitFilters,
+      excludeType,
+    });
+    await queryClient.refetchQueries({ queryKey: timeseriesQueryKey });
   };
 
   return {

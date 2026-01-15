@@ -95,8 +95,11 @@ export interface MetricsTabProps {
 }
 
 /**
- * Extended props for GeneralTab which includes getSexLabel helper.
+ * Extended props for GeneralTab which includes getSexLabel helper and userId.
  */
 export interface GeneralTabProps extends MetricsTabProps {
+  userId: string;
   getSexLabel: (sex: string) => string;
+  implicitFilters?: Partial<ConsultationsFilters>;
+  excludeType?: string;
 }

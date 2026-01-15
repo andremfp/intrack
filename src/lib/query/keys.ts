@@ -90,6 +90,32 @@ export const metrics = {
       stableStringify(implicitFilters),
       excludeType ?? "",
     ] as const,
+
+  /**
+   * Timeseries data (date range comes from filters.dateFrom/dateTo)
+   */
+  timeseries: ({
+    userId,
+    specialtyCode,
+    filters,
+    implicitFilters,
+    excludeType,
+  }: {
+    userId: string;
+    specialtyCode: string;
+    filters: Record<string, unknown>;
+    implicitFilters: Record<string, unknown>;
+    excludeType?: string;
+  }) =>
+    [
+      ...metrics.all,
+      "timeseries",
+      userId,
+      specialtyCode,
+      stableStringify(filters),
+      stableStringify(implicitFilters),
+      excludeType ?? "",
+    ] as const,
 };
 
 export const reports = {
