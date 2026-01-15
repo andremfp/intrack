@@ -441,7 +441,10 @@ export const MGF_FIELDS: SpecialtyField[] = [
     placeholder: "Referenciação",
     section: "referral",
     visibleWhen: (ctx) => ctx.location === "unidade",
-    options: MGF_INTERNSHIP_OPTIONS,
+    options: [
+      ...MGF_INTERNSHIP_OPTIONS,
+      { value: "urgencia", label: "Serviço de Urgência" },
+    ],
   },
   {
     key: "referrence_motive",
