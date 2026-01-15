@@ -14,6 +14,7 @@ import { EmptyMetricsState } from "../empty-metrics-state";
 import { MetricsToolbar } from "../metrics-toolbar";
 import { BreakdownChart } from "../charts/breakdown-chart";
 import { ICPC2CodeTable } from "../charts/icpc2-code-table";
+import { ReferralMetrics } from "../charts/referral-metrics";
 
 export function ConsultationsTab({
   specialty,
@@ -83,24 +84,50 @@ export function ConsultationsTab({
       />
 
       <div className="grid gap-3 grid-cols-1 lg:grid-cols-2">
-        <div className="relative">
-          <BreakdownChart
-            title="Tipo de Consulta"
-            data={metrics.byType.map((item) => ({
-              label: item.label,
-              type: item.type,
-              value: item.count,
-            }))}
-          />
-        </div>
-        <div className="relative">
-          <MetricCard
-            title="Atendimento"
-            data={metrics.byPresential}
-            getKey={(item) => item.presential}
-            getLabel={(key) => (key === "true" ? "Presencial" : "Remoto")}
-          />
-        </div>
+        <Collapsible className="lg:col-span-2" defaultOpen>
+          <CollapsibleTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex w-full items-center justify-between"
+            >
+              <span>Detalhes da Consulta</span>
+              <ChevronDown className="h-4 w-4 transition-transform data-[state=open]:rotate-180" />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2 grid gap-3 grid-cols-1 lg:grid-cols-2">
+            <div className="relative">
+              <BreakdownChart
+                title="Tipo de Consulta"
+                data={metrics.byType.map((item) => ({
+                  label: item.label,
+                  type: item.type,
+                  value: item.count,
+                }))}
+              />
+            </div>
+            <div className="relative">
+              <MetricCard
+                title="Atendimento"
+                data={metrics.byPresential}
+                getKey={(item) => item.presential}
+                getLabel={(key) => (key === "true" ? "Presencial" : "Remoto")}
+              />
+            </div>
+            <MetricCard
+              title="Autonomia"
+              data={metrics.byAutonomy}
+              getKey={(item) => item.autonomy}
+              getLabel={(key) => getFieldLabel("autonomy", key)}
+            />
+            <MetricCard
+              title="Lista Própria"
+              data={metrics.byOwnList}
+              getKey={(item) => item.ownList}
+              getLabel={(key) => (key === "true" ? "Sim" : "Não")}
+            />
+          </CollapsibleContent>
+        </Collapsible>
       </div>
 
       <div className="grid gap-3 grid-cols-1 lg:grid-cols-2">
@@ -185,7 +212,7 @@ export function ConsultationsTab({
               size="sm"
               className="flex w-full items-center justify-between"
             >
-              <span>Contracetivos</span>
+              <span>Planeamento Familiar</span>
               <ChevronDown className="h-4 w-4 transition-transform data-[state=open]:rotate-180" />
             </Button>
           </CollapsibleTrigger>
@@ -202,6 +229,23 @@ export function ConsultationsTab({
               getKey={(item) => item.newContraceptive}
               getLabel={(key) => getFieldLabel("new_contraceptive", key)}
             />
+          </CollapsibleContent>
+        </Collapsible>
+      </div>
+      <div className="grid grid-cols-1 gap-3">
+        <Collapsible>
+          <CollapsibleTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex w-full items-center justify-between"
+            >
+              <span>Referenciações</span>
+              <ChevronDown className="h-4 w-4 transition-transform data-[state=open]:rotate-180" />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2">
+            <ReferralMetrics data={metrics.byReferral} />
           </CollapsibleContent>
         </Collapsible>
       </div>

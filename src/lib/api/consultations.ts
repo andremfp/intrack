@@ -8,6 +8,7 @@ import {
   type SpecialtyDetails,
   PAGINATION_CONSTANTS,
   MGF_FIELDS,
+  MGF_INTERNSHIP_OPTIONS,
   ageToYears,
   type ConsultationsSortingField,
 } from "@/constants";
@@ -619,6 +620,9 @@ export interface ConsultationMetrics {
   byAgeRange: Array<{ range: string; count: number }>;
   byType: Array<{ type: string; label: string; count: number }>;
   byPresential: Array<{ presential: string; count: number }>;
+  byLocation: Array<{ location: string; count: number }>;
+  byAutonomy: Array<{ autonomy: string; count: number }>;
+  byOwnList: Array<{ ownList: string; count: number }>;
   bySmoker: Array<{ smoker: string; count: number }>;
   byVaccinationPlan: Array<{ vaccinationPlan: string; count: number }>;
   byAlcohol: Array<{ alcohol: string; count: number }>;
@@ -634,6 +638,12 @@ export interface ConsultationMetrics {
   byDiagnosis: Array<{ code: string; count: number }>;
   byProblems: Array<{ code: string; count: number }>;
   byNewDiagnosis: Array<{ code: string; count: number }>;
+  byReferral: Array<{
+    referral: string;
+    label: string;
+    count: number;
+    motives: Array<{ code: string; count: number }>;
+  }>;
 }
 
 // Type for Supabase client that allows dynamic table/view names
@@ -812,6 +822,9 @@ function getEmptyMetrics(): ConsultationMetrics {
     byAgeRange: [],
     byType: [],
     byPresential: [],
+    byLocation: [],
+    byAutonomy: [],
+    byOwnList: [],
     bySmoker: [],
     byVaccinationPlan: [],
     byAlcohol: [],
@@ -824,6 +837,7 @@ function getEmptyMetrics(): ConsultationMetrics {
     byDiagnosis: [],
     byProblems: [],
     byNewDiagnosis: [],
+    byReferral: [],
   };
 }
 
@@ -840,6 +854,10 @@ function calculateMetrics(
     (MGF_FIELDS.find((field) => field.key === "type")?.options ?? []).map(
       (option) => [option.value, option.label]
     )
+  );
+  // Create map from shared referral options - always use labels
+  const referralValueToLabel = new Map<string, string>(
+    MGF_INTERNSHIP_OPTIONS.map((option) => [option.value, option.label])
   );
   // Initialize all metric maps and counters in single pass
   const totalConsultations = consultations.length;
@@ -864,6 +882,9 @@ function calculateMetrics(
   const sexCounts = new Map<string, number>();
   const typeCounts = new Map<string, number>();
   const presentialCounts = new Map<string, number>();
+  const locationCounts = new Map<string, number>();
+  const autonomyCounts = new Map<string, number>();
+  const ownListCounts = new Map<string, number>();
   const smokerCounts = new Map<string, number>();
   const vaccinationPlanCounts = new Map<string, number>();
   const alcoholCounts = new Map<string, number>();
@@ -876,6 +897,9 @@ function calculateMetrics(
   const diagnosisCounts = new Map<string, number>();
   const problemsCounts = new Map<string, number>();
   const newDiagnosisCounts = new Map<string, number>();
+  // Referral tracking: Map<referralType, Map<motiveCode, count>>
+  const referralMotiveCounts = new Map<string, Map<string, number>>();
+  const referralCounts = new Map<string, number>();
 
   // Single-pass iteration through all consultations
   consultations.forEach((c) => {
@@ -923,6 +947,23 @@ function calculateMetrics(
     if (c.presential !== null && c.presential !== undefined) {
       const key = c.presential ? "true" : "false";
       presentialCounts.set(key, (presentialCounts.get(key) || 0) + 1);
+    }
+
+    // Location counting
+    if (c.location !== null && c.location !== undefined) {
+      locationCounts.set(c.location, (locationCounts.get(c.location) || 0) + 1);
+    }
+
+    // Autonomy counting
+    if (c.autonomy !== null && c.autonomy !== undefined) {
+      autonomyCounts.set(c.autonomy, (autonomyCounts.get(c.autonomy) || 0) + 1);
+    }
+
+    // Own list counting
+    const ownList = getDetail(c, "own_list");
+    if (ownList !== null && ownList !== undefined) {
+      const key = ownList ? "true" : "false";
+      ownListCounts.set(key, (ownListCounts.get(key) || 0) + 1);
     }
 
     // Smoker counting
@@ -1033,6 +1074,28 @@ function calculateMetrics(
         );
       }
     });
+
+    // Referral counting
+    const referral = getDetail(c, "referrence");
+    if (referral && typeof referral === "string") {
+      referralCounts.set(referral, (referralCounts.get(referral) || 0) + 1);
+
+      // Track motives for this referral
+      const referralMotive = getDetail(c, "referrence_motive");
+      const motiveCodes = Array.isArray(referralMotive) ? referralMotive : [];
+      if (motiveCodes.length > 0) {
+        if (!referralMotiveCounts.has(referral)) {
+          referralMotiveCounts.set(referral, new Map<string, number>());
+        }
+        const motiveMap = referralMotiveCounts.get(referral)!;
+        motiveCodes.forEach((code) => {
+          const normalized = String(code).trim();
+          if (normalized) {
+            motiveMap.set(normalized, (motiveMap.get(normalized) || 0) + 1);
+          }
+        });
+      }
+    }
   });
   // Calculate final metrics using data from single-pass iteration
   const averageAge = validAgeCount > 0 ? totalAgeInYears / validAgeCount : 0;
@@ -1065,6 +1128,27 @@ function calculateMetrics(
     })
   );
 
+  const byLocation = Array.from(locationCounts.entries()).map(
+    ([location, count]) => ({
+      location,
+      count,
+    })
+  );
+
+  const byAutonomy = Array.from(autonomyCounts.entries()).map(
+    ([autonomy, count]) => ({
+      autonomy,
+      count,
+    })
+  );
+
+  const byOwnList = Array.from(ownListCounts.entries()).map(
+    ([ownList, count]) => ({
+      ownList,
+      count,
+    })
+  );
+
   const bySmoker = Array.from(smokerCounts.entries()).map(
     ([smoker, count]) => ({
       smoker,
@@ -1080,9 +1164,10 @@ function calculateMetrics(
     ([alcohol, count]) => ({ alcohol, count })
   );
 
-  const byDrugs = Array.from(drugsCounts.entries()).map(
-    ([drugs, count]) => ({ drugs, count })
-  );
+  const byDrugs = Array.from(drugsCounts.entries()).map(([drugs, count]) => ({
+    drugs,
+    count,
+  }));
 
   const byFamilyType = Array.from(familyTypeCounts.entries()).map(
     ([familyType, count]) => ({ familyType, count })
@@ -1116,6 +1201,21 @@ function calculateMetrics(
     .map(([code, count]) => ({ code, count }))
     .sort((a, b) => b.count - a.count);
 
+  const byReferral = Array.from(referralCounts.entries())
+    .map(([referral, count]) => {
+      const motivesMap = referralMotiveCounts.get(referral) || new Map();
+      const motives = Array.from(motivesMap.entries())
+        .map(([code, motiveCount]) => ({ code, count: motiveCount }))
+        .sort((a, b) => b.count - a.count);
+      return {
+        referral,
+        label: referralValueToLabel.get(referral) ?? referral,
+        count,
+        motives,
+      };
+    })
+    .sort((a, b) => b.count - a.count);
+
   return {
     totalConsultations,
     averageAge,
@@ -1124,6 +1224,9 @@ function calculateMetrics(
     bySex,
     byType,
     byPresential,
+    byLocation,
+    byAutonomy,
+    byOwnList,
     bySmoker,
     byVaccinationPlan,
     byAlcohol,
@@ -1136,5 +1239,6 @@ function calculateMetrics(
     byDiagnosis,
     byProblems,
     byNewDiagnosis,
+    byReferral,
   };
 }

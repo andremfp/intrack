@@ -37,8 +37,9 @@ function getFieldValues(
 // Extract values from constants
 const LOCATIONS = getFieldValues(MGF_FIELDS, "location");
 const AUTONOMY = getFieldValues(MGF_FIELDS, "autonomy");
-const TYPES = getFieldValues(MGF_FIELDS, "type", true);
+const TYPES = getFieldValues(MGF_FIELDS, "type");
 const INTERNSHIPS = getFieldValues(MGF_FIELDS, "internship", true);
+const REFERRALS = getFieldValues(MGF_FIELDS, "referrence", true);
 const SEX = getFieldValues(COMMON_CONSULTATION_FIELDS, "sex");
 const SMOKER = getFieldValues(MGF_FIELDS, "smoker");
 const FAMILY_TYPES = getFieldValues(MGF_FIELDS, "family_type", true);
@@ -103,8 +104,10 @@ while (date.getFullYear() === YEAR) {
     const professional_situation =
       location === "unidade" ? random(PROFESSIONAL_SITUATIONS) : null;
     const profession = location === "unidade" ? randomProfession() : null;
-    const referrence = location === "unidade" ? random(INTERNSHIPS) : null;
-
+    const referrence = location === "unidade" ? random(REFERRALS) : null;
+    const own_list =
+      location === "unidade" ? (Math.random() < 0.9 ? true : false) : null;
+    const other_list = own_list === false ? "other_list" : null;
     const sex = random(SEX);
     const age = 18 + Math.floor(Math.random() * 70);
 
@@ -114,6 +117,8 @@ while (date.getFullYear() === YEAR) {
       type,
       presential: Math.random() < 0.8 ? true : false,
       internship,
+      own_list,
+      other_list,
       family_type,
       school_level,
       profession,
@@ -172,7 +177,7 @@ INSERT INTO consultations (
 ${values.join(",\n")};
 `;
 
-writeFileSync(`consultations_${YEAR}_${SPECIALTY_YEAR}.sql`, sql.trim());
+writeFileSync(`dummy_consultations_${YEAR}_${SPECIALTY_YEAR}.sql`, sql.trim());
 console.log(
   `Generated ${values.length} consultations for ${YEAR} ${SPECIALTY_YEAR}`
 );
