@@ -159,7 +159,8 @@ export type Database = {
           display_name: string
           email: string
           specialty_id: string | null
-          updsted_at: string
+          specialty_year: number
+          updated_at: string
           user_id: string
         }
         Insert: {
@@ -167,7 +168,8 @@ export type Database = {
           display_name: string
           email: string
           specialty_id?: string | null
-          updsted_at?: string
+          specialty_year?: number
+          updated_at?: string
           user_id: string
         }
         Update: {
@@ -175,7 +177,8 @@ export type Database = {
           display_name?: string
           email?: string
           specialty_id?: string | null
-          updsted_at?: string
+          specialty_year?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -194,16 +197,19 @@ export type Database = {
         Row: {
           age: number | null
           age_unit: string | null
+          alcohol: boolean | null
           autonomy: string | null
           created_at: string | null
           date: string | null
           details: Json | null
+          drugs: boolean | null
           family_type: string | null
           favorite: boolean | null
           id: string | null
           location: string | null
           presential: boolean | null
           process_number: number | null
+          professional_situation: string | null
           school_level: string | null
           sex: string | null
           smoker: string | null

@@ -6,8 +6,14 @@ import type { ConsultationMetrics } from "@/lib/api/consultations";
 export function getFieldLabel(fieldKey: string, value: string): string {
   const field = MGF_FIELDS.find((f) => f.key === fieldKey);
   if (field && field.options) {
-    const option = field.options.find((opt) => opt.value === value);
-    if (option) return option.label;
+    const option = field.options.find((opt) => {
+      const optValue = "value" in opt ? opt.value : "code" in opt ? opt.code : undefined;
+      return optValue === value;
+    });
+    if (option) {
+      const label = "label" in option ? option.label : "description" in option ? option.description : undefined;
+      return label ?? value;
+    }
   }
   return value;
 }
@@ -57,7 +63,6 @@ export function mapEnabledFieldsToDataFields(
       case "new_contraceptive":
       case "family_type":
       case "school_level":
-      case "professional_area":
       case "profession":
       case "vaccination_plan":
         dataFields.push(field as keyof ConsultationsFilters);
@@ -84,13 +89,17 @@ export interface MetricsTabProps {
   hasActiveFilters?: boolean;
   onExportExcel?: () => void;
   isExportingExcel?: boolean;
+  isExportDisabled?: boolean;
   onRefresh?: () => void;
   isRefreshing?: boolean;
 }
 
 /**
- * Extended props for GeneralTab which includes getSexLabel helper.
+ * Extended props for GeneralTab which includes getSexLabel helper and userId.
  */
 export interface GeneralTabProps extends MetricsTabProps {
+  userId: string;
   getSexLabel: (sex: string) => string;
+  implicitFilters?: Partial<ConsultationsFilters>;
+  excludeType?: string;
 }

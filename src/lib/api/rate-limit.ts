@@ -45,7 +45,9 @@ const VITE_ENV: Record<string, string | undefined> = {
 function readEnv(key: string): string | undefined {
   // NOTE: Vite only injects env vars when referenced as `import.meta.env.VITE_*`.
   // Dynamic access via `import.meta[key]` won't be replaced during build.
-  return VITE_ENV[key] ?? process.env[key];
+  const processEnv =
+    typeof process !== "undefined" && process?.env ? process.env : undefined;
+  return VITE_ENV[key] ?? processEnv?.[key];
 }
 
 function removeTrailingSlash(value: string): string {

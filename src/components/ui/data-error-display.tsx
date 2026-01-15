@@ -27,7 +27,7 @@ export function DataErrorDisplay({
       : error.message;
 
   return (
-    <div className="flex flex-1 min-h-full items-center justify-center py-12">
+    <div className="flex w-full items-center justify-center py-10">
       <div className="flex flex-col items-center gap-4 max-w-md px-4">
         <AlertCircle className="h-12 w-12 text-destructive" />
         <div className="text-center space-y-2">

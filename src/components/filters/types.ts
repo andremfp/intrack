@@ -18,9 +18,11 @@ export type FilterFieldType =
   | "new_contraceptive"
   | "family_type"
   | "school_level"
-  | "professional_area"
+  | "professional_situation"
   | "profession"
-  | "vaccination_plan";
+  | "vaccination_plan"
+  | "alcohol"
+  | "drugs";
 
 // UI configuration for filter display - specifies which filters to show and how
 export interface FilterUIConfig {
@@ -45,7 +47,4 @@ export interface ConsultationFiltersProps {
 }
 
 // Sorting types (re-exported from sorting module for convenience)
-export type {
-  SortingConfig,
-  ConsultationSortingProps,
-} from "../sorting/types";
+export type { SortingConfig, ConsultationSortingProps } from "../sorting/types";

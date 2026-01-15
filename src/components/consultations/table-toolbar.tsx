@@ -65,7 +65,7 @@ export function TableToolbar({
             className="h-8 flex-shrink-0"
           >
             <IconPlus className="h-4 w-4" />
-            <span className="hidden lg:inline">Adicionar Consulta</span>
+            <span className="hidden lg:inline">Nova Consulta</span>
           </Button>
         )}
         {onBulkDelete && (
@@ -95,6 +95,7 @@ export function TableToolbar({
                 isExportingCsv={isExportingCsv}
                 isExportingExcel={isExportingExcel}
                 isLoading={isLoading}
+                disabled={isEmpty}
               />
             ) : null}
             {onRefresh && (

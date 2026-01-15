@@ -1,5 +1,11 @@
 import { writeFileSync } from "fs";
 import { MGF_ICPC2_CODES } from "../src/icpc2-codes.ts";
+import { PROFESSIONS } from "../src/professions.ts";
+import {
+  MGF_FIELDS,
+  COMMON_CONSULTATION_FIELDS,
+  type SpecialtyField,
+} from "../src/constants.ts";
 
 const YEAR = Number(process.argv[2]);
 const SPECIALTY_YEAR = Number(process.argv[3]);
@@ -12,83 +18,38 @@ if (
 )
   throw new Error("Invalid year or specialty year");
 
-const LOCATIONS = [
-  "unidade",
-  "urgência",
-  "complementar",
-  "form_curta",
-] as const;
-const AUTONOMY = ["total", "parcial", "observada", "ombro-a-ombro"] as const;
-const TYPES = [
-  null,
-  "SA",
-  "SIJ",
-  "PF",
-  "SM",
-  "DM",
-  "HTA",
-  "DA",
-  "AM",
-  "Domicílio",
-] as const;
-const INTERNSHIPS = [
-  null,
-  "cardio",
-  "endocrino",
-  "gastro",
-  "geriatria",
-  "hemato",
-  "neuro",
-  "nefro",
-  "onco",
-  "otorrino",
-  "pediatria",
-  "psiquiatria",
-  "reumato",
-  "urologia",
-  "gineco",
-  "obstetricia",
-  "orto",
-  "neurocir",
-  "pedopsiquiatria",
-  "dermato",
-  "paliativos",
-  "pneumo",
-  "cir vascular",
-  "cir toracica",
-  "cir geral",
-  "cir plastica",
-  "med interna",
-  "form_curta",
-] as const;
-const SEX = ["m", "f", "other"] as const;
-const SMOKER = ["sim", "nao", "ex fumador"] as const;
-const FAMILY_TYPES = [null, "tipo1"] as const;
-const SCHOOL_LEVELS = [
-  null,
-  "sem",
-  "primario",
-  "9ano",
-  "secundario",
-  "superior",
-  "mestrado",
-  "doutoramento",
-] as const;
-const PROFESSIONAL_AREAS = [null, "health"] as const;
-const PROFESSIONS = [null, "medicine", "nursing", "pharmacy", "other"] as const;
-const CONTRACEPTIVES = [
-  null,
-  "coc",
-  "cop",
-  "siu",
-  "preserv",
-  "implante",
-  "anel",
-  "adesivo",
-  "laqueacao",
-  "natural",
-  "menopausa",
-] as const;
+// Helper function to extract option values from a field by key
+function getFieldValues(
+  fields: SpecialtyField[],
+  key: string,
+  includeNull: boolean = false
+): (string | null)[] {
+  const field = fields.find((f) => f.key === key);
+  if (!field?.options) {
+    return includeNull ? [null] : [];
+  }
+  const values = field.options
+    .filter((opt) => "value" in opt)
+    .map((opt) => (opt as { value: string }).value);
+  return includeNull ? [null, ...values] : values;
+}
+
+// Extract values from constants
+const LOCATIONS = getFieldValues(MGF_FIELDS, "location");
+const AUTONOMY = getFieldValues(MGF_FIELDS, "autonomy");
+const TYPES = getFieldValues(MGF_FIELDS, "type");
+const INTERNSHIPS = getFieldValues(MGF_FIELDS, "internship", true);
+const REFERRALS = getFieldValues(MGF_FIELDS, "referrence", true);
+const SEX = getFieldValues(COMMON_CONSULTATION_FIELDS, "sex");
+const SMOKER = getFieldValues(MGF_FIELDS, "smoker");
+const FAMILY_TYPES = getFieldValues(MGF_FIELDS, "family_type", true);
+const SCHOOL_LEVELS = getFieldValues(MGF_FIELDS, "school_level", true);
+const PROFESSIONAL_SITUATIONS = getFieldValues(
+  MGF_FIELDS,
+  "professional_situation",
+  true
+);
+const CONTRACEPTIVES = getFieldValues(MGF_FIELDS, "contraceptive", true);
 
 function random<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -116,6 +77,11 @@ function randomICPC2Codes(count: number = 1): string[] {
   return selected;
 }
 
+function randomProfession(): string {
+  const selected = random(PROFESSIONS);
+  return selected.code ?? "";
+}
+
 function isWeekday(d: Date): boolean {
   const day = d.getDay();
   return day !== 0 && day !== 6;
@@ -135,11 +101,13 @@ while (date.getFullYear() === YEAR) {
     const internship = location !== "unidade" ? random(INTERNSHIPS) : null;
     const family_type = location === "unidade" ? random(FAMILY_TYPES) : null;
     const school_level = location === "unidade" ? random(SCHOOL_LEVELS) : null;
-    const professional_area =
-      location === "unidade" ? random(PROFESSIONAL_AREAS) : null;
-    const profession = location === "unidade" ? random(PROFESSIONS) : null;
-    const referrence = location === "unidade" ? random(INTERNSHIPS) : null;
-
+    const professional_situation =
+      location === "unidade" ? random(PROFESSIONAL_SITUATIONS) : null;
+    const profession = location === "unidade" ? randomProfession() : null;
+    const referrence = location === "unidade" ? random(REFERRALS) : null;
+    const own_list =
+      location === "unidade" ? (Math.random() < 0.9 ? true : false) : null;
+    const other_list = own_list === false ? "other_list" : null;
     const sex = random(SEX);
     const age = 18 + Math.floor(Math.random() * 70);
 
@@ -149,11 +117,15 @@ while (date.getFullYear() === YEAR) {
       type,
       presential: Math.random() < 0.8 ? true : false,
       internship,
+      own_list,
+      other_list,
       family_type,
       school_level,
-      professional_area,
       profession,
+      professional_situation,
       smoker: random(SMOKER),
+      alcohol: randomBoolOrNull(),
+      drugs: randomBoolOrNull(),
       vaccination_plan: randomBoolOrNull(),
       chronic_diseases: [],
       problems: randomICPC2Codes(1),
@@ -205,7 +177,7 @@ INSERT INTO consultations (
 ${values.join(",\n")};
 `;
 
-writeFileSync(`consultations_${YEAR}_${SPECIALTY_YEAR}.sql`, sql.trim());
+writeFileSync(`dummy_consultations_${YEAR}_${SPECIALTY_YEAR}.sql`, sql.trim());
 console.log(
   `Generated ${values.length} consultations for ${YEAR} ${SPECIALTY_YEAR}`
 );

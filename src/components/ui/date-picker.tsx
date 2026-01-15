@@ -23,6 +23,7 @@ interface DatePickerProps {
   label?: string;
   isInvalid?: boolean;
   describedBy?: string;
+  maxLength?: number;
 }
 
 function formatDate(date: Date | undefined) {
@@ -54,6 +55,7 @@ export function DatePicker({
   label,
   isInvalid = false,
   describedBy,
+  maxLength,
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false);
   const [date, setDate] = React.useState<Date | undefined>(
@@ -136,6 +138,7 @@ export function DatePicker({
           }}
           disabled={disabled}
           required={required}
+          maxLength={maxLength}
           aria-invalid={isInvalid || undefined}
           aria-describedby={describedBy}
         />

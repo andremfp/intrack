@@ -23,11 +23,7 @@ import type {
   ConsultationMGF,
 } from "@/lib/api/consultations";
 import type { Specialty } from "@/lib/api/specialties";
-import {
-  COMMON_CONSULTATION_FIELDS,
-  getICPC2Codes,
-  MGF_SECTION_LABELS,
-} from "@/constants";
+import { COMMON_CONSULTATION_FIELDS, MGF_SECTION_LABELS } from "@/constants";
 import { useConsultationForm } from "@/hooks/consultations/use-consultation-form";
 import {
   validateForm,
@@ -81,7 +77,7 @@ export function ConsultationModal({
       sanitized[key] =
         fieldType === "text-list" ||
         fieldType === "multi-select" ||
-        fieldType === "icpc2-codes"
+        fieldType === "code-search"
           ? []
           : "";
     };
@@ -119,8 +115,6 @@ export function ConsultationModal({
       onClose();
     }, 300);
   };
-
-  const icpc2Codes = specialty ? getICPC2Codes(specialty.code) : [];
 
   const {
     formValues,
@@ -369,14 +363,25 @@ export function ConsultationModal({
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {ageUnitField.options?.map((option) => (
-                                      <SelectItem
-                                        key={option.value}
-                                        value={option.value}
-                                      >
-                                        {option.label}
-                                      </SelectItem>
-                                    ))}
+                                    {ageUnitField.options
+                                      ?.filter(
+                                        (
+                                          option
+                                        ): option is {
+                                          value: string;
+                                          label: string;
+                                        } =>
+                                          "value" in option &&
+                                          option.value !== undefined
+                                      )
+                                      .map((option) => (
+                                        <SelectItem
+                                          key={option.value}
+                                          value={option.value}
+                                        >
+                                          {option.label}
+                                        </SelectItem>
+                                      ))}
                                   </SelectContent>
                                 </Select>
                               )}
@@ -546,7 +551,6 @@ export function ConsultationModal({
                                       onUpdate={(value) =>
                                         updateField(field.key, value)
                                       }
-                                      icpc2Codes={icpc2Codes}
                                       isRequired={required}
                                     />
                                   );
@@ -598,7 +602,6 @@ export function ConsultationModal({
                                               onUpdate={(value) =>
                                                 updateField(field.key, value)
                                               }
-                                              icpc2Codes={icpc2Codes}
                                               isRequired={required}
                                             />
                                           );

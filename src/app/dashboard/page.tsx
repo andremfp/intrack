@@ -6,7 +6,7 @@ import { useSidebar } from "@/components/ui/sidebar-context";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { cn } from "@/utils/utils";
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useCallback } from "react";
 import type { Specialty } from "@/lib/api/specialties";
 import { SCROLLBAR_CLASSES, TAB_CONSTANTS } from "@/constants";
 import { useCachedUserProfile } from "@/hooks/user/use-cached-user-profile";
@@ -17,6 +17,7 @@ import { DashboardContentRouter } from "@/components/dashboard/dashboard-content
 import { useDashboardModals } from "@/hooks/modals/use-dashboard-modals";
 import { useUserInitialization } from "@/hooks/user/use-user-initialization";
 import { getSpecialty } from "@/lib/api/specialties";
+import { getCurrentUser } from "@/lib/api/users";
 import { toasts } from "@/utils/toasts";
 
 function DashboardContent() {
@@ -24,7 +25,7 @@ function DashboardContent() {
 
   const [userProfile, updateUserProfile] = useCachedUserProfile();
   const [userSpecialty, updateUserSpecialty] = useCachedUserSpecialty();
-  const [activeTab, updateActiveTab] = useCachedActiveTab();
+  const [activeTab, updateActiveTab] = useCachedActiveTab(userProfile);
 
   // Memoize parsed tab values to avoid recalculation
   const {
@@ -71,6 +72,19 @@ function DashboardContent() {
     updateInitShowSpecialtyModal(initShowSpecialtyModal);
   }, [initShowSpecialtyModal, updateInitShowSpecialtyModal]);
 
+  // Memoize refresh callbacks to prevent unnecessary re-renders
+  const handleConsultationsRefreshReady = useCallback((refresh: () => Promise<void>) => {
+    refreshConsultationsRef.current = refresh;
+  }, []);
+
+  const handleMetricsRefreshReady = useCallback((refresh: () => Promise<void>) => {
+    refreshMetricsRef.current = refresh;
+  }, []);
+
+  const handleReportsRefreshReady = useCallback((refresh: () => Promise<void>) => {
+    refreshReportsRef.current = refresh;
+  }, []);
+
   // Recover specialty details if the ID exists in the user profile but the cached specialty is missing
   useEffect(() => {
     const specialtyId = userProfile?.data.specialty_id;
@@ -89,20 +103,28 @@ function DashboardContent() {
     })();
   }, [userProfile?.data.specialty_id, userSpecialty, updateUserSpecialty]);
 
-  // If we land on the main "Consultas" tab but the specialty has multiple years,
-  // promote it to the first-year subtab so selection + header year are consistent.
-  useEffect(() => {
-    if (!userSpecialty || userSpecialty.years <= 1) return;
-    if (activeTab !== TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS) return;
-    updateActiveTab(`${TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS}.1`);
-  }, [userSpecialty, activeTab, updateActiveTab]);
-
   // Enhanced handlers that include parent component logic
-  const handleSpecialtySelected = (specialty: Specialty) => {
+  const handleSpecialtySelected = async (specialty: Specialty) => {
     updateUserSpecialty(specialty);
     baseHandleSpecialtySelected();
 
-    if (specialty.years > 1) {
+    // Refresh user profile to get the updated specialty_year
+    const userResult = await getCurrentUser();
+    if (userResult.success && userResult.data) {
+      updateUserProfile(userResult.data);
+
+      // Update active tab to match the user's specialty year
+      const specialtyYear = userResult.data.data.specialty_year;
+      if (specialtyYear && specialtyYear >= 1) {
+        updateActiveTab(
+          `${TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS}.${specialtyYear}`
+        );
+      } else if (specialty.years > 1) {
+        // Fallback to year 1 if specialty_year is not set
+        updateActiveTab(`${TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS}.1`);
+      }
+    } else if (specialty.years > 1) {
+      // Fallback if user fetch fails
       updateActiveTab(`${TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS}.1`);
     }
   };
@@ -152,15 +174,9 @@ function DashboardContent() {
           activeReportSpecialtyCode={activeReportSpecialtyCode}
           onRowClick={handleRowClick}
           onAddConsultation={() => handleAddConsultation(activeSpecialtyYear)}
-          onConsultationsRefreshReady={(refresh) => {
-            refreshConsultationsRef.current = refresh;
-          }}
-          onMetricsRefreshReady={(refresh) => {
-            refreshMetricsRef.current = refresh;
-          }}
-          onReportsRefreshReady={(refresh) => {
-            refreshReportsRef.current = refresh;
-          }}
+          onConsultationsRefreshReady={handleConsultationsRefreshReady}
+          onMetricsRefreshReady={handleMetricsRefreshReady}
+          onReportsRefreshReady={handleReportsRefreshReady}
         />
       </SidebarInset>
       <ModalManager

@@ -32,6 +32,7 @@ export function TextField({
           value={stringValue}
           onChange={(date: string) => onUpdate(date)}
           placeholder="dd/mm/aaaa"
+          maxLength={10}
           required={required}
           isInvalid={isInvalid}
           describedBy={isInvalid ? `${fieldId}-error` : undefined}
@@ -46,7 +47,7 @@ export function TextField({
   }
 
   return (
-    <div>
+    <div className="space-y-2">
       <Label htmlFor={fieldId} className="text-sm font-medium">
         {field.label}
         {required && <span className="text-destructive ml-1">*</span>}
@@ -59,6 +60,7 @@ export function TextField({
           onChange={(e) => onUpdate(e.target.value)}
           placeholder={field.placeholder}
           required={required}
+          maxLength={30}
           aria-invalid={isInvalid || undefined}
           aria-describedby={isInvalid ? `${fieldId}-error` : undefined}
           className={isInvalid ? "border-destructive" : ""}
