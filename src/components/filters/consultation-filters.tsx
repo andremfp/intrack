@@ -1221,11 +1221,11 @@ export function ConsultationFilters({
                 disabled={config.isLoading || isLoading}
               >
                 <IconFilter className="h-4 w-4" />
-                <span className="hidden sm:inline">Filtros</span>
+                <span className="hidden lg:inline">Filtros</span>
                 {activeFilterCount > 0 && (
                   <Badge
                     variant="secondary"
-                    className="sm:ml-1 px-1 py-0 text-[10px] absolute sm:relative -top-1 -right-1 sm:top-0 sm:right-0 min-w-[16px] h-4 flex items-center justify-center"
+                    className="lg:ml-1 px-1 py-0 text-[10px] absolute lg:relative -top-1 -right-1 lg:top-0 lg:right-0 min-w-[16px] h-4 flex items-center justify-center"
                   >
                     {activeFilterCount}
                   </Badge>
@@ -1268,11 +1268,11 @@ export function ConsultationFilters({
                 disabled={config.isLoading || isLoading}
               >
                 <IconFilter className="h-4 w-4" />
-                <span className="hidden sm:inline">Filtros</span>
+                <span className="hidden lg:inline">Filtros</span>
                 {activeFilterCount > 0 && (
                   <Badge
                     variant="secondary"
-                    className="sm:ml-1 px-1 py-0 text-[10px] absolute sm:relative -top-1 -right-1 sm:top-0 sm:right-0 min-w-[16px] h-4 flex items-center justify-center"
+                    className="lg:ml-1 px-1 py-0 text-[10px] absolute lg:relative -top-1 -right-1 lg:top-0 lg:right-0 min-w-[16px] h-4 flex items-center justify-center"
                   >
                     {activeFilterCount}
                   </Badge>

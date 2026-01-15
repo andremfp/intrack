@@ -81,6 +81,8 @@ export function ConsultationsTab({
         isExportDisabled={isExportDisabled}
         onRefresh={onRefresh}
         isRefreshing={isRefreshing}
+        setFilter={setFilter}
+        filters={filters}
       />
 
       <div className="grid gap-3 grid-cols-1 lg:grid-cols-2">

@@ -84,6 +84,8 @@ export function GeneralTab({
         isExportDisabled={isExportDisabled}
         onRefresh={onRefresh}
         isRefreshing={isRefreshing}
+        setFilter={setFilter}
+        filters={filters}
       />
 
       {/* Key metrics charts: keep side-by-side even on small screens */}

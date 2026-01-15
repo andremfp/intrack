@@ -272,7 +272,10 @@ export function TimeSeriesChart({
     } else {
       // Show every few months (more aggressive on small screens)
       const monthsPerTick = compactMode ? 3 : 2;
-      const interval = Math.max(1, Math.ceil(diffDays / maxTicks / (30 * monthsPerTick)));
+      const interval = Math.max(
+        1,
+        Math.ceil(diffDays / maxTicks / (30 * monthsPerTick))
+      );
       return interval * 30 * monthsPerTick - 1;
     }
   }, [timeRange, containerWidth, compactMode]);
