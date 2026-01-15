@@ -8,6 +8,7 @@ import {
   type SpecialtyDetails,
   PAGINATION_CONSTANTS,
   MGF_FIELDS,
+  MGF_INTERNSHIP_OPTIONS,
   ageToYears,
   type ConsultationsSortingField,
 } from "@/constants";
@@ -44,7 +45,10 @@ export type ConsultationsFilters = {
   family_type?: string;
   school_level?: string;
   profession?: string;
-  vaccination_plan?: string;
+  professional_situation?: string;
+  vaccination_plan?: boolean;
+  alcohol?: boolean;
+  drugs?: boolean;
 };
 
 async function ensureOperationAllowed(
@@ -386,6 +390,21 @@ export async function getMGFConsultations(
         filters.new_contraceptive
       );
     }
+    if (filters.professional_situation) {
+      query = query.eq(
+        "details->>professional_situation",
+        filters.professional_situation
+      );
+    }
+    if (filters.profession) {
+      query = query.eq("details->>profession", filters.profession);
+    }
+    if (filters.alcohol !== undefined) {
+      query = query.eq("alcohol", filters.alcohol);
+    }
+    if (filters.drugs !== undefined) {
+      query = query.eq("drugs", filters.drugs);
+    }
   }
 
   // Apply sorting (default to date descending)
@@ -546,6 +565,21 @@ export async function getMGFConsultationsForExport(
         filters.new_contraceptive
       );
     }
+    if (filters.professional_situation) {
+      query = query.eq(
+        "details->>professional_situation",
+        filters.professional_situation
+      );
+    }
+    if (filters.profession) {
+      query = query.eq("details->>profession", filters.profession);
+    }
+    if (filters.alcohol !== undefined) {
+      query = query.eq("alcohol", filters.alcohol);
+    }
+    if (filters.drugs !== undefined) {
+      query = query.eq("drugs", filters.drugs);
+    }
   }
 
   const sortField = sorting?.field || "date";
@@ -581,20 +615,34 @@ export async function getMGFConsultationsForExport(
 export interface ConsultationMetrics {
   totalConsultations: number;
   averageAge: number;
-  byMonth: Array<{ month: string; count: number }>;
   bySex: Array<{ sex: string; count: number }>;
   byAgeRange: Array<{ range: string; count: number }>;
   byType: Array<{ type: string; label: string; count: number }>;
   byPresential: Array<{ presential: string; count: number }>;
+  byLocation: Array<{ location: string; count: number }>;
+  byAutonomy: Array<{ autonomy: string; count: number }>;
+  byOwnList: Array<{ ownList: string; count: number }>;
   bySmoker: Array<{ smoker: string; count: number }>;
   byVaccinationPlan: Array<{ vaccinationPlan: string; count: number }>;
+  byAlcohol: Array<{ alcohol: string; count: number }>;
+  byDrugs: Array<{ drugs: string; count: number }>;
   byFamilyType: Array<{ familyType: string; count: number }>;
   bySchoolLevel: Array<{ schoolLevel: string; count: number }>;
+  byProfessionalSituation: Array<{
+    professionalSituation: string;
+    count: number;
+  }>;
   byContraceptive: Array<{ contraceptive: string; count: number }>;
   byNewContraceptive: Array<{ newContraceptive: string; count: number }>;
   byDiagnosis: Array<{ code: string; count: number }>;
   byProblems: Array<{ code: string; count: number }>;
   byNewDiagnosis: Array<{ code: string; count: number }>;
+  byReferral: Array<{
+    referral: string;
+    label: string;
+    count: number;
+    motives: Array<{ code: string; count: number }>;
+  }>;
 }
 
 // Type for Supabase client that allows dynamic table/view names
@@ -607,7 +655,8 @@ type SupabaseWithDynamicFrom = typeof supabase & {
 export async function getConsultationMetrics(
   userId: string,
   filters?: ConsultationsFilters,
-  specialtyCode?: string
+  specialtyCode?: string,
+  excludeType?: string
 ): Promise<ApiResponse<ConsultationMetrics>> {
   try {
     // Build query with database-level filtering
@@ -645,11 +694,28 @@ export async function getConsultationMetrics(
     }
 
     if (filters?.profession) {
-      query = query.eq("details->>profession", filters.profession);
+      // Profession can be stored as just the code (from forms) or "CODE - Description" (from imports)
+      // Use ilike with pattern to match both formats
+      query = query.ilike("details->>profession", `${filters.profession}%`);
     }
 
-    if (filters?.vaccination_plan) {
-      query = query.eq("details->>vaccination_plan", filters.vaccination_plan);
+    if (filters?.vaccination_plan !== undefined) {
+      query = query.eq("vaccination_plan", filters.vaccination_plan);
+    }
+
+    if (filters?.professional_situation) {
+      query = query.eq(
+        "details->>professional_situation",
+        filters.professional_situation
+      );
+    }
+
+    if (filters?.alcohol !== undefined) {
+      query = query.eq("alcohol", filters.alcohol);
+    }
+
+    if (filters?.drugs !== undefined) {
+      query = query.eq("drugs", filters.drugs);
     }
 
     if (filters?.sex) {
@@ -662,6 +728,11 @@ export async function getConsultationMetrics(
 
     if (filters?.type) {
       query = query.eq("type", filters.type);
+    }
+
+    // Exclude specific type if requested (e.g., exclude 'AM' for general tab)
+    if (excludeType) {
+      query = query.neq("type", excludeType);
     }
 
     if (filters?.presential !== undefined) {
@@ -741,24 +812,207 @@ export async function getConsultationMetrics(
   }
 }
 
+export interface TimeSeriesDataPoint {
+  date: string; // YYYY-MM-DD format
+  count: number;
+}
+
+/**
+ * Fetch timeseries data aggregated by day for consultations.
+ * This is optimized for chart display with date range filtering.
+ */
+export async function getConsultationTimeSeries(
+  userId: string,
+  filters?: ConsultationsFilters,
+  specialtyCode?: string,
+  excludeType?: string
+): Promise<ApiResponse<TimeSeriesDataPoint[]>> {
+  try {
+    // Build query with database-level filtering
+    const viewName = specialtyCode
+      ? `consultations_${specialtyCode}`
+      : "consultations_mgf";
+
+    // Use typed client that allows dynamic view names
+    const typedSupabase = supabase as SupabaseWithDynamicFrom;
+    let query = typedSupabase
+      .from(viewName)
+      .select("date")
+      .eq("user_id", userId);
+
+    // Apply date range filters from filters object
+    if (filters?.dateFrom) {
+      query = query.gte("date", filters.dateFrom);
+    }
+    if (filters?.dateTo) {
+      query = query.lte("date", filters.dateTo);
+    }
+
+    // Convert year to specialtyYear for API compatibility
+    const specialtyYear = filters?.year;
+    if (specialtyYear !== undefined) {
+      query = query.eq("specialty_year", specialtyYear);
+    }
+
+    if (filters?.location) {
+      query = query.eq("location", filters.location);
+    }
+
+    if (filters?.internship) {
+      query = query.ilike("details->>internship", filters.internship);
+    }
+
+    if (filters?.family_type) {
+      query = query.eq("details->>family_type", filters.family_type);
+    }
+
+    if (filters?.school_level) {
+      query = query.eq("details->>school_level", filters.school_level);
+    }
+
+    if (filters?.profession) {
+      query = query.ilike("details->>profession", `${filters.profession}%`);
+    }
+
+    if (filters?.vaccination_plan !== undefined) {
+      query = query.eq("vaccination_plan", filters.vaccination_plan);
+    }
+
+    if (filters?.professional_situation) {
+      query = query.eq(
+        "details->>professional_situation",
+        filters.professional_situation
+      );
+    }
+
+    if (filters?.alcohol !== undefined) {
+      query = query.eq("alcohol", filters.alcohol);
+    }
+
+    if (filters?.drugs !== undefined) {
+      query = query.eq("drugs", filters.drugs);
+    }
+
+    if (filters?.sex) {
+      query = query.eq("sex", filters.sex);
+    }
+
+    if (filters?.autonomy) {
+      query = query.eq("autonomy", filters.autonomy);
+    }
+
+    if (filters?.type) {
+      query = query.eq("type", filters.type);
+    }
+
+    // Exclude specific type if requested
+    if (excludeType) {
+      query = query.neq("type", excludeType);
+    }
+
+    if (filters?.presential !== undefined) {
+      query = query.eq("presential", filters.presential);
+    }
+
+    if (filters?.smoker) {
+      query = query.eq("smoker", filters.smoker);
+    }
+
+    // Age filtering with unit conversion to years
+    if (filters?.ageMin !== undefined || filters?.ageMax !== undefined) {
+      const conditions: string[] = [];
+
+      let yearsCondition = "age_unit.eq.years";
+      if (filters.ageMin !== undefined) {
+        yearsCondition += `,age.gte.${filters.ageMin}`;
+      }
+      if (filters.ageMax !== undefined) {
+        yearsCondition += `,age.lte.${filters.ageMax}`;
+      }
+      conditions.push(`and(${yearsCondition})`);
+
+      let monthsCondition = "age_unit.eq.months";
+      if (filters.ageMin !== undefined) {
+        monthsCondition += `,age.gte.${filters.ageMin * 12}`;
+      }
+      if (filters.ageMax !== undefined) {
+        monthsCondition += `,age.lte.${filters.ageMax * 12}`;
+      }
+      conditions.push(`and(${monthsCondition})`);
+
+      let weeksCondition = "age_unit.eq.weeks";
+      if (filters.ageMin !== undefined) {
+        weeksCondition += `,age.gte.${Math.floor(filters.ageMin * 52.1429)}`;
+      }
+      if (filters.ageMax !== undefined) {
+        weeksCondition += `,age.lte.${Math.ceil(filters.ageMax * 52.1429)}`;
+      }
+      conditions.push(`and(${weeksCondition})`);
+
+      let daysCondition = "age_unit.eq.days";
+      if (filters.ageMin !== undefined) {
+        daysCondition += `,age.gte.${Math.floor(filters.ageMin * 365.25)}`;
+      }
+      if (filters.ageMax !== undefined) {
+        daysCondition += `,age.lte.${Math.ceil(filters.ageMax * 365.25)}`;
+      }
+      conditions.push(`and(${daysCondition})`);
+
+      query = query.or(conditions.join(","));
+    }
+
+    const { data, error } = await query;
+
+    if (error) return failure(error, "getConsultationTimeSeries");
+    if (!data) return success([]);
+
+    // Aggregate by day
+    const dayCounts = new Map<string, number>();
+    (data as Array<{ date: string }>).forEach((c) => {
+      if (c.date) {
+        // Normalize date to YYYY-MM-DD format
+        const dateStr = c.date.split("T")[0];
+        dayCounts.set(dateStr, (dayCounts.get(dateStr) || 0) + 1);
+      }
+    });
+
+    // Convert to array and sort by date
+    const timeSeriesData: TimeSeriesDataPoint[] = Array.from(
+      dayCounts.entries()
+    )
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    return success(timeSeriesData);
+  } catch (error) {
+    return failure(error as Error, "getConsultationTimeSeries");
+  }
+}
+
 function getEmptyMetrics(): ConsultationMetrics {
   return {
     totalConsultations: 0,
     averageAge: 0,
-    byMonth: [],
     bySex: [],
     byAgeRange: [],
     byType: [],
     byPresential: [],
+    byLocation: [],
+    byAutonomy: [],
+    byOwnList: [],
     bySmoker: [],
     byVaccinationPlan: [],
+    byAlcohol: [],
+    byDrugs: [],
     byFamilyType: [],
     bySchoolLevel: [],
+    byProfessionalSituation: [],
     byContraceptive: [],
     byNewContraceptive: [],
     byDiagnosis: [],
     byProblems: [],
     byNewDiagnosis: [],
+    byReferral: [],
   };
 }
 
@@ -775,6 +1029,10 @@ function calculateMetrics(
     (MGF_FIELDS.find((field) => field.key === "type")?.options ?? []).map(
       (option) => [option.value, option.label]
     )
+  );
+  // Create map from shared referral options - always use labels
+  const referralValueToLabel = new Map<string, string>(
+    MGF_INTERNSHIP_OPTIONS.map((option) => [option.value, option.label])
   );
   // Initialize all metric maps and counters in single pass
   const totalConsultations = consultations.length;
@@ -795,19 +1053,27 @@ function calculateMetrics(
   ];
 
   // Initialize all maps for counting
-  const monthCounts = new Map<string, number>();
   const sexCounts = new Map<string, number>();
   const typeCounts = new Map<string, number>();
   const presentialCounts = new Map<string, number>();
+  const locationCounts = new Map<string, number>();
+  const autonomyCounts = new Map<string, number>();
+  const ownListCounts = new Map<string, number>();
   const smokerCounts = new Map<string, number>();
   const vaccinationPlanCounts = new Map<string, number>();
+  const alcoholCounts = new Map<string, number>();
+  const drugsCounts = new Map<string, number>();
   const familyTypeCounts = new Map<string, number>();
   const schoolLevelCounts = new Map<string, number>();
+  const professionalSituationCounts = new Map<string, number>();
   const contraceptiveCounts = new Map<string, number>();
   const newContraceptiveCounts = new Map<string, number>();
   const diagnosisCounts = new Map<string, number>();
   const problemsCounts = new Map<string, number>();
   const newDiagnosisCounts = new Map<string, number>();
+  // Referral tracking: Map<referralType, Map<motiveCode, count>>
+  const referralMotiveCounts = new Map<string, Map<string, number>>();
+  const referralCounts = new Map<string, number>();
 
   // Single-pass iteration through all consultations
   consultations.forEach((c) => {
@@ -822,15 +1088,6 @@ function calculateMetrics(
         b.max !== undefined ? age >= b.min && age <= b.max : age >= b.min
       );
       if (bucket) bucket.count += 1;
-    }
-
-    // Month grouping
-    if (c.date) {
-      const date = new Date(c.date);
-      const monthKey = `${date.getFullYear()}-${String(
-        date.getMonth() + 1
-      ).padStart(2, "0")}`;
-      monthCounts.set(monthKey, (monthCounts.get(monthKey) || 0) + 1);
     }
 
     // Sex counting
@@ -857,6 +1114,23 @@ function calculateMetrics(
       presentialCounts.set(key, (presentialCounts.get(key) || 0) + 1);
     }
 
+    // Location counting
+    if (c.location !== null && c.location !== undefined) {
+      locationCounts.set(c.location, (locationCounts.get(c.location) || 0) + 1);
+    }
+
+    // Autonomy counting
+    if (c.autonomy !== null && c.autonomy !== undefined) {
+      autonomyCounts.set(c.autonomy, (autonomyCounts.get(c.autonomy) || 0) + 1);
+    }
+
+    // Own list counting
+    const ownList = getDetail(c, "own_list");
+    if (ownList !== null && ownList !== undefined) {
+      const key = ownList ? "true" : "false";
+      ownListCounts.set(key, (ownListCounts.get(key) || 0) + 1);
+    }
+
     // Smoker counting
     if (c.smoker !== null && c.smoker !== undefined) {
       smokerCounts.set(c.smoker, (smokerCounts.get(c.smoker) || 0) + 1);
@@ -866,6 +1140,18 @@ function calculateMetrics(
     if (c.vaccination_plan !== null && c.vaccination_plan !== undefined) {
       const key = c.vaccination_plan ? "true" : "false";
       vaccinationPlanCounts.set(key, (vaccinationPlanCounts.get(key) || 0) + 1);
+    }
+
+    // Alcohol counting
+    if (c.alcohol !== null && c.alcohol !== undefined) {
+      const key = c.alcohol ? "true" : "false";
+      alcoholCounts.set(key, (alcoholCounts.get(key) || 0) + 1);
+    }
+
+    // Drugs counting
+    if (c.drugs !== null && c.drugs !== undefined) {
+      const key = c.drugs ? "true" : "false";
+      drugsCounts.set(key, (drugsCounts.get(key) || 0) + 1);
     }
 
     // Family type counting
@@ -881,6 +1167,17 @@ function calculateMetrics(
       schoolLevelCounts.set(
         c.school_level,
         (schoolLevelCounts.get(c.school_level) || 0) + 1
+      );
+    }
+
+    // Professional situation counting
+    if (
+      c.professional_situation !== null &&
+      c.professional_situation !== undefined
+    ) {
+      professionalSituationCounts.set(
+        c.professional_situation,
+        (professionalSituationCounts.get(c.professional_situation) || 0) + 1
       );
     }
 
@@ -942,6 +1239,28 @@ function calculateMetrics(
         );
       }
     });
+
+    // Referral counting
+    const referral = getDetail(c, "referrence");
+    if (referral && typeof referral === "string") {
+      referralCounts.set(referral, (referralCounts.get(referral) || 0) + 1);
+
+      // Track motives for this referral
+      const referralMotive = getDetail(c, "referrence_motive");
+      const motiveCodes = Array.isArray(referralMotive) ? referralMotive : [];
+      if (motiveCodes.length > 0) {
+        if (!referralMotiveCounts.has(referral)) {
+          referralMotiveCounts.set(referral, new Map<string, number>());
+        }
+        const motiveMap = referralMotiveCounts.get(referral)!;
+        motiveCodes.forEach((code) => {
+          const normalized = String(code).trim();
+          if (normalized) {
+            motiveMap.set(normalized, (motiveMap.get(normalized) || 0) + 1);
+          }
+        });
+      }
+    }
   });
   // Calculate final metrics using data from single-pass iteration
   const averageAge = validAgeCount > 0 ? totalAgeInYears / validAgeCount : 0;
@@ -949,10 +1268,6 @@ function calculateMetrics(
   const byAgeRange = ageRangeBuckets
     .filter((b) => b.count > 0)
     .map((b) => ({ range: b.label, count: b.count }));
-
-  const byMonth = Array.from(monthCounts.entries())
-    .map(([month, count]) => ({ month, count }))
-    .sort((a, b) => a.month.localeCompare(b.month));
 
   const bySex = Array.from(sexCounts.entries()).map(([sex, count]) => ({
     sex,
@@ -974,6 +1289,27 @@ function calculateMetrics(
     })
   );
 
+  const byLocation = Array.from(locationCounts.entries()).map(
+    ([location, count]) => ({
+      location,
+      count,
+    })
+  );
+
+  const byAutonomy = Array.from(autonomyCounts.entries()).map(
+    ([autonomy, count]) => ({
+      autonomy,
+      count,
+    })
+  );
+
+  const byOwnList = Array.from(ownListCounts.entries()).map(
+    ([ownList, count]) => ({
+      ownList,
+      count,
+    })
+  );
+
   const bySmoker = Array.from(smokerCounts.entries()).map(
     ([smoker, count]) => ({
       smoker,
@@ -985,6 +1321,15 @@ function calculateMetrics(
     ([vaccinationPlan, count]) => ({ vaccinationPlan, count })
   );
 
+  const byAlcohol = Array.from(alcoholCounts.entries()).map(
+    ([alcohol, count]) => ({ alcohol, count })
+  );
+
+  const byDrugs = Array.from(drugsCounts.entries()).map(([drugs, count]) => ({
+    drugs,
+    count,
+  }));
+
   const byFamilyType = Array.from(familyTypeCounts.entries()).map(
     ([familyType, count]) => ({ familyType, count })
   );
@@ -992,6 +1337,10 @@ function calculateMetrics(
   const bySchoolLevel = Array.from(schoolLevelCounts.entries()).map(
     ([schoolLevel, count]) => ({ schoolLevel, count })
   );
+
+  const byProfessionalSituation = Array.from(
+    professionalSituationCounts.entries()
+  ).map(([professionalSituation, count]) => ({ professionalSituation, count }));
 
   const byContraceptive = Array.from(contraceptiveCounts.entries())
     .map(([contraceptive, count]) => ({ contraceptive, count }))
@@ -1013,22 +1362,43 @@ function calculateMetrics(
     .map(([code, count]) => ({ code, count }))
     .sort((a, b) => b.count - a.count);
 
+  const byReferral = Array.from(referralCounts.entries())
+    .map(([referral, count]) => {
+      const motivesMap = referralMotiveCounts.get(referral) || new Map();
+      const motives = Array.from(motivesMap.entries())
+        .map(([code, motiveCount]) => ({ code, count: motiveCount }))
+        .sort((a, b) => b.count - a.count);
+      return {
+        referral,
+        label: referralValueToLabel.get(referral) ?? referral,
+        count,
+        motives,
+      };
+    })
+    .sort((a, b) => b.count - a.count);
+
   return {
     totalConsultations,
     averageAge,
     byAgeRange,
-    byMonth,
     bySex,
     byType,
     byPresential,
+    byLocation,
+    byAutonomy,
+    byOwnList,
     bySmoker,
     byVaccinationPlan,
+    byAlcohol,
+    byDrugs,
     byFamilyType,
     bySchoolLevel,
+    byProfessionalSituation,
     byContraceptive,
     byNewContraceptive,
     byDiagnosis,
     byProblems,
     byNewDiagnosis,
+    byReferral,
   };
 }

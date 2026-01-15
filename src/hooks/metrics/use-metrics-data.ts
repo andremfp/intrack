@@ -15,15 +15,23 @@ async function fetchMetricsData({
 }): Promise<ConsultationMetrics> {
   // Extract parameters from query key
   // Note: filters and implicitFilters are stringified in the query key for stable comparison
-  const [, , userId, specialtyCode, filtersStr, implicitFiltersStr] =
-    queryKey as [
-      string,
-      string,
-      string,
-      string,
-      string, // stableStringify(filters)
-      string // stableStringify(implicitFilters)
-    ];
+  const [
+    ,
+    ,
+    userId,
+    specialtyCode,
+    filtersStr,
+    implicitFiltersStr,
+    excludeType,
+  ] = queryKey as [
+    string,
+    string,
+    string,
+    string,
+    string, // stableStringify(filters)
+    string, // stableStringify(implicitFilters)
+    string // excludeType (empty string if not provided)
+  ];
 
   // Parse the stringified filters back to objects
   const filters = JSON.parse(filtersStr) as Record<string, unknown>;
@@ -38,7 +46,8 @@ async function fetchMetricsData({
   const result = await getConsultationMetrics(
     userId,
     mergedFilters,
-    specialtyCode
+    specialtyCode,
+    excludeType || undefined
   );
 
   if (!result.success) {
@@ -57,43 +66,85 @@ export function useMetricsData({
   specialty,
   filters,
   implicitFilters = {},
+  excludeType,
 }: UseMetricsDataParams): UseMetricsDataReturn {
   const queryClient = useQueryClient();
   const specialtyCode = specialty?.code;
 
+  const initialQueryKey = metrics.summary({
+    userId,
+    specialtyCode: specialtyCode || "",
+    filters,
+    implicitFilters,
+    excludeType,
+  });
+
   const query = useQuery({
-    queryKey: metrics.summary({
-      userId,
-      specialtyCode: specialtyCode || "",
-      filters,
-      implicitFilters,
-    }),
+    queryKey: initialQueryKey,
     queryFn: fetchMetricsData,
     enabled: !!(userId && specialtyCode),
   });
 
   const loadMetrics = async (filtersOverride?: Partial<typeof filters>) => {
-    // For manual refresh, invalidate the current query
-    await queryClient.invalidateQueries({
-      queryKey: metrics.summary({
+    // If filters are being overridden, we need to invalidate with the new key
+    // Otherwise, just refetch the current query directly
+    if (filtersOverride) {
+      const mergedFilters = { ...filters, ...filtersOverride };
+      const summaryQueryKey = metrics.summary({
         userId,
         specialtyCode: specialtyCode || "",
-        filters: filtersOverride ? { ...filters, ...filtersOverride } : filters,
+        filters: mergedFilters,
         implicitFilters,
-      }),
-    });
+        excludeType,
+      });
+      const timeseriesQueryKey = metrics.timeseries({
+        userId,
+        specialtyCode: specialtyCode || "",
+        filters: mergedFilters,
+        implicitFilters,
+        excludeType,
+      });
+
+      await queryClient.invalidateQueries({ queryKey: summaryQueryKey });
+      await queryClient.refetchQueries({ queryKey: summaryQueryKey });
+      await queryClient.invalidateQueries({ queryKey: timeseriesQueryKey });
+      await queryClient.refetchQueries({ queryKey: timeseriesQueryKey });
+    } else {
+      // Just refetch directly - this will force a network request even if data is fresh
+      // No need to invalidate first, as refetch() bypasses cache
+      await query.refetch({ cancelRefetch: false });
+
+      // Also refetch timeseries data with current filters
+      const timeseriesQueryKey = metrics.timeseries({
+        userId,
+        specialtyCode: specialtyCode || "",
+        filters,
+        implicitFilters,
+        excludeType,
+      });
+      await queryClient.refetchQueries({ queryKey: timeseriesQueryKey });
+    }
   };
 
   const retryLoadMetrics = async () => {
-    // For retry, invalidate and refetch
-    await queryClient.invalidateQueries({
-      queryKey: metrics.prefix({ userId, specialtyCode: specialtyCode || "" }),
+    // For retry, refetch the current query directly
+    await query.refetch();
+
+    // Also refetch timeseries data
+    const timeseriesQueryKey = metrics.timeseries({
+      userId,
+      specialtyCode: specialtyCode || "",
+      filters,
+      implicitFilters,
+      excludeType,
     });
+    await queryClient.refetchQueries({ queryKey: timeseriesQueryKey });
   };
 
   return {
     metrics: query.data ?? null,
     isLoading: query.isLoading,
+    isRefreshing: query.isFetching,
     error: query.error as AppError | null,
     loadMetrics,
     retryLoadMetrics,

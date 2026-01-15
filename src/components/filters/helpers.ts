@@ -69,7 +69,12 @@ function getFieldType(field: string): "string" | "number" | "boolean" {
   ) {
     return "number";
   }
-  if (field === "presential") {
+  if (
+    field === "presential" ||
+    field === "vaccination_plan" ||
+    field === "alcohol" ||
+    field === "drugs"
+  ) {
     return "boolean";
   }
   return "string";
@@ -106,7 +111,10 @@ function mapEnabledFieldsToSetterFields(
       case "family_type":
       case "school_level":
       case "profession":
+      case "professional_situation":
       case "vaccination_plan":
+      case "alcohol":
+      case "drugs":
         setterFields.push(field);
         break;
     }
@@ -268,6 +276,10 @@ export function getProfessionLabel(value: string): string {
   return getFieldLabel("profession", value);
 }
 
+export function getProfessionalSituationLabel(value: string): string {
+  return getFieldLabel("professional_situation", value);
+}
+
 export function getVaccinationPlanLabel(value: string): string {
   return getFieldLabel("vaccination_plan", value);
 }
@@ -365,14 +377,34 @@ export function getFieldLabel(fieldKey: string, value: string): string {
   // Search in COMMON_CONSULTATION_FIELDS first, then MGF_FIELDS
   const commonField = COMMON_CONSULTATION_FIELDS.find((field) => field.key === fieldKey);
   if (commonField?.options) {
-    const option = commonField.options.find((opt) => opt.value === value);
-    return option?.label || value;
+    // Handle code-search fields (code/description) vs select fields (value/label)
+    if (commonField.type === "code-search") {
+      const option = commonField.options.find(
+        (opt) => "code" in opt && opt.code === value
+      );
+      return option && "description" in option
+        ? `${option.code} - ${option.description}`
+        : value;
+    } else {
+      const option = commonField.options.find((opt) => opt.value === value);
+      return option?.label || value;
+    }
   }
 
   const mgfField = MGF_FIELDS.find((field) => field.key === fieldKey);
   if (mgfField?.options) {
-    const option = mgfField.options.find((opt) => opt.value === value);
-    return option?.label || value;
+    // Handle code-search fields (code/description) vs select fields (value/label)
+    if (mgfField.type === "code-search") {
+      const option = mgfField.options.find(
+        (opt) => "code" in opt && opt.code === value
+      );
+      return option && "description" in option
+        ? `${option.code} - ${option.description}`
+        : value;
+    } else {
+      const option = mgfField.options.find((opt) => opt.value === value);
+      return option?.label || value;
+    }
   }
 
   return value;
@@ -440,6 +472,12 @@ export function generatePrettyFilterLabel(
       return `N° Processo: ${value}`;
     case "presential":
       return `Presencial: ${value ? "Sim" : "Não"}`;
+    case "vaccination_plan":
+      return `PNV Cumprido: ${value ? "Sim" : "Não"}`;
+    case "alcohol":
+      return `Alcoól: ${value ? "Sim" : "Não"}`;
+    case "drugs":
+      return `Drogas: ${value ? "Sim" : "Não"}`;
     default: {
       // Generic case for fields with options or simple text fields
       const metadata = getFieldMetadata(key);
