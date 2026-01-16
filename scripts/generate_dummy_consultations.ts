@@ -55,6 +55,17 @@ function random<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+function randomMultiple<T>(
+  arr: readonly T[],
+  min: number = 0,
+  max: number = 3
+): T[] {
+  if (arr.length === 0) return [];
+  const count = Math.floor(Math.random() * (max - min + 1)) + min;
+  const shuffled = [...arr].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, Math.min(count, arr.length));
+}
+
 function randomBoolOrNull(): boolean | null {
   const r = Math.random();
   if (r < 0.33) return true;
@@ -104,7 +115,18 @@ while (date.getFullYear() === YEAR) {
     const professional_situation =
       location === "unidade" ? random(PROFESSIONAL_SITUATIONS) : null;
     const profession = location === "unidade" ? randomProfession() : null;
-    const referrence = location === "unidade" ? random(REFERRALS) : null;
+    const referrence =
+      location === "unidade"
+        ? (() => {
+            const r = Math.random();
+            if (r < 0.5) return null; // 50% no referral
+            return randomMultiple(
+              REFERRALS.filter((r): r is string => r !== null),
+              1,
+              4
+            ); // 50% multiple referrals
+          })()
+        : null;
     const own_list =
       location === "unidade" ? (Math.random() < 0.9 ? true : false) : null;
     const other_list = own_list === false ? "other_list" : null;
@@ -132,7 +154,10 @@ while (date.getFullYear() === YEAR) {
       diagnosis: randomICPC2Codes(1),
       new_diagnosis: Math.random() < 0.3 ? randomICPC2Codes(1) : null,
       referrence,
-      referrence_motive: referrence ? randomICPC2Codes(1) : null,
+      referrence_motive:
+        referrence && Array.isArray(referrence) && referrence.length > 0
+          ? randomICPC2Codes(Math.random() < 0.7 ? 1 : 2)
+          : null,
       contraceptive:
         location === "unidade" && sex !== "m" ? random(CONTRACEPTIVES) : null,
       new_contraceptive:

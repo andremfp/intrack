@@ -4,6 +4,7 @@ import { SelectCell } from "./select-cell";
 import { TextListCell } from "./text-list-cell";
 import { CodeSearchCell } from "./code-search-cell";
 import { TextCell } from "./text-cell";
+import { MultiSelectCell } from "./multi-select-cell";
 
 interface SpecialtyFieldCellProps {
   value: unknown;
@@ -37,6 +38,8 @@ export function SpecialtyFieldCell({ value, field }: SpecialtyFieldCellProps) {
       return <SelectCell value={String(value)} options={selectOptions} />;
     case "text-list":
       return <TextListCell value={value} />;
+    case "multi-select":
+      return <MultiSelectCell value={value} field={field} />;
     case "code-search":
       return <CodeSearchCell value={value} field={field} />;
     case "text":

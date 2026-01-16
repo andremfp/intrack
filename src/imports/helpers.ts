@@ -266,6 +266,11 @@ function mapFieldValue(
     return num !== null && num >= 1 ? num : null;
   }
 
+  // Handle multi-select fields
+  if (field?.type === "multi-select") {
+    return parseTextList(rawValue); // Multi-select stored as array
+  }
+
   // Handle select/combobox fields
   if (field?.type === "select" || field?.type === "combobox") {
     return parseSelectValue(fieldKey, rawValue);
