@@ -437,11 +437,14 @@ export const MGF_FIELDS: SpecialtyField[] = [
   {
     key: "referrence",
     label: "Referenciação",
-    type: "combobox",
+    type: "multi-select",
     placeholder: "Referenciação",
     section: "referral",
     visibleWhen: (ctx) => ctx.location === "unidade",
-    options: MGF_INTERNSHIP_OPTIONS,
+    options: [
+      ...MGF_INTERNSHIP_OPTIONS,
+      { value: "urgencia", label: "Serviço de Urgência" },
+    ],
   },
   {
     key: "referrence_motive",
@@ -511,13 +514,87 @@ export const MGF_FIELDS: SpecialtyField[] = [
   },
 ];
 
+// Shared HTA (Hipertensão Arterial) sections - used by dm, hta, and sm
+const HTA_EXAMS_SECTION: ConstultationTypeSection = {
+  key: "hta_exams",
+  label: "Hipertensão Arterial - Exames",
+  section: "type_specific",
+  fields: [
+    {
+      key: "creatinina",
+      label: "Creatinina",
+      type: "number",
+      units: "mg/dL",
+    },
+    {
+      key: "score2",
+      label: "Score2",
+      type: "text",
+      units: "",
+    },
+    {
+      key: "albuminuria",
+      label: "Albuminuria",
+      type: "number",
+      units: "mg/g",
+    },
+    {
+      key: "ldl",
+      label: "LDL",
+      type: "number",
+      units: "mg/dL",
+    },
+    {
+      key: "tfg",
+      label: "TFG",
+      type: "number",
+      units: "mL/min",
+    },
+  ],
+};
+
+const HTA_HISTORY_SECTION: ConstultationTypeSection = {
+  key: "hta_history",
+  label: "Hipertensão Arterial - Historial",
+  section: "type_specific",
+  fields: [
+    {
+      key: "medicamentos",
+      label: "Medicamentos",
+      type: "multi-select",
+      options: [
+        { value: "ieca", label: "IECA" },
+        { value: "diur_tiazid", label: "Diuréticos Tiazídicos" },
+        {
+          value: "diur_tiazid_like",
+          label: "Diuréticos Tiazídicos-Like",
+        },
+        { value: "bloq_calc", label: "Bloqueador dos Canais de Cálcio" },
+        { value: "beta_bloq", label: "Beta Bloqueantes" },
+        { value: "ara", label: "ARA" },
+        { value: "antag_aldo", label: "Antagonistas da Aldosterona" },
+        { value: "outros", label: "Outros" },
+      ],
+    },
+    {
+      key: "complicacoes",
+      label: "Complicações",
+      type: "multi-select",
+      options: [
+        { value: "microvasculares", label: "Microvasculares" },
+        { value: "macrovascular", label: "Macrovasculares" },
+      ],
+    },
+  ],
+};
+
 export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
   string,
   ConstultationTypeSection[]
 > = {
   dm: [
     {
-      key: "exams",
+      key: "dm_exams",
       label: "Diabetes - Exames",
       section: "type_specific",
       fields: [
@@ -546,12 +623,6 @@ export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
           units: "mg/dL",
         },
         {
-          key: "hba1c",
-          label: "HbA1C",
-          type: "number",
-          units: "%",
-        },
-        {
           key: "tfg",
           label: "TFG",
           type: "number",
@@ -560,7 +631,7 @@ export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
       ],
     },
     {
-      key: "history",
+      key: "dm_history",
       label: "Diabetes - Historial",
       section: "type_specific",
       fields: [
@@ -590,79 +661,16 @@ export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
         },
       ],
     },
+    HTA_EXAMS_SECTION,
+    HTA_HISTORY_SECTION,
   ],
   hta: [
-    {
-      key: "exams",
-      label: "Hipertensão Arterial - Exames",
-      section: "type_specific",
-      fields: [
-        {
-          key: "creatinina",
-          label: "Creatinina",
-          type: "number",
-          units: "mg/dL",
-        },
-        {
-          key: "score2",
-          label: "Score2",
-          type: "text",
-          units: "",
-        },
-        {
-          key: "albuminuria",
-          label: "Albuminuria",
-          type: "number",
-          units: "mg/g",
-        },
-        {
-          key: "ldl",
-          label: "LDL",
-          type: "number",
-          units: "mg/dL",
-        },
-        {
-          key: "tfg",
-          label: "TFG",
-          type: "number",
-          units: "mL/min",
-        },
-      ],
-    },
-    {
-      key: "history",
-      label: "Hipertensão Arterial - Historial",
-      section: "type_specific",
-      fields: [
-        {
-          key: "medicamentos",
-          label: "Medicamentos",
-          type: "multi-select",
-          options: [
-            { value: "ieca", label: "IECA" },
-            { value: "diur_tiazid", label: "Diuréticos Tiazídicos" },
-            {
-              value: "diur_tiazid_like",
-              label: "Diuréticos Tiazídicos-Like",
-            },
-            { value: "bloq_calc", label: "Bloqueador dos Canais de Cálcio" },
-            { value: "beta_bloq", label: "Beta Bloqueantes" },
-            { value: "ara", label: "ARA" },
-            { value: "antag_aldo", label: "Antagonistas da Aldosterona" },
-            { value: "outros", label: "Outros" },
-          ],
-        },
-        {
-          key: "complicacoes",
-          label: "Complicações",
-          type: "multi-select",
-          options: [
-            { value: "microvasculares", label: "Microvasculares" },
-            { value: "macrovascular", label: "Macrovasculares" },
-          ],
-        },
-      ],
-    },
+    { ...HTA_EXAMS_SECTION, key: "exams" },
+    { ...HTA_HISTORY_SECTION, key: "history" },
+  ],
+  sa: [
+    { ...HTA_EXAMS_SECTION, key: "exams" },
+    { ...HTA_HISTORY_SECTION, key: "history" },
   ],
   sm: [
     {
