@@ -62,9 +62,11 @@ export function formatBoolean(value: unknown): ConsultationExportCell {
 }
 
 /**
- * Formats a select/combobox field value using field options
+ * Formats a select/combobox/multi-select field value using field options
  *
- * Looks up the option by value and returns its label, or the value as-is if no match
+ * For single values: Looks up the option by value and returns its label
+ * For arrays (multi-select): Looks up each value and joins labels with semicolons
+ * Falls back to the value(s) as-is if no match found
  */
 export function formatWithOptions(
   field: SpecialtyField | undefined,
@@ -72,15 +74,35 @@ export function formatWithOptions(
 ): ConsultationExportCell {
   if (!field) {
     if (value === null || value === undefined) return null;
+    if (Array.isArray(value)) {
+      return value.length > 0 ? value.join("; ") : null;
+    }
     return String(value);
   }
 
   if (value === null || value === undefined || value === "") return null;
 
   if (!field.options || field.options.length === 0) {
+    if (Array.isArray(value)) {
+      return value.length > 0 ? value.join("; ") : null;
+    }
     return String(value);
   }
 
+  // Handle arrays (multi-select fields)
+  if (Array.isArray(value)) {
+    if (value.length === 0) return null;
+    const labels = value
+      .map((val) => {
+        const str = String(val);
+        const option = field.options!.find((opt) => opt.value === str);
+        return option?.label ?? str;
+      })
+      .filter((label) => label.length > 0);
+    return labels.length > 0 ? labels.join("; ") : null;
+  }
+
+  // Handle single values (select/combobox fields)
   const str = String(value);
   const option = field.options.find((opt) => opt.value === str);
   return option?.label ?? str;

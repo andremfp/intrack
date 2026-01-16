@@ -437,7 +437,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
   {
     key: "referrence",
     label: "Referenciação",
-    type: "combobox",
+    type: "multi-select",
     placeholder: "Referenciação",
     section: "referral",
     visibleWhen: (ctx) => ctx.location === "unidade",

@@ -1242,17 +1242,28 @@ function calculateMetrics(
 
     // Referral counting
     const referral = getDetail(c, "referrence");
-    if (referral && typeof referral === "string") {
-      referralCounts.set(referral, (referralCounts.get(referral) || 0) + 1);
+    // Referrals are always arrays (migrated from legacy string format)
+    const referralValues = Array.isArray(referral)
+      ? referral.filter(
+          (v): v is string => typeof v === "string" && v.length > 0
+        )
+      : [];
+
+    // Count each referral type
+    referralValues.forEach((referralValue) => {
+      referralCounts.set(
+        referralValue,
+        (referralCounts.get(referralValue) || 0) + 1
+      );
 
       // Track motives for this referral
       const referralMotive = getDetail(c, "referrence_motive");
       const motiveCodes = Array.isArray(referralMotive) ? referralMotive : [];
       if (motiveCodes.length > 0) {
-        if (!referralMotiveCounts.has(referral)) {
-          referralMotiveCounts.set(referral, new Map<string, number>());
+        if (!referralMotiveCounts.has(referralValue)) {
+          referralMotiveCounts.set(referralValue, new Map<string, number>());
         }
-        const motiveMap = referralMotiveCounts.get(referral)!;
+        const motiveMap = referralMotiveCounts.get(referralValue)!;
         motiveCodes.forEach((code) => {
           const normalized = String(code).trim();
           if (normalized) {
@@ -1260,7 +1271,7 @@ function calculateMetrics(
           }
         });
       }
-    }
+    });
   });
   // Calculate final metrics using data from single-pass iteration
   const averageAge = validAgeCount > 0 ? totalAgeInYears / validAgeCount : 0;
