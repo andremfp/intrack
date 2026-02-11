@@ -185,6 +185,7 @@ export const MGF_INTERNSHIP_OPTIONS = [
   { value: "cir geral", label: "Cirurgia Geral" },
   { value: "cir plastica", label: "Cirurgia Plástica" },
   { value: "med interna", label: "Medicina Interna" },
+  { value: "mfr", label: "Medicina Física e Reabilitação" },
 ];
 
 // MGF (Medicina Geral e Familiar) specialty fields
@@ -720,7 +721,7 @@ export type SpecialtyDetails = Record<
 >;
 
 const resolveFieldDefault = (
-  field: SpecialtyField
+  field: SpecialtyField,
 ): SpecialtyDetails[string] => {
   if (field.defaultValue !== undefined) {
     return field.defaultValue as SpecialtyDetails[string];
@@ -739,7 +740,7 @@ const resolveFieldDefault = (
 
 // Get default details object for a specialty (with all fields initialized)
 export function getDefaultSpecialtyDetails(
-  specialtyCode: string
+  specialtyCode: string,
 ): SpecialtyDetails {
   switch (specialtyCode) {
     case SPECIALTY_CODES.MGF: {
@@ -774,14 +775,14 @@ export function getSpecialtyMainLocation(specialtyCode: string): {
   const locationField = fields.find((field) => field.key === "location");
   const value = locationField?.mainLocation;
   const label = locationField?.options?.find(
-    (option) => option.value === value
+    (option) => option.value === value,
   )?.label;
   return { value, label };
 }
 
 // Get display name for Consultations metrics tab (returns main location or default)
 export function getConsultationsTabDisplayName(
-  specialtyCode?: string | null
+  specialtyCode?: string | null,
 ): string {
   if (!specialtyCode) {
     return TAB_CONSTANTS.METRICS_SUB_TABS.CONSULTATIONS;
