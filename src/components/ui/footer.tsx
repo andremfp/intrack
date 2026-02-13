@@ -8,9 +8,9 @@ export function Footer() {
   return (
     <footer className="dark border-t border-neutral-800 bg-[color:var(--landing-footer-background)] px-4 py-8">
       <div className="mx-auto max-w-7xl">
-        <div className="flex flex-col items-center justify-between gap-6 md:flex-row md:gap-4">
+        <div className="flex flex-col items-center justify-center gap-2 text-center">
           {/* Logo and Description */}
-          <div className="flex flex-col items-center gap-2 text-center md:items-start md:text-left">
+          <div className="flex flex-col items-center gap-2">
             <div className="flex items-center gap-2">
               <img
                 src="/intrack-icon-dark.svg"
@@ -27,9 +27,9 @@ export function Footer() {
           </div>
 
           {/* Links and Info */}
-          <div className="flex flex-col items-center gap-4 md:items-end">
+          <div className="flex flex-col items-center gap-1">
             {/* Social Links */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center mb-2">
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0" asChild>
                 <a
                   href="https://github.com/andremfp/intrack"
@@ -41,16 +41,27 @@ export function Footer() {
                 </a>
               </Button>
             </div>
+            <span className="text-xs font-normal text-[color:var(--muted-foreground)]">
+              Need help?
+            </span>
+            <a
+              href="mailto:contact@intrack.pt"
+              className="text-xs text-[color:var(--muted-foreground)] select-all"
+            >
+              contact@intrack.pt
+            </a>
+          </div>
+        </div>
 
-            {/* Version and Copyright */}
-            <div className="flex flex-col items-center gap-1 text-center md:items-end md:text-right">
-              <p className="text-xs text-[color:var(--muted-foreground)]">
-                Versão {version}
-              </p>
-              <p className="text-xs text-[color:var(--muted-foreground)]">
-                &copy; {currentYear} InTrack.
-              </p>
-            </div>
+        <div className="mt-6 border-t border-neutral-800 pt-4">
+          {/* Version and Copyright */}
+          <div className="flex flex-col items-center gap-1 text-center">
+            <p className="text-xs text-[color:var(--muted-foreground)]">
+              Versão {version}
+            </p>
+            <p className="text-xs text-[color:var(--muted-foreground)]">
+              InTrack · {currentYear}
+            </p>
           </div>
         </div>
       </div>

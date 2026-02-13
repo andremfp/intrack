@@ -22,7 +22,6 @@ InTrack helps Portuguese Medical residents track consultations and milestones, a
 ## 🗺 Roadmap
 
 - [ ] **Testing:** Add comprehensive E2E tests (Playwright/Cypress).
-- [ ] **Custom Domain** Add custom domain to production.
 - [ ] **Donations** Add support for donations to support the project.
 - [ ] **Specialties:** Add support for more medical specialties beyond MGF.
 - [ ] **Multi-Language/Translations:** Add multi-language support.

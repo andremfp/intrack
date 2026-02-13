@@ -16,7 +16,10 @@ export function HeroSection() {
   const heroMetrics = ["métricas", "relatórios"];
   const staticHeroWords = ["Regista", "consultas,", "gera"];
   return (
-    <GradientBackground className="relative w-full min-h-[80vh] flex items-center justify-center sm:py-20">
+    <GradientBackground
+      id="visao-geral"
+      className="relative w-full min-h-[80vh] flex items-center justify-center sm:py-20"
+    >
       <div className="relative z-10 mx-auto flex w-full flex-col items-center justify-center gap-10 px-4 md:px-0 max-w-6xl">
         <h1 className="relative mx-auto w-full max-w-4xl text-center text-5xl font-bold text-[var(--foreground)] sm:text-5xl md:text-5xl lg:text-6xl xl:text-7xl drop-shadow-sm dark:drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]">
           <div className="flex flex-col items-center justify-center gap-2">
