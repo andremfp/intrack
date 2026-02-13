@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { AppLogo } from "@/components/ui/logo";
-import { IconX, IconBrandGithub } from "@tabler/icons-react";
+import { IconX, IconBrandGithub, IconMail } from "@tabler/icons-react";
 
 export function AboutModal({ onClose }: { onClose: () => void }) {
   // Prevent body scroll when modal is open
@@ -75,7 +75,6 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
 
           {/* Details */}
           <div className="px-6 py-6 space-y-4">
-            {/* GitHub Link */}
             <div className="flex items-center justify-center">
               <a
                 href="https://github.com/andremfp/intrack"
@@ -85,6 +84,15 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
                 className="h-12 w-12 rounded-full hover:bg-muted flex items-center justify-center transition-colors"
               >
                 <IconBrandGithub size={24} stroke={1.5} />
+              </a>
+              <a
+                href="mailto:contact@intrack.pt"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Contact Email"
+                className="h-12 w-12 rounded-full hover:bg-muted flex items-center justify-center transition-colors"
+              >
+                <IconMail size={24} stroke={1.5} />
               </a>
             </div>
 

@@ -59,7 +59,7 @@ export function FeaturesSection() {
     },
   ];
   return (
-    <div className="relative">
+    <div id="funcionalidades" className="relative">
       <AuroraBackground className="absolute inset-0 h-auto min-h-0 pointer-events-none">
         {null}
       </AuroraBackground>
