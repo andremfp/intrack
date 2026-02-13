@@ -85,17 +85,14 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
               >
                 <IconBrandGithub size={24} stroke={1.5} />
               </a>
-              <a
-                href="mailto:contact@intrack.pt"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Contact Email"
-                className="h-12 w-12 rounded-full hover:bg-muted flex items-center justify-center transition-colors"
-              >
-                <IconMail size={24} stroke={1.5} />
-              </a>
             </div>
 
+            <div className="flex items-center justify-center gap-3">
+              <IconMail size={18} stroke={1.7} className="shrink-0" />
+              <p className="text-sm text-muted-foreground select-all">
+                contact@intrack.pt
+              </p>
+            </div>
             {/* Year */}
             <div className="pt-2 text-center">
               <p className="text-xs text-muted-foreground">
