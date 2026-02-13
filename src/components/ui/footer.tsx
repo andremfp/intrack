@@ -60,7 +60,7 @@ export function Footer() {
               Versão {version}
             </p>
             <p className="text-xs text-[color:var(--muted-foreground)]">
-              &copy; {currentYear} InTrack.
+              InTrack · {currentYear}
             </p>
           </div>
         </div>
