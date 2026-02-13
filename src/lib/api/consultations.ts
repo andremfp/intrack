@@ -8,7 +8,6 @@ import {
   type SpecialtyDetails,
   PAGINATION_CONSTANTS,
   MGF_FIELDS,
-  MGF_INTERNSHIP_OPTIONS,
   ageToYears,
   type ConsultationsSortingField,
 } from "@/constants";
@@ -1030,9 +1029,11 @@ function calculateMetrics(
       (option) => [option.value, option.label]
     )
   );
-  // Create map from shared referral options - always use labels
-  const referralValueToLabel = new Map<string, string>(
-    MGF_INTERNSHIP_OPTIONS.map((option) => [option.value, option.label])
+  // Create map from the referrence field options so labels cover all referral values.
+  const referralValueToLabel = new Map(
+    (MGF_FIELDS.find((field) => field.key === "referrence")?.options ?? []).map(
+      (option) => [option.value, option.label]
+    )
   );
   // Initialize all metric maps and counters in single pass
   const totalConsultations = consultations.length;

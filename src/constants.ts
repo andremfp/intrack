@@ -235,6 +235,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
       { value: "DA", label: "Doença Aguda" },
       { value: "AM", label: "Acto Médico" },
       { value: "Domicílio", label: "Domicílio" },
+      { value: "IVG", label: "Interrupção Voluntária de Gravidez" },
     ],
   },
   {
@@ -383,7 +384,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
   },
   {
     key: "alcohol",
-    label: "Alcoól",
+    label: "Álcool",
     type: "boolean",
     section: "clinical_history",
   },
@@ -445,6 +446,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
     options: [
       ...MGF_INTERNSHIP_OPTIONS,
       { value: "urgencia", label: "Serviço de Urgência" },
+      { value: "ivg", label: "Consulta de IVG" },
     ],
   },
   {
