@@ -41,7 +41,7 @@ export const MGF_REPORT_DEFINITIONS: MGFReportDefinition[] = [
         key: "unit",
         title: "Unidade de Saúde",
         description:
-          "Consultas observadas, ombro-a-ombro, em autonomia parcial e total, para tipologias SA, SIJ, PF, SM, Domicílio e DA, presenciais e não presenciais.",
+          "Consultas observadas, ombro-a-ombro, em autonomia parcial e total, para tipologias SA, SIJ, PF, SM, Domicílio, DA e IVG, presenciais e não presenciais.",
         sampleDescription:
           "Amostra das quatro semanas com maior número de consultas, da segunda metade do ano, com pelo menos três dias/semana na unidade.",
       },
@@ -66,7 +66,7 @@ export const MGF_REPORT_DEFINITIONS: MGFReportDefinition[] = [
         key: "unit",
         title: "Unidade de Saúde",
         description:
-          "Consultas ombro-a-ombro, em autonomia parcial e total, para tipologias SA, SIJ, PF, SM, Domicílio e DA, presenciais e não presenciais.",
+          "Consultas ombro-a-ombro, em autonomia parcial e total, para tipologias SA, SIJ, PF, SM, Domicílio, DA e IVG, presenciais e não presenciais.",
         sampleDescription:
           "Amostra das quinze semanas com maior número de consultas, do ano 2 e do ano 3 do internato, com pelo menos três dias/semana na unidade.",
       },
@@ -99,7 +99,7 @@ export const MGF_REPORT_DEFINITIONS: MGFReportDefinition[] = [
         key: "unit",
         title: "Unidade de Saúde",
         description:
-          "Consultas com autonomia total nas tipologias SA, SIJ, PF, SM, Domicílio e DA, presenciais e não presenciais.",
+          "Consultas com autonomia total nas tipologias SA, SIJ, PF, SM, Domicílio, DA e IVG, presenciais e não presenciais.",
         sampleDescription:
           "Todas as consultas com autonomia total, durante todo o ano.",
       },
@@ -117,7 +117,15 @@ const REPORT_SPECIALTY_YEAR_MAP: Record<MGFReportKey, number[]> = {
   year4: [4],
 };
 
-export const MGF_CONSULTATION_TYPES_FOR_REPORTS = ["SA", "SIJ", "PF", "SM", "Domicílio", "DA"];
+export const MGF_CONSULTATION_TYPES_FOR_REPORTS = [
+  "SA",
+  "SIJ",
+  "PF",
+  "SM",
+  "Domicílio",
+  "DA",
+  "IVG",
+];
 export const MGF_AUTONOMY_LEVELS_FOR_REPORTS = ["observada", "ombro-a-ombro", "parcial", "total"];
 
 const REPORT_UTILS_CONFIG: ReportUtilsConfig = {
