@@ -44,6 +44,7 @@ export function CodeSearchField<T extends CodeSearchItem>({
   const isInvalid = Boolean(errorMessage);
   const required = isRequired ?? field.requiredWhen === "always";
   const [searchTerm, setSearchTerm] = useState("");
+  const [visibleCount, setVisibleCount] = useState(10);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   // Default implementations
@@ -115,7 +116,11 @@ export function CodeSearchField<T extends CodeSearchItem>({
       )
     : [];
 
-  const displayedItems = filteredItems.slice(0, 10);
+  const displayedItems = filteredItems.slice(0, visibleCount);
+
+  useEffect(() => {
+    setVisibleCount(10);
+  }, [searchTerm]);
 
   // Handle selection
   const handleSelect = (item: T) => {
@@ -279,9 +284,22 @@ export function CodeSearchField<T extends CodeSearchItem>({
             </div>
           )}
           {filteredItems.length > 10 && (
-            <div className="px-2 sm:px-3 py-2 text-xs text-muted-foreground border-t bg-muted/30 text-center">
-              Mostrando 10 de {filteredItems.length} resultados. Refine a
-              pesquisa.
+            <div className="px-2 sm:px-3 py-2 text-xs text-muted-foreground border-t bg-muted/30 text-center space-y-2">
+              <div>
+                Mostrando {displayedItems.length} de {filteredItems.length}{" "}
+                resultados.
+              </div>
+              {displayedItems.length < filteredItems.length && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => setVisibleCount((prev) => prev + 10)}
+                >
+                  Carregar mais
+                </Button>
+              )}
             </div>
           )}
         </div>
