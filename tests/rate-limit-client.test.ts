@@ -1,13 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { supabase } from "@/supabase";
-import { ErrorMessages } from "@/errors";
+import { AppError, ErrorMessages } from "@/errors";
 import type { AuthError, Session } from "@supabase/supabase-js";
 import type { RateLimitErrorDetails } from "@/lib/api/rate-limit";
 import {
   checkRateLimit,
   getRateLimitStatus,
   clearRateLimitCache,
+  getCachedStatus,
 } from "@/lib/api/rate-limit";
 
 import type { MockInstance } from "vitest";
@@ -220,5 +221,174 @@ describe("rate-limit client", () => {
       throw new Error("Expected auth failure");
     }
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("returns error for invalid response shape", async () => {
+    // Missing remainingRequests and resetTime — shape validation should reject it
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ allowed: true }),
+    });
+
+    const result = await checkRateLimit("import");
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.userMessage).toBe(
+        "Resposta inválida da função de rate limit."
+      );
+    } else {
+      throw new Error("Expected shape validation to fail");
+    }
+  });
+
+  it("re-fetches after cache TTL expires", async () => {
+    vi.useFakeTimers();
+    const baseTime = new Date("2026-01-01T00:00:00Z").getTime();
+    vi.setSystemTime(baseTime);
+
+    const payload = {
+      allowed: true,
+      remainingRequests: 9,
+      resetTime: new Date().toISOString(),
+    };
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => payload,
+    });
+
+    await checkRateLimit("import");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(getCachedStatus("import")).not.toBeNull();
+
+    // Advance past the 10 s TTL
+    vi.setSystemTime(baseTime + 11_000);
+    expect(getCachedStatus("import")).toBeNull();
+
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => payload,
+    });
+
+    await checkRateLimit("import");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    vi.useRealTimers();
+  });
+
+  it("bypasses cache when force: true", async () => {
+    const payload = {
+      allowed: true,
+      remainingRequests: 9,
+      resetTime: new Date().toISOString(),
+    };
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => payload,
+    });
+
+    // Seed the cache
+    await checkRateLimit("import");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    // force: true should bypass the cached result
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => payload,
+    });
+    await checkRateLimit("import", undefined, { force: true });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("falls through to default error message when response body is not JSON", async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => {
+        throw new Error("Not JSON");
+      },
+    });
+
+    const result = await checkRateLimit("import");
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      // safeJson catches the parse error and returns null; no error payload
+      // means getDefaultErrorMessage(500) is used
+      expect(result.error.userMessage).toBe(
+        "Erro ao validar o limite de utilização."
+      );
+    } else {
+      throw new Error("Expected failure for non-JSON response");
+    }
+  });
+});
+
+// URL resolution tests require module-level isolation because VITE_ENV is a
+// constant captured at module load time from import.meta.env. Stubbing env vars
+// via vi.stubEnv + forcing a fresh module evaluation via vi.resetModules +
+// dynamic import lets each test control what import.meta.env looks like when
+// VITE_ENV is initialised.
+describe("URL resolution + helpers", () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("LOCAL URL takes priority over PROD URL", async () => {
+    vi.stubEnv("VITE_LOCAL_SUPABASE_URL", "https://local.example.com");
+    vi.stubEnv("VITE_SUPABASE_URL", "https://prod.example.com");
+    const { resolveFunctionsBaseUrl: resolve } = await import(
+      "@/lib/api/rate-limit"
+    );
+
+    expect(resolve()).toBe("https://local.example.com/functions/v1");
+  });
+
+  it("falls back to PROD URL when LOCAL is absent", async () => {
+    // Empty string is falsy — readEnv returns "" which is treated as absent
+    vi.stubEnv("VITE_LOCAL_SUPABASE_URL", "");
+    vi.stubEnv("VITE_SUPABASE_URL", "https://prod.example.com");
+    const { resolveFunctionsBaseUrl: resolve } = await import(
+      "@/lib/api/rate-limit"
+    );
+
+    expect(resolve()).toBe("https://prod.example.com/functions/v1");
+  });
+
+  it("throws when neither URL is set", async () => {
+    vi.stubEnv("VITE_LOCAL_SUPABASE_URL", "");
+    vi.stubEnv("VITE_SUPABASE_URL", "");
+    // @/supabase also uses VITE_SUPABASE_URL to create its client; prevent it
+    // from throwing when the module reloads with empty env vars.
+    vi.doMock("@/supabase", () => ({ supabase: {} }));
+    try {
+      const { resolveFunctionsBaseUrl: resolve } = await import(
+        "@/lib/api/rate-limit"
+      );
+      expect(() => resolve()).toThrow();
+    } finally {
+      vi.doUnmock("@/supabase");
+    }
+  });
+
+  it("normalizes localhost to 127.0.0.1 in LOCAL URL", async () => {
+    vi.stubEnv("VITE_LOCAL_SUPABASE_URL", "http://localhost:54321");
+    vi.stubEnv("VITE_SUPABASE_URL", "");
+    const { resolveFunctionsBaseUrl: resolve } = await import(
+      "@/lib/api/rate-limit"
+    );
+    const url = resolve();
+
+    expect(url).toContain("127.0.0.1");
+    expect(url).not.toContain("localhost");
   });
 });

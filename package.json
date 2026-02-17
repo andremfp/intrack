@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:rate-limit": "deno test --lock=deno.lock supabase/tests/rate-limit-test.ts",
+    "test:rate-limit": "deno test --lock=deno.lock supabase/tests/rate-limit-test.ts supabase/tests/rate-limit-handler-test.ts",
     "test:unit": "vitest run --config vitest.config.ts",
     "test": "npm run test:rate-limit && npm run test:unit",
     "sb:local:generate:schema": "npx supabase gen types typescript --local > src/schema.ts",
