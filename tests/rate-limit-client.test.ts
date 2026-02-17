@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { supabase } from "@/supabase";
-import { AppError, ErrorMessages } from "@/errors";
+import { ErrorMessages } from "@/errors";
 import type { AuthError, Session } from "@supabase/supabase-js";
 import type { RateLimitErrorDetails } from "@/lib/api/rate-limit";
 import {
@@ -199,7 +199,7 @@ describe("rate-limit client", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.userMessage).toBe(
-        "Erro ao validar o limite de utilização."
+        "Erro ao validar o limite de utilização.",
       );
     } else {
       throw new Error("Expected server failure");
@@ -236,7 +236,7 @@ describe("rate-limit client", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.userMessage).toBe(
-        "Resposta inválida da função de rate limit."
+        "Resposta inválida da função de rate limit.",
       );
     } else {
       throw new Error("Expected shape validation to fail");
@@ -321,7 +321,7 @@ describe("rate-limit client", () => {
       // safeJson catches the parse error and returns null; no error payload
       // means getDefaultErrorMessage(500) is used
       expect(result.error.userMessage).toBe(
-        "Erro ao validar o limite de utilização."
+        "Erro ao validar o limite de utilização.",
       );
     } else {
       throw new Error("Expected failure for non-JSON response");
@@ -346,9 +346,8 @@ describe("URL resolution + helpers", () => {
   it("LOCAL URL takes priority over PROD URL", async () => {
     vi.stubEnv("VITE_LOCAL_SUPABASE_URL", "https://local.example.com");
     vi.stubEnv("VITE_SUPABASE_URL", "https://prod.example.com");
-    const { resolveFunctionsBaseUrl: resolve } = await import(
-      "@/lib/api/rate-limit"
-    );
+    const { resolveFunctionsBaseUrl: resolve } =
+      await import("@/lib/api/rate-limit");
 
     expect(resolve()).toBe("https://local.example.com/functions/v1");
   });
@@ -357,9 +356,8 @@ describe("URL resolution + helpers", () => {
     // Empty string is falsy — readEnv returns "" which is treated as absent
     vi.stubEnv("VITE_LOCAL_SUPABASE_URL", "");
     vi.stubEnv("VITE_SUPABASE_URL", "https://prod.example.com");
-    const { resolveFunctionsBaseUrl: resolve } = await import(
-      "@/lib/api/rate-limit"
-    );
+    const { resolveFunctionsBaseUrl: resolve } =
+      await import("@/lib/api/rate-limit");
 
     expect(resolve()).toBe("https://prod.example.com/functions/v1");
   });
@@ -371,9 +369,8 @@ describe("URL resolution + helpers", () => {
     // from throwing when the module reloads with empty env vars.
     vi.doMock("@/supabase", () => ({ supabase: {} }));
     try {
-      const { resolveFunctionsBaseUrl: resolve } = await import(
-        "@/lib/api/rate-limit"
-      );
+      const { resolveFunctionsBaseUrl: resolve } =
+        await import("@/lib/api/rate-limit");
       expect(() => resolve()).toThrow();
     } finally {
       vi.doUnmock("@/supabase");
@@ -383,9 +380,8 @@ describe("URL resolution + helpers", () => {
   it("normalizes localhost to 127.0.0.1 in LOCAL URL", async () => {
     vi.stubEnv("VITE_LOCAL_SUPABASE_URL", "http://localhost:54321");
     vi.stubEnv("VITE_SUPABASE_URL", "");
-    const { resolveFunctionsBaseUrl: resolve } = await import(
-      "@/lib/api/rate-limit"
-    );
+    const { resolveFunctionsBaseUrl: resolve } =
+      await import("@/lib/api/rate-limit");
     const url = resolve();
 
     expect(url).toContain("127.0.0.1");
