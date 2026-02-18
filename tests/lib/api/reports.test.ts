@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { AppError } from "@/errors";
+import type { ApiResponse } from "@/errors";
 import { getReportData } from "@/lib/api/reports";
 import { getSpecialtyReportConfig } from "@/reports/helpers";
 import { checkRateLimit, clearRateLimitCache } from "@/lib/api/rate-limit";
+import type { RateLimitStatus } from "@/lib/api/rate-limit";
 import type { SpecialtyReportConfig } from "@/reports/report-types";
 import type { MGFReportData } from "@/reports/report-types";
 
@@ -71,9 +74,18 @@ function makeConfig(specialtyYears: number[]): SpecialtyReportConfig {
   };
 }
 
-const RATE_LIMIT_OK = { success: true, data: { allowed: true } };
-const RATE_LIMIT_BLOCKED = { success: true, data: { allowed: false } };
-const RATE_LIMIT_NETWORK_ERROR = { success: false, error: new Error("network") };
+const RATE_LIMIT_OK: ApiResponse<RateLimitStatus> = {
+  success: true,
+  data: { allowed: true, remainingRequests: 10, resetTime: "2026-01-01T00:00:00Z" },
+};
+const RATE_LIMIT_BLOCKED: ApiResponse<RateLimitStatus> = {
+  success: true,
+  data: { allowed: false, remainingRequests: 0, resetTime: "2026-01-01T00:00:00Z" },
+};
+const RATE_LIMIT_NETWORK_ERROR: ApiResponse<RateLimitStatus> = {
+  success: false,
+  error: new AppError("network error"),
+};
 
 // ---------------------------------------------------------------------------
 // Global reset between tests
