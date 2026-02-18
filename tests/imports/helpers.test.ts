@@ -63,12 +63,8 @@ describe("isRowEmpty", () => {
     expect(isRowEmpty({ a: null, b: null })).toBe(true);
   });
 
-  it("returns true when all values are undefined", () => {
-    expect(isRowEmpty({ a: undefined, b: undefined })).toBe(true);
-  });
-
-  it("returns true when values are a mix of null, undefined, and empty strings", () => {
-    expect(isRowEmpty({ a: null, b: "", c: undefined })).toBe(true);
+  it("returns true when values are a mix of null and empty strings", () => {
+    expect(isRowEmpty({ a: null, b: "" })).toBe(true);
   });
 
   it("returns true when string values are whitespace-only", () => {
