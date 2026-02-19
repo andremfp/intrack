@@ -32,3 +32,4 @@ dist-ssr
 
 .cursor/
 dummy_consultations_*.sql
+.claude/
