@@ -68,7 +68,7 @@ describe("useCachedActiveTab", () => {
     let profile: UserData | undefined = undefined;
     const { result, rerender } = renderHook(
       (props: { profile: UserData | undefined }) => useCachedActiveTab(props.profile),
-      { initialProps: { profile } }
+      { initialProps: { profile } as { profile: UserData | undefined } }
     );
 
     // Initially no specialty year — expect base consultations tab
