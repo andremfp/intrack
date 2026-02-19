@@ -53,6 +53,7 @@ export function useUserInitialization(
           // If the auth session is missing/invalid, treat it as a logout and redirect to login
           if (userExistsResult.error.userMessage === ErrorMessages.AUTH_FAILED) {
             userCache.clearAllCache();
+            setIsLoading(false);
             navigate("/", { replace: true });
             return;
           }

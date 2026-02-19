@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -22,7 +23,7 @@ describe("ErrorBoundary", () => {
     render(
       <ErrorBoundary>
         <Bomb shouldThrow={false} />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
     expect(screen.getByText("Child content")).toBeInTheDocument();
   });
@@ -31,7 +32,7 @@ describe("ErrorBoundary", () => {
     render(
       <ErrorBoundary>
         <Bomb shouldThrow={true} />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
     expect(screen.getByText("Algo correu mal")).toBeInTheDocument();
   });
@@ -55,7 +56,7 @@ describe("ErrorBoundary", () => {
     render(
       <ErrorBoundary fallback={CustomFallback}>
         <Bomb shouldThrow={true} />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
     expect(screen.getByText("Custom: Test error")).toBeInTheDocument();

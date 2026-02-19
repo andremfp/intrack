@@ -1,3 +1,4 @@
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import type { Specialty } from "@/lib/api/specialties";
 import type { UserData } from "@/lib/api/users";
@@ -73,7 +74,7 @@ describe("ModalManager", () => {
         {...baseProps}
         showProfileModal={true}
         userSpecialty={makeSpecialty()}
-      />
+      />,
     );
     expect(screen.getByTestId("profile-modal")).toBeInTheDocument();
   });

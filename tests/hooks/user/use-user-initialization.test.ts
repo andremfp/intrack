@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { AppError, ErrorMessages } from "@/errors";
 import type { UserData } from "@/lib/api/users";
@@ -60,7 +61,12 @@ function makeSpecialty(): Specialty {
 
 /** Injected toast mock — resets automatically in beforeEach */
 function makeToastsMock() {
-  return { apiError: vi.fn(), error: vi.fn(), success: vi.fn(), warning: vi.fn() };
+  return {
+    apiError: vi.fn(),
+    error: vi.fn(),
+    success: vi.fn(),
+    warning: vi.fn(),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -79,7 +85,7 @@ describe("useUserInitialization", () => {
   it("with initialUserProfile that has specialty_id: isLoading=false, showSpecialtyModal=false, no API calls", () => {
     const profile = makeUserData("sp1");
     const { result } = renderHook(() =>
-      useUserInitialization(vi.fn(), vi.fn(), profile, toastsMock)
+      useUserInitialization(vi.fn(), vi.fn(), profile, toastsMock),
     );
 
     expect(result.current.isLoading).toBe(false);
@@ -90,7 +96,7 @@ describe("useUserInitialization", () => {
   it("with initialUserProfile that has no specialty_id: isLoading=false, showSpecialtyModal=true", () => {
     const profile = makeUserData(null);
     const { result } = renderHook(() =>
-      useUserInitialization(vi.fn(), vi.fn(), profile, toastsMock)
+      useUserInitialization(vi.fn(), vi.fn(), profile, toastsMock),
     );
 
     expect(result.current.isLoading).toBe(false);
@@ -107,7 +113,7 @@ describe("useUserInitialization", () => {
     });
 
     const { result } = renderHook(() =>
-      useUserInitialization(vi.fn(), vi.fn(), null, toastsMock)
+      useUserInitialization(vi.fn(), vi.fn(), null, toastsMock),
     );
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -118,10 +124,13 @@ describe("useUserInitialization", () => {
 
   it("checkUserExists returns non-auth API error → apiError toast called, isLoading=false", async () => {
     const apiError = new AppError("Some other error");
-    mockCheckUserExists.mockResolvedValueOnce({ success: false, error: apiError });
+    mockCheckUserExists.mockResolvedValueOnce({
+      success: false,
+      error: apiError,
+    });
 
     const { result } = renderHook(() =>
-      useUserInitialization(vi.fn(), vi.fn(), null, toastsMock)
+      useUserInitialization(vi.fn(), vi.fn(), null, toastsMock),
     );
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -142,7 +151,12 @@ describe("useUserInitialization", () => {
     const updateUserSpecialty = vi.fn();
 
     const { result } = renderHook(() =>
-      useUserInitialization(updateUserProfile, updateUserSpecialty, null, toastsMock)
+      useUserInitialization(
+        updateUserProfile,
+        updateUserSpecialty,
+        null,
+        toastsMock,
+      ),
     );
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -160,7 +174,7 @@ describe("useUserInitialization", () => {
     const updateUserProfile = vi.fn();
 
     const { result } = renderHook(() =>
-      useUserInitialization(updateUserProfile, vi.fn(), null, toastsMock)
+      useUserInitialization(updateUserProfile, vi.fn(), null, toastsMock),
     );
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -176,7 +190,7 @@ describe("useUserInitialization", () => {
     mockGetCurrentUser.mockResolvedValueOnce({ success: true, data: userData });
 
     const { result } = renderHook(() =>
-      useUserInitialization(vi.fn(), vi.fn(), null, toastsMock)
+      useUserInitialization(vi.fn(), vi.fn(), null, toastsMock),
     );
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -196,7 +210,7 @@ describe("useUserInitialization", () => {
     const updateUserSpecialty = vi.fn();
 
     const { result } = renderHook(() =>
-      useUserInitialization(vi.fn(), updateUserSpecialty, null, toastsMock)
+      useUserInitialization(vi.fn(), updateUserSpecialty, null, toastsMock),
     );
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));

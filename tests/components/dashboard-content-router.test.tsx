@@ -1,3 +1,4 @@
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { TAB_CONSTANTS } from "@/constants";
 import type { MetricsSubTab } from "@/utils/tab-parsing";
@@ -44,7 +45,7 @@ describe("DashboardContentRouter", () => {
       <DashboardContentRouter
         {...baseProps}
         mainTab={TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS}
-      />
+      />,
     );
     expect(screen.getByTestId("consultations-dashboard")).toBeInTheDocument();
   });
@@ -55,10 +56,10 @@ describe("DashboardContentRouter", () => {
         {...baseProps}
         mainTab={TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS}
         userId=""
-      />
+      />,
     );
     expect(
-      screen.queryByTestId("consultations-dashboard")
+      screen.queryByTestId("consultations-dashboard"),
     ).not.toBeInTheDocument();
   });
 
@@ -68,7 +69,7 @@ describe("DashboardContentRouter", () => {
         {...baseProps}
         mainTab={TAB_CONSTANTS.MAIN_TABS.METRICS}
         metricsSubTab={TAB_CONSTANTS.METRICS_SUB_TABS.GENERAL as MetricsSubTab}
-      />
+      />,
     );
     expect(screen.getByTestId("metrics-dashboard")).toBeInTheDocument();
   });
@@ -79,7 +80,7 @@ describe("DashboardContentRouter", () => {
         {...baseProps}
         mainTab={TAB_CONSTANTS.MAIN_TABS.METRICS}
         metricsSubTab={null}
-      />
+      />,
     );
     expect(screen.queryByTestId("metrics-dashboard")).not.toBeInTheDocument();
   });
@@ -93,7 +94,7 @@ describe("DashboardContentRouter", () => {
         userSpecialty={specialty}
         activeReportKey={"year1" as MGFReportKey}
         activeReportSpecialtyCode="mgf"
-      />
+      />,
     );
     expect(screen.getByTestId("reports-dashboard")).toBeInTheDocument();
   });
@@ -107,7 +108,7 @@ describe("DashboardContentRouter", () => {
         userSpecialty={specialty}
         activeReportKey={"year1" as MGFReportKey}
         activeReportSpecialtyCode="other"
-      />
+      />,
     );
     expect(screen.queryByTestId("reports-dashboard")).not.toBeInTheDocument();
   });
