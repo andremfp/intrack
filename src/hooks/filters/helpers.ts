@@ -56,15 +56,17 @@ export function keyValueStateReducer<T extends Record<string, unknown>>(
 }
 
 /**
- * Helper function to load persisted state from localStorage
- * Returns the loaded value merged with defaults, or just defaults if nothing is cached
+ * Helper function to load persisted state from a storage provider.
+ * Returns the loaded value merged with defaults, or just defaults if nothing is cached.
+ * Accepts an optional storage param (defaults to localStorage) to allow DI in tests.
  */
 export function loadPersistedState<T extends Record<string, unknown>>(
   key: string,
-  defaultValue: T
+  defaultValue: T,
+  storage: Pick<Storage, "getItem"> = localStorage
 ): T {
   try {
-    const cached = localStorage.getItem(key);
+    const cached = storage.getItem(key);
     if (cached) {
       const parsed = JSON.parse(cached);
       // Merge with default to ensure all properties exist

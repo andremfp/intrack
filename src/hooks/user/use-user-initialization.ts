@@ -18,7 +18,9 @@ import { userCache } from "@/utils/user-cache";
 export function useUserInitialization(
   updateUserProfile: (profile: UserData) => void,
   updateUserSpecialty: (specialty: Specialty) => void,
-  initialUserProfile: UserData | null
+  initialUserProfile: UserData | null,
+  // Optional toast injection — defaults to imported toasts, override in tests
+  _toasts: typeof toasts = toasts
 ): UseUserInitializationResult {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(!initialUserProfile);
@@ -57,7 +59,7 @@ export function useUserInitialization(
 
           setIsLoading(false);
           hasInitialized.current = true;
-          toasts.apiError(userExistsResult.error, "Erro");
+          _toasts.apiError(userExistsResult.error, "Erro");
           return;
         }
 
@@ -71,14 +73,14 @@ export function useUserInitialization(
           if (!upsertResult.success) {
             setIsLoading(false);
             hasInitialized.current = true;
-            toasts.apiError(upsertResult.error, "Erro ao criar perfil");
+            _toasts.apiError(upsertResult.error, "Erro ao criar perfil");
             return;
           }
 
           if (!upsertResult.data) {
             setIsLoading(false);
             hasInitialized.current = true;
-            toasts.error(
+            _toasts.error(
               "Erro ao criar perfil",
               "Não foi possível obter os dados do utilizador após a criação."
             );
@@ -94,14 +96,14 @@ export function useUserInitialization(
           if (!userResult.success) {
             setIsLoading(false);
             hasInitialized.current = true;
-            toasts.apiError(userResult.error, "Erro ao carregar perfil");
+            _toasts.apiError(userResult.error, "Erro ao carregar perfil");
             return;
           }
 
           if (!userResult.data) {
             setIsLoading(false);
             hasInitialized.current = true;
-            toasts.error(
+            _toasts.error(
               "Erro ao carregar perfil",
               "Não foi possível carregar o perfil do utilizador."
             );
@@ -127,7 +129,7 @@ export function useUserInitialization(
           if (specialtyResult.success) {
             updateUserSpecialty(specialtyResult.data);
           } else {
-            toasts.apiError(
+            _toasts.apiError(
               specialtyResult.error,
               "Erro ao carregar especialidade"
             );
@@ -140,7 +142,7 @@ export function useUserInitialization(
         console.error("Unexpected error during user initialization:", error);
         setIsLoading(false);
         hasInitialized.current = true;
-        toasts.error(
+        _toasts.error(
           "Erro inesperado",
           "Ocorreu um erro inesperado ao inicializar o utilizador."
         );
