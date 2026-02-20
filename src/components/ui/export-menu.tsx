@@ -64,6 +64,7 @@ export function ExportMenu({
           size="sm"
           disabled={disabled || isLoading || isExporting}
           className={`h-8 ${className ?? ""}`}
+          data-testid="export-menu-trigger"
         >
           {isExporting ? (
             <>
@@ -85,6 +86,7 @@ export function ExportMenu({
               type="button"
               onClick={handleCsv}
               disabled={disabled || isExportingCsv || isLoading}
+              data-testid="export-csv-btn"
               className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isExportingCsv ? (
