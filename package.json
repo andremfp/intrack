@@ -11,6 +11,7 @@
     "test:rate-limit": "deno test --lock=deno.lock supabase/tests/rate-limit-test.ts supabase/tests/rate-limit-handler-test.ts",
     "test:unit": "vitest run --config vitest.config.ts",
     "test": "npm run test:rate-limit && npm run test:unit",
+    "test:e2e": "playwright test",
     "sb:local:generate:schema": "npx supabase gen types typescript --local > src/schema.ts",
     "sb:local:start": "npx supabase start",
     "sb:local:db:seed:users": "node supabase/seed-users.js",
@@ -72,6 +73,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/vite": "^4.1.14",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

@@ -638,6 +638,7 @@ export function ConsultationModal({
                 form="consultation-form"
                 disabled={isSaving}
                 className="w-full sm:w-auto min-w-[140px] shadow-sm"
+                data-testid="submit-consultation-btn"
               >
                 {isSaving ? (
                   <>
