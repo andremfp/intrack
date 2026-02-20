@@ -13,29 +13,31 @@ export function usePersistedReducer<
   key: string,
   reducer: (state: T, action: A) => T,
   defaultState: T,
-  resetAction: (payload: T) => A
+  resetAction: (payload: T) => A,
+  // Optional storage injection — defaults to localStorage, override in tests
+  storage: Pick<Storage, "getItem" | "setItem"> = localStorage
 ): [T, React.Dispatch<A>] {
-  // Load initial state from localStorage
+  // Load initial state from storage
   const [state, dispatch] = useReducer(
     reducer,
     defaultState,
     (defaultValue) => {
-      const loaded = loadPersistedState(key, defaultValue);
+      const loaded = loadPersistedState(key, defaultValue, storage);
       return loaded;
     }
   );
 
   // Update state when key changes (e.g., tab switch)
   useEffect(() => {
-    const loadedState = loadPersistedState(key, defaultState);
+    const loadedState = loadPersistedState(key, defaultState, storage);
     dispatch(resetAction(loadedState));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, defaultState]);
 
-  // Persist to localStorage whenever state changes
+  // Persist to storage whenever state changes
   useEffect(() => {
     try {
-      localStorage.setItem(key, JSON.stringify(state));
+      storage.setItem(key, JSON.stringify(state));
     } catch (error) {
       console.error(`Error saving state to cache for key "${key}":`, error);
     }

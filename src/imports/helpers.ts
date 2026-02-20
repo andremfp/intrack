@@ -80,7 +80,7 @@ export function excelSerialToDate(serial: number): Date {
 function evaluateRule(
   rule: FieldRule | undefined,
   ctx: FieldRuleContext,
-  defaultValue: boolean
+  defaultValue: boolean,
 ): boolean {
   if (!rule) return defaultValue;
   if (rule === "always") return true;
@@ -93,7 +93,7 @@ function evaluateRule(
 }
 
 function getRuleContext(
-  consultation: Partial<ConsultationInsert>
+  consultation: Partial<ConsultationInsert>,
 ): FieldRuleContext {
   const details =
     consultation.details && typeof consultation.details === "object"
@@ -106,10 +106,10 @@ function getRuleContext(
     typeof ownListValue === "boolean"
       ? ownListValue
       : typeof ownListValue === "string" && ownListValue === "true"
-      ? true
-      : typeof ownListValue === "string" && ownListValue === "false"
-      ? false
-      : undefined;
+        ? true
+        : typeof ownListValue === "string" && ownListValue === "false"
+          ? false
+          : undefined;
 
   return {
     location:
@@ -129,7 +129,7 @@ function isFieldVisible(field: SpecialtyField, ctx: FieldRuleContext): boolean {
 
 function isFieldRequired(
   field: SpecialtyField,
-  ctx: FieldRuleContext
+  ctx: FieldRuleContext,
 ): boolean {
   return evaluateRule(field.requiredWhen, ctx, false);
 }
@@ -141,7 +141,7 @@ function isFieldRequired(
 export function validateSelectValue(
   field: SpecialtyField,
   value: unknown,
-  rowIndex: number
+  rowIndex: number,
 ): ValidationError | null {
   if (!field.options || value === null || value === undefined || value === "") {
     return null;
@@ -166,7 +166,7 @@ export function validateSelectValue(
  */
 function getConsultationValue(
   consultation: Partial<ConsultationInsert>,
-  fieldKey: string
+  fieldKey: string,
 ): unknown {
   // Check top-level fields first
   if (
@@ -196,7 +196,7 @@ function getConsultationValue(
 /**
  * Checks if a row is empty (all values are null, empty, or whitespace)
  */
-function isRowEmpty(row: ImportRow): boolean {
+export function isRowEmpty(row: ImportRow): boolean {
   return Object.values(row).every((value) => {
     if (value === null || value === undefined) return true;
     if (typeof value === "string") return value.trim() === "";
@@ -226,7 +226,7 @@ function isRowEmpty(row: ImportRow): boolean {
 function mapFieldValue(
   fieldKey: string,
   rawValue: unknown,
-  specialtyCode: string
+  specialtyCode: string,
 ): unknown {
   const field = getFieldByKey(fieldKey);
 
@@ -335,36 +335,36 @@ function mapFieldValue(
 
       // Try exact match on label (case-insensitive)
       const exactMatch = typeField.options.find(
-        (opt) => opt.label?.toLowerCase() === lowerStr
+        (opt) => opt.label?.toLowerCase() === lowerStr,
       );
       if (exactMatch?.value) return exactMatch.value;
 
       // Try value match (case-insensitive)
       const valueMatch = typeField.options.find(
-        (opt) => opt.value?.toLowerCase() === lowerStr
+        (opt) => opt.value?.toLowerCase() === lowerStr,
       );
       if (valueMatch?.value) return valueMatch.value;
 
       // Try diacritic-insensitive match on label/value
       const normalizedLabelMatch = typeField.options.find(
-        (opt) => opt.label && normalize(opt.label) === normalizedStr
+        (opt) => opt.label && normalize(opt.label) === normalizedStr,
       );
       if (normalizedLabelMatch?.value) return normalizedLabelMatch.value;
 
       const normalizedValueMatch = typeField.options.find(
-        (opt) => opt.value && normalize(opt.value) === normalizedStr
+        (opt) => opt.value && normalize(opt.value) === normalizedStr,
       );
       if (normalizedValueMatch?.value) return normalizedValueMatch.value;
 
       // Try partial match on label
       const partialMatch = typeField.options.find((opt) =>
-        opt.label?.toLowerCase().includes(lowerStr)
+        opt.label?.toLowerCase().includes(lowerStr),
       );
       if (partialMatch?.value) return partialMatch.value;
 
       // Try partial match diacritic-insensitive
       const normalizedPartialMatch = typeField.options.find(
-        (opt) => opt.label && normalize(opt.label).includes(normalizedStr)
+        (opt) => opt.label && normalize(opt.label).includes(normalizedStr),
       );
       if (normalizedPartialMatch?.value) return normalizedPartialMatch.value;
 
@@ -390,7 +390,7 @@ export function mapImportRowToConsultation(
   userId: string,
   specialtyId: string,
   specialtyCode: string,
-  defaultSpecialtyYear: number
+  defaultSpecialtyYear: number,
 ): Partial<ConsultationInsert> {
   const consultation: Partial<ConsultationInsert> = {
     user_id: userId,
@@ -494,7 +494,7 @@ export function mapImportRowToConsultation(
 function validateVisibilityConstraints(
   consultation: Partial<ConsultationInsert>,
   rowIndex: number,
-  specialtyFields: SpecialtyField[]
+  specialtyFields: SpecialtyField[],
 ): ValidationError[] {
   const errors: ValidationError[] = [];
   const allFields = [...COMMON_CONSULTATION_FIELDS, ...specialtyFields];
@@ -532,7 +532,7 @@ function validateVisibilityConstraints(
 /**
  * Parses a CSV line handling quoted values
  */
-function parseCsvLine(line: string): string[] {
+export function parseCsvLine(line: string): string[] {
   const result: string[] = [];
   let current = "";
   let inQuotes = false;
@@ -606,8 +606,8 @@ export async function parseCsvFile(file: File): Promise<{
           new Error(
             `Erro ao processar CSV: ${
               error instanceof Error ? error.message : "Erro desconhecido"
-            }`
-          )
+            }`,
+          ),
         );
       }
     };
@@ -666,7 +666,7 @@ export async function parseXlsxFile(file: File): Promise<{
         }
 
         const rawHeaders = (jsonData[0] as unknown[]).map((h) =>
-          String(h || "").trim()
+          String(h || "").trim(),
         ) as string[];
         // Filter out empty headers and create a map of header to original index
         const headerIndexMap = new Map<string, number>();
@@ -701,8 +701,8 @@ export async function parseXlsxFile(file: File): Promise<{
           new Error(
             `Erro ao processar ficheiro: ${
               error instanceof Error ? error.message : "Erro desconhecido"
-            }`
-          )
+            }`,
+          ),
         );
       }
     };
@@ -724,7 +724,7 @@ export async function parseXlsxFile(file: File): Promise<{
 function validateRequiredFields(
   consultation: Partial<ConsultationInsert>,
   rowIndex: number,
-  specialtyFields: SpecialtyField[]
+  specialtyFields: SpecialtyField[],
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 
@@ -765,7 +765,7 @@ function validateRequiredFields(
  */
 function validateNumericConstraints(
   consultation: Partial<ConsultationInsert>,
-  rowIndex: number
+  rowIndex: number,
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 
@@ -821,7 +821,7 @@ function validateNumericConstraints(
  */
 function validateDate(
   consultation: Partial<ConsultationInsert>,
-  rowIndex: number
+  rowIndex: number,
 ): ValidationError[] {
   if (!consultation.date) return [];
 
@@ -851,7 +851,7 @@ function validateSelectFields(
   rowIndex: number,
   specialtyFields: SpecialtyField[],
   rawRow?: ImportRow,
-  headers?: string[]
+  headers?: string[],
 ): ValidationError[] {
   const errors: ValidationError[] = [];
   const allFields = [...COMMON_CONSULTATION_FIELDS, ...specialtyFields];
@@ -896,7 +896,7 @@ function validateSelectFields(
     const validValues = new Set(
       field.options
         .map((opt) => opt.value)
-        .filter((val): val is string => val !== undefined)
+        .filter((val): val is string => val !== undefined),
     );
     if (typeof value === "string" && !validValues.has(value)) {
       const validOptions = field.options
@@ -926,7 +926,7 @@ function validateCodeSearchFields(
   rowIndex: number,
   specialtyFields: SpecialtyField[],
   rawRow?: ImportRow,
-  headers?: string[]
+  headers?: string[],
 ): ValidationError[] {
   const errors: ValidationError[] = [];
   const allFields = [...COMMON_CONSULTATION_FIELDS, ...specialtyFields];
@@ -982,7 +982,7 @@ function validateCodeSearchFields(
 function validateTextFields(
   consultation: Partial<ConsultationInsert>,
   rowIndex: number,
-  specialtyFields: SpecialtyField[]
+  specialtyFields: SpecialtyField[],
 ): ValidationError[] {
   const errors: ValidationError[] = [];
   const allFields = [...COMMON_CONSULTATION_FIELDS, ...specialtyFields];
@@ -1014,7 +1014,7 @@ function validateTextFields(
 function validateTextListFields(
   consultation: Partial<ConsultationInsert>,
   rowIndex: number,
-  specialtyFields: SpecialtyField[]
+  specialtyFields: SpecialtyField[],
 ): ValidationError[] {
   const errors: ValidationError[] = [];
   const allFields = [...COMMON_CONSULTATION_FIELDS, ...specialtyFields];
@@ -1055,7 +1055,7 @@ function validateBooleanFields(
   rowIndex: number,
   specialtyFields: SpecialtyField[],
   rawRow?: ImportRow,
-  headers?: string[]
+  headers?: string[],
 ): ValidationError[] {
   const errors: ValidationError[] = [];
   const allFields = [...COMMON_CONSULTATION_FIELDS, ...specialtyFields];
@@ -1111,16 +1111,16 @@ export function validateImportRow(
   rowIndex: number,
   specialtyFields: SpecialtyField[],
   rawRow?: ImportRow,
-  headers?: string[]
+  headers?: string[],
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 
   // Run all validation checks
   errors.push(
-    ...validateVisibilityConstraints(consultation, rowIndex, specialtyFields)
+    ...validateVisibilityConstraints(consultation, rowIndex, specialtyFields),
   );
   errors.push(
-    ...validateRequiredFields(consultation, rowIndex, specialtyFields)
+    ...validateRequiredFields(consultation, rowIndex, specialtyFields),
   );
   errors.push(...validateNumericConstraints(consultation, rowIndex));
   errors.push(...validateDate(consultation, rowIndex));
@@ -1130,8 +1130,8 @@ export function validateImportRow(
       rowIndex,
       specialtyFields,
       rawRow,
-      headers
-    )
+      headers,
+    ),
   );
   errors.push(
     ...validateCodeSearchFields(
@@ -1139,8 +1139,8 @@ export function validateImportRow(
       rowIndex,
       specialtyFields,
       rawRow,
-      headers
-    )
+      headers,
+    ),
   );
   errors.push(
     ...validateBooleanFields(
@@ -1148,12 +1148,12 @@ export function validateImportRow(
       rowIndex,
       specialtyFields,
       rawRow,
-      headers
-    )
+      headers,
+    ),
   );
   errors.push(...validateTextFields(consultation, rowIndex, specialtyFields));
   errors.push(
-    ...validateTextListFields(consultation, rowIndex, specialtyFields)
+    ...validateTextListFields(consultation, rowIndex, specialtyFields),
   );
 
   return errors;
@@ -1173,7 +1173,7 @@ export function validateImportData(
   userId: string,
   specialtyId: string,
   specialtyCode: string,
-  defaultSpecialtyYear: number
+  defaultSpecialtyYear: number,
 ): ImportPreviewData {
   const specialtyFields = specialtyCode === "mgf" ? MGF_FIELDS : [];
   const consultations: ImportPreviewData["consultations"] = [];
@@ -1189,7 +1189,7 @@ export function validateImportData(
       userId,
       specialtyId,
       specialtyCode,
-      defaultSpecialtyYear
+      defaultSpecialtyYear,
     );
 
     const errors = validateImportRow(
@@ -1197,7 +1197,7 @@ export function validateImportData(
       rowIndex,
       specialtyFields,
       row,
-      headers
+      headers,
     );
 
     consultations.push({

@@ -32,3 +32,8 @@ dist-ssr
 
 .cursor/
 dummy_consultations_*.sql
+.claude/
+
+# Playwright
+playwright-report/
+test-results/

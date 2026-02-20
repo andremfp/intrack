@@ -15,7 +15,7 @@ interface TableToolbarProps {
   hasActiveFilters?: boolean;
   onAddConsultation?: () => void;
   onBulkDelete?: (
-    ids: string[]
+    ids: string[],
   ) => Promise<{ deletedIds: string[]; failedIds: string[] }>;
   onToggleDeleteMode?: () => void;
   onHandleBulkDelete?: () => void;
@@ -63,6 +63,7 @@ export function TableToolbar({
             onClick={onAddConsultation}
             disabled={isLoading}
             className="h-8 flex-shrink-0"
+            data-testid="nova-consulta-btn"
           >
             <IconPlus className="h-4 w-4" />
             <span className="hidden lg:inline">Nova Consulta</span>

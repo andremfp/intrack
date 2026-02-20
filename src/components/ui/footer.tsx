@@ -42,7 +42,7 @@ export function Footer() {
               </Button>
             </div>
             <span className="text-xs font-normal text-[color:var(--muted-foreground)]">
-              Need help?
+              Precisas de ajuda?
             </span>
             <a
               href="mailto:contact@intrack.pt"

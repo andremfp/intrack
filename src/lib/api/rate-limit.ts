@@ -61,7 +61,7 @@ function normalizeLocalUrl(value: string): string {
   return value;
 }
 
-function resolveFunctionsBaseUrl(): string {
+export function resolveFunctionsBaseUrl(): string {
   const localUrl = readEnv("VITE_LOCAL_SUPABASE_URL");
   const prodUrl = readEnv("VITE_SUPABASE_URL");
 
@@ -122,7 +122,7 @@ const rateLimitCache = new Map<
   { status: RateLimitStatus; fetchedAt: number }
 >();
 
-function getCachedStatus(
+export function getCachedStatus(
   operationType: RateLimitOperation
 ): RateLimitStatus | null {
   const cached = rateLimitCache.get(operationType);
