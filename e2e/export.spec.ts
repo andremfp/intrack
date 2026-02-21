@@ -2,8 +2,13 @@ import { test, expect } from "@playwright/test";
 
 test.describe("export", () => {
   test.beforeEach(async ({ page }) => {
-    // Log in before each test
+    // Surface any uncaught JS errors (e.g. failed chunk loads) in test output.
+    page.on("pageerror", (err) => console.error("[pageerror]", err.message));
+
+    // Log in before each test. Wait for #email so the lazy login chunk is
+    // fully rendered before we start interacting with the form.
     await page.goto("/login");
+    await page.locator("#email").waitFor();
     await page.locator("#email").fill("test@example.com");
     await page.locator("#password").fill("password123");
     await page.getByRole("button", { name: "Login", exact: true }).click();

@@ -5,6 +5,17 @@ export default defineConfig({
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: 'http://localhost:4173',
+    // Capture a full trace on the first retry of any failing test.
+    // Open with: npx playwright show-report
+    trace: 'on-first-retry',
+    // Screenshot on failure for quick visual inspection.
+    screenshot: 'only-on-failure',
+  },
+  // Lazy-loaded route chunks add an async gap between page.goto() returning and
+  // the actual component rendering. Raise expect.timeout from the 5 s default so
+  // toHaveURL / toBeVisible assertions don't expire before the chunk arrives.
+  expect: {
+    timeout: 15_000,
   },
   projects: [
     {
