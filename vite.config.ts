@@ -5,31 +5,6 @@ import tailwindcss from "@tailwindcss/vite";
 import { devtools } from "@tanstack/devtools-vite";
 import packageJson from "./package.json";
 
-// Groups vendor libraries into stable, named chunks so browsers can cache them
-// independently of frequently-changing app code. Only applied in production.
-function manualChunks(id: string): string | undefined {
-  if (!id.includes("node_modules")) return undefined;
-
-  if (/node_modules\/(react|react-dom|react-router-dom)\//.test(id)) {
-    return "vendor-react";
-  }
-  if (/node_modules\/@tanstack\/(react-query|react-table)\//.test(id)) {
-    return "vendor-query";
-  }
-  if (/node_modules\/recharts\//.test(id)) {
-    return "vendor-charts";
-  }
-  if (/node_modules\/@tabler\/icons-react\//.test(id)) {
-    return "vendor-icons";
-  }
-  if (/node_modules\/@radix-ui\//.test(id)) {
-    return "vendor-radix";
-  }
-  if (/node_modules\/(motion|cobe|cmdk|vaul|sonner|next-themes)\//.test(id)) {
-    return "vendor-ui";
-  }
-}
-
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss(), devtools()],
@@ -43,11 +18,12 @@ export default defineConfig(({ mode }) => ({
   },
   ...(mode === "production" && {
     build: {
-      rollupOptions: {
-        output: {
-          manualChunks,
-        },
-      },
+      // Let Rollup handle chunk splitting automatically. Manual chunks break
+      // the initialization order guarantee: e.g. @radix-ui runs module-level
+      // code that accesses React exports, so forcing them into separate chunks
+      // causes a TDZ ReferenceError ("Cannot access 'X' before initialization")
+      // at runtime when the chunks load in the wrong order.
+      chunkSizeWarningLimit: 600,
     },
   }),
 }));
