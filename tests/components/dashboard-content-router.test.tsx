@@ -1,5 +1,6 @@
+import { Suspense } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { TAB_CONSTANTS } from "@/constants";
 import type { MetricsSubTab } from "@/utils/tab-parsing";
 import type { MGFReportKey } from "@/reports/mgf/mgf-reports";
@@ -40,76 +41,99 @@ const baseProps = {
 };
 
 describe("DashboardContentRouter", () => {
-  it("mainTab=Consultas + userId → ConsultationsDashboard rendered", () => {
+  it("mainTab=Consultas + userId → ConsultationsDashboard rendered", async () => {
     render(
-      <DashboardContentRouter
-        {...baseProps}
-        mainTab={TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS}
-      />,
+      <Suspense fallback={null}>
+        <DashboardContentRouter
+          {...baseProps}
+          mainTab={TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS}
+        />
+      </Suspense>,
     );
-    expect(screen.getByTestId("consultations-dashboard")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("consultations-dashboard"),
+      ).toBeInTheDocument(),
+    );
   });
 
   it("mainTab=Consultas without userId → ConsultationsDashboard absent", () => {
     render(
-      <DashboardContentRouter
-        {...baseProps}
-        mainTab={TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS}
-        userId=""
-      />,
+      <Suspense fallback={null}>
+        <DashboardContentRouter
+          {...baseProps}
+          mainTab={TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS}
+          userId=""
+        />
+      </Suspense>,
     );
+    // Condition is false — lazy component never mounts, no suspension occurs.
     expect(
       screen.queryByTestId("consultations-dashboard"),
     ).not.toBeInTheDocument();
   });
 
-  it("mainTab=Métricas + userId + metricsSubTab → MetricsDashboard rendered", () => {
+  it("mainTab=Métricas + userId + metricsSubTab → MetricsDashboard rendered", async () => {
     render(
-      <DashboardContentRouter
-        {...baseProps}
-        mainTab={TAB_CONSTANTS.MAIN_TABS.METRICS}
-        metricsSubTab={TAB_CONSTANTS.METRICS_SUB_TABS.GENERAL as MetricsSubTab}
-      />,
+      <Suspense fallback={null}>
+        <DashboardContentRouter
+          {...baseProps}
+          mainTab={TAB_CONSTANTS.MAIN_TABS.METRICS}
+          metricsSubTab={TAB_CONSTANTS.METRICS_SUB_TABS.GENERAL as MetricsSubTab}
+        />
+      </Suspense>,
     );
-    expect(screen.getByTestId("metrics-dashboard")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByTestId("metrics-dashboard")).toBeInTheDocument(),
+    );
   });
 
   it("mainTab=Métricas without metricsSubTab → MetricsDashboard absent", () => {
     render(
-      <DashboardContentRouter
-        {...baseProps}
-        mainTab={TAB_CONSTANTS.MAIN_TABS.METRICS}
-        metricsSubTab={null}
-      />,
+      <Suspense fallback={null}>
+        <DashboardContentRouter
+          {...baseProps}
+          mainTab={TAB_CONSTANTS.MAIN_TABS.METRICS}
+          metricsSubTab={null}
+        />
+      </Suspense>,
     );
+    // Condition is false — lazy component never mounts, no suspension occurs.
     expect(screen.queryByTestId("metrics-dashboard")).not.toBeInTheDocument();
   });
 
-  it("mainTab=Relatórios + full matching props → ReportsDashboard rendered", () => {
+  it("mainTab=Relatórios + full matching props → ReportsDashboard rendered", async () => {
     const specialty = makeSpecialty("mgf");
     render(
-      <DashboardContentRouter
-        {...baseProps}
-        mainTab={TAB_CONSTANTS.MAIN_TABS.REPORTS}
-        userSpecialty={specialty}
-        activeReportKey={"year1" as MGFReportKey}
-        activeReportSpecialtyCode="mgf"
-      />,
+      <Suspense fallback={null}>
+        <DashboardContentRouter
+          {...baseProps}
+          mainTab={TAB_CONSTANTS.MAIN_TABS.REPORTS}
+          userSpecialty={specialty}
+          activeReportKey={"year1" as MGFReportKey}
+          activeReportSpecialtyCode="mgf"
+        />
+      </Suspense>,
     );
-    expect(screen.getByTestId("reports-dashboard")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByTestId("reports-dashboard")).toBeInTheDocument(),
+    );
   });
 
   it("mainTab=Relatórios with specialty code mismatch → ReportsDashboard absent", () => {
     const specialty = makeSpecialty("mgf");
     render(
-      <DashboardContentRouter
-        {...baseProps}
-        mainTab={TAB_CONSTANTS.MAIN_TABS.REPORTS}
-        userSpecialty={specialty}
-        activeReportKey={"year1" as MGFReportKey}
-        activeReportSpecialtyCode="other"
-      />,
+      <Suspense fallback={null}>
+        <DashboardContentRouter
+          {...baseProps}
+          mainTab={TAB_CONSTANTS.MAIN_TABS.REPORTS}
+          userSpecialty={specialty}
+          activeReportKey={"year1" as MGFReportKey}
+          activeReportSpecialtyCode="other"
+        />
+      </Suspense>,
     );
+    // Condition is false — lazy component never mounts, no suspension occurs.
     expect(screen.queryByTestId("reports-dashboard")).not.toBeInTheDocument();
   });
 });
