@@ -447,6 +447,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
       ...MGF_INTERNSHIP_OPTIONS,
       { value: "urgencia", label: "Serviço de Urgência" },
       { value: "ivg", label: "Consulta de IVG" },
+      { value: "cir pediatrica", label: "Cirurgia Pediátrica" },
     ],
   },
   {
