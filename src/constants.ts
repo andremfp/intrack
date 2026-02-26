@@ -186,6 +186,7 @@ export const MGF_INTERNSHIP_OPTIONS = [
   { value: "cir plastica", label: "Cirurgia Plástica" },
   { value: "med interna", label: "Medicina Interna" },
   { value: "mfr", label: "Medicina Física e Reabilitação" },
+  { value: "oftalmo", label: "Oftalmologia" },
 ];
 
 // MGF (Medicina Geral e Familiar) specialty fields
