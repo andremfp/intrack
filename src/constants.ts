@@ -472,6 +472,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
     options: [
       { value: "coc", label: "COC" },
       { value: "cop", label: "COP" },
+      { value: "diu", label: "DIU" },
       { value: "siu", label: "SIU" },
       { value: "preserv", label: "Preservativo" },
       { value: "implante", label: "Implante" },
@@ -492,6 +493,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
     options: [
       { value: "coc", label: "COC" },
       { value: "cop", label: "COP" },
+      { value: "diu", label: "DIU" },
       { value: "siu", label: "SIU" },
       { value: "preserv", label: "Preservativo" },
       { value: "implant", label: "Implante" },
