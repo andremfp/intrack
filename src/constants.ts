@@ -449,6 +449,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
       { value: "urgencia", label: "Serviço de Urgência" },
       { value: "ivg", label: "Consulta de IVG" },
       { value: "cir pediatrica", label: "Cirurgia Pediátrica" },
+      { value: "cir maxilo-facial", label: "Cirurgia Maxilo-Facial" },
     ],
   },
   {
