@@ -184,6 +184,7 @@ export const MGF_INTERNSHIP_OPTIONS = [
   { value: "cir toracica", label: "Cirurgia Toracica" },
   { value: "cir geral", label: "Cirurgia Geral" },
   { value: "cir plastica", label: "Cirurgia Plástica" },
+  { value: "cir maxilo-facial", label: "Cirurgia Maxilo-Facial" },
   { value: "med interna", label: "Medicina Interna" },
   { value: "mfr", label: "Medicina Física e Reabilitação" },
   { value: "oftalmo", label: "Oftalmologia" },
@@ -472,6 +473,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
     options: [
       { value: "coc", label: "COC" },
       { value: "cop", label: "COP" },
+      { value: "diu", label: "DIU" },
       { value: "siu", label: "SIU" },
       { value: "preserv", label: "Preservativo" },
       { value: "implante", label: "Implante" },
@@ -492,6 +494,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
     options: [
       { value: "coc", label: "COC" },
       { value: "cop", label: "COP" },
+      { value: "diu", label: "DIU" },
       { value: "siu", label: "SIU" },
       { value: "preserv", label: "Preservativo" },
       { value: "implant", label: "Implante" },
