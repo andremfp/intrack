@@ -491,14 +491,14 @@ describe("calculateMetrics — code arrays (diagnosis, problems, new_diagnosis)"
 });
 
 // ---------------------------------------------------------------------------
-// calculateMetrics — JSONB details: referral with motives
+// calculateMetrics — JSONB details: referral with motives (ReferrenceEntry[] format)
 // ---------------------------------------------------------------------------
-describe("calculateMetrics — byReferral (details.referrence + referrence_motive)", () => {
-  it("counts each referral type from the referrence array", () => {
+describe("calculateMetrics — byReferral (details.referrence)", () => {
+  it("counts each referrence type from the referrence array", () => {
     const m = calculateMetrics([
-      makeMGFConsultation({ details: { referrence: ["urgencia"] } }),
-      makeMGFConsultation({ details: { referrence: ["urgencia"] } }),
-      makeMGFConsultation({ details: { referrence: ["ivg"] } }),
+      makeMGFConsultation({ details: { referrence: [{ urgencia: [] }] } }),
+      makeMGFConsultation({ details: { referrence: [{ urgencia: [] }] } }),
+      makeMGFConsultation({ details: { referrence: [{ ivg: [] }] } }),
     ]);
     const urgencia = m.byReferral.find((r) => r.referral === "urgencia");
     const ivg = m.byReferral.find((r) => r.referral === "ivg");
@@ -508,30 +508,43 @@ describe("calculateMetrics — byReferral (details.referrence + referrence_motiv
 
   it("includes a label from the referrence field options", () => {
     const m = calculateMetrics([
-      makeMGFConsultation({ details: { referrence: ["urgencia"] } }),
+      makeMGFConsultation({ details: { referrence: [{ urgencia: [] }] } }),
     ]);
     const entry = m.byReferral.find((r) => r.referral === "urgencia");
     expect(entry?.label).toBe("Serviço de Urgência");
   });
 
-  it("tracks motives per referral type", () => {
+  it("tracks motives from paired entry value per referral type", () => {
+    // Each { specialty: string[] } entry pairs a specialty with its ICPC-2 motives.
     const m = calculateMetrics([
       makeMGFConsultation({
-        details: { referrence: ["urgencia"], referrence_motive: ["A01", "B02"] },
+        details: { referrence: [{ urgencia: ["A01"] }, { ivg: ["B02"] }] },
       }),
     ]);
-    const entry = m.byReferral.find((r) => r.referral === "urgencia");
-    expect(entry?.motives).toContainEqual({ code: "A01", count: 1 });
-    expect(entry?.motives).toContainEqual({ code: "B02", count: 1 });
+    const urgencia = m.byReferral.find((r) => r.referral === "urgencia");
+    const ivg = m.byReferral.find((r) => r.referral === "ivg");
+    expect(urgencia?.motives).toContainEqual({ code: "A01", count: 1 });
+    expect(ivg?.motives).toContainEqual({ code: "B02", count: 1 });
+  });
+
+  it("tracks multiple motives per referral entry", () => {
+    const m = calculateMetrics([
+      makeMGFConsultation({
+        details: { referrence: [{ urgencia: ["A01", "B02"] }] },
+      }),
+    ]);
+    const urgencia = m.byReferral.find((r) => r.referral === "urgencia");
+    expect(urgencia?.motives).toContainEqual({ code: "A01", count: 1 });
+    expect(urgencia?.motives).toContainEqual({ code: "B02", count: 1 });
   });
 
   it("aggregates motives across multiple consultations with same referral", () => {
     const m = calculateMetrics([
       makeMGFConsultation({
-        details: { referrence: ["urgencia"], referrence_motive: ["A01"] },
+        details: { referrence: [{ urgencia: ["A01"] }] },
       }),
       makeMGFConsultation({
-        details: { referrence: ["urgencia"], referrence_motive: ["A01"] },
+        details: { referrence: [{ urgencia: ["A01"] }] },
       }),
     ]);
     const entry = m.byReferral.find((r) => r.referral === "urgencia");
@@ -540,27 +553,27 @@ describe("calculateMetrics — byReferral (details.referrence + referrence_motiv
 
   it("sorts byReferral descending by count", () => {
     const m = calculateMetrics([
-      makeMGFConsultation({ details: { referrence: ["urgencia"] } }),
-      makeMGFConsultation({ details: { referrence: ["urgencia"] } }),
-      makeMGFConsultation({ details: { referrence: ["ivg"] } }),
+      makeMGFConsultation({ details: { referrence: [{ urgencia: [] }] } }),
+      makeMGFConsultation({ details: { referrence: [{ urgencia: [] }] } }),
+      makeMGFConsultation({ details: { referrence: [{ ivg: [] }] } }),
     ]);
     expect(m.byReferral[0].referral).toBe("urgencia");
     expect(m.byReferral[1].referral).toBe("ivg");
   });
 
-  it("returns empty motives array when no referrence_motive is set", () => {
+  it("returns empty motives array when referrence entry has no motives", () => {
     const m = calculateMetrics([
-      makeMGFConsultation({ details: { referrence: ["urgencia"] } }),
+      makeMGFConsultation({ details: { referrence: [{ urgencia: [] }] } }),
     ]);
     const entry = m.byReferral.find((r) => r.referral === "urgencia");
     expect(entry?.motives).toEqual([]);
   });
 
-  it("skips non-string values in the referrence array", () => {
+  it("skips non-object values in the referrence array", () => {
     const m = calculateMetrics([
-      makeMGFConsultation({ details: { referrence: [null, "", "urgencia"] } }),
+      makeMGFConsultation({ details: { referrence: [null, "not-an-object", { urgencia: [] }] } }),
     ]);
-    // Only "urgencia" counted; null and empty string filtered
+    // Only the object entry is counted; null and plain string are filtered
     expect(m.byReferral).toHaveLength(1);
     expect(m.byReferral[0].referral).toBe("urgencia");
   });
@@ -570,5 +583,14 @@ describe("calculateMetrics — byReferral (details.referrence + referrence_motiv
       makeMGFConsultation({ details: { referrence: null } }),
     ]);
     expect(m.byReferral).toEqual([]);
+  });
+
+  it("empty motives array produces no motive entries in metrics", () => {
+    const m = calculateMetrics([
+      makeMGFConsultation({ details: { referrence: [{ urgencia: [] }] } }),
+    ]);
+    const entry = m.byReferral.find((r) => r.referral === "urgencia");
+    // Empty array must not produce any motive counts
+    expect(entry?.motives).toHaveLength(0);
   });
 });

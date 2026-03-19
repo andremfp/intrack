@@ -1,5 +1,5 @@
 import type { ConsultationMGF } from "@/lib/api/consultations";
-import { COMMON_CONSULTATION_FIELDS, type SpecialtyField } from "@/constants";
+import { COMMON_CONSULTATION_FIELDS, type SpecialtyField, type ReferrenceEntry } from "@/constants";
 import { resolveTypeSections } from "@/components/forms/consultation/helpers";
 
 /**
@@ -15,7 +15,7 @@ import { resolveTypeSections } from "@/components/forms/consultation/helpers";
 export function getFieldValue(
   field: SpecialtyField,
   databaseValue?: unknown
-): string | string[] {
+): string | string[] | ReferrenceEntry[] {
   // Text-list fields: form works with string[]
   if (field.type === "text-list") {
     if (Array.isArray(databaseValue)) {
@@ -62,6 +62,14 @@ export function getFieldValue(
     return field.defaultValue !== undefined ? String(field.defaultValue) : "";
   }
 
+  // Referrence-list fields: stored as ReferrenceEntry[] in DB
+  if (field.type === "referrence-list") {
+    if (Array.isArray(databaseValue)) {
+      return databaseValue as ReferrenceEntry[];
+    }
+    return [] as ReferrenceEntry[];
+  }
+
   // Multi-select fields: stored as array of strings in DB, need array for form
   if (field.type === "multi-select") {
     if (Array.isArray(databaseValue)) {
@@ -95,7 +103,7 @@ export function initializeFormValues(
   specialtyFields: SpecialtyField[],
   editingConsultation?: ConsultationMGF | null
 ) {
-  const formValues: Record<string, string | string[]> = {};
+  const formValues: Record<string, string | string[] | ReferrenceEntry[]> = {};
 
   // ============================================================================
   // SOURCE 1: Top-level fields from database view columns

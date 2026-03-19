@@ -8,6 +8,7 @@ import {
   parseIcpcCodes,
   parseNumber,
   parseProfessionCode,
+  parseReferrenceList,
   parseSelectValue,
   parseTextList,
   validateLocationAndInternship,
@@ -302,6 +303,98 @@ describe("parseIcpcCodes", () => {
     expect(parseIcpcCodes(null, SPECIALTY)).toBeNull();
     expect(parseIcpcCodes(undefined, SPECIALTY)).toBeNull();
     expect(parseIcpcCodes("", SPECIALTY)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseReferrenceList  (lenient validation)
+// ---------------------------------------------------------------------------
+
+describe("parseReferrenceList", () => {
+  const SPECIALTY = "mgf";
+
+  it("returns null for null, undefined, or empty string", () => {
+    expect(parseReferrenceList(null, SPECIALTY)).toBeNull();
+    expect(parseReferrenceList(undefined, SPECIALTY)).toBeNull();
+    expect(parseReferrenceList("", SPECIALTY)).toBeNull();
+  });
+
+  it("parses a single specialty with no codes", () => {
+    const result = parseReferrenceList("Cardiologia", SPECIALTY);
+    expect(result).toHaveLength(1);
+    expect(result![0]).toEqual({ cardio: [] });
+  });
+
+  it("parses a single specialty with one ICPC-2 code", () => {
+    const result = parseReferrenceList("Cardiologia: A01", SPECIALTY);
+    expect(result).toHaveLength(1);
+    expect(Object.keys(result![0])[0]).toBe("cardio");
+    expect(result![0]["cardio"]).toHaveLength(1);
+    expect(result![0]["cardio"][0]).toMatch(/^A01 - /);
+  });
+
+  it("parses a single specialty with multiple codes", () => {
+    const result = parseReferrenceList("Cardiologia: A01, A02", SPECIALTY);
+    expect(result).toHaveLength(1);
+    expect(result![0]["cardio"]).toHaveLength(2);
+    expect(result![0]["cardio"][0]).toMatch(/^A01/);
+    expect(result![0]["cardio"][1]).toMatch(/^A02/);
+  });
+
+  it("parses multiple entries separated by semicolons", () => {
+    const result = parseReferrenceList(
+      "Cardiologia: A01; Endocrinologia",
+      SPECIALTY
+    );
+    expect(result).toHaveLength(2);
+    expect(result![0]).toEqual(expect.objectContaining({ cardio: expect.any(Array) }));
+    expect(result![1]).toEqual({ endocrino: [] });
+  });
+
+  it("accepts 'CODE - Description' format, extracting just the code", () => {
+    const result = parseReferrenceList(
+      "Cardiologia: A01 - Dor generalizada / múltipla",
+      SPECIALTY
+    );
+    expect(result).toHaveLength(1);
+    expect(result![0]["cardio"]).toHaveLength(1);
+    expect(result![0]["cardio"][0]).toMatch(/^A01 - /);
+  });
+
+  it("matches specialty labels diacritic-insensitively", () => {
+    // "Serviço de Urgência" → value "urgencia"; test without diacritics
+    const result = parseReferrenceList("Servico de Urgencia", SPECIALTY);
+    expect(result).toHaveLength(1);
+    expect(result![0]).toEqual({ urgencia: [] });
+  });
+
+  it("drops unknown specialties but keeps valid ones (lenient)", () => {
+    const result = parseReferrenceList(
+      "EspecialidadeInvalida; Cardiologia",
+      SPECIALTY
+    );
+    expect(result).toHaveLength(1);
+    expect(result![0]).toEqual({ cardio: [] });
+  });
+
+  it("returns null when all specialties are unknown", () => {
+    expect(
+      parseReferrenceList("EspecialidadeInvalida; OutraInvalida", SPECIALTY)
+    ).toBeNull();
+  });
+
+  it("drops invalid ICPC-2 codes but keeps valid ones within the same entry (lenient)", () => {
+    const result = parseReferrenceList("Cardiologia: A01, ZZZ", SPECIALTY);
+    expect(result).toHaveLength(1);
+    expect(result![0]["cardio"]).toHaveLength(1);
+    expect(result![0]["cardio"][0]).toMatch(/^A01/);
+  });
+
+  it("retains a specialty entry with an empty code list when all its codes are invalid", () => {
+    // The specialty itself is valid — only its codes are dropped
+    const result = parseReferrenceList("Cardiologia: ZZZ", SPECIALTY);
+    expect(result).toHaveLength(1);
+    expect(result![0]).toEqual({ cardio: [] });
   });
 });
 

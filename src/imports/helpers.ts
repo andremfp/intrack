@@ -21,6 +21,7 @@ import {
   parseSelectValue,
   parseTextList,
   parseIcpcCodes,
+  parseReferrenceList,
   parseProfessionCode,
   getFieldSource,
 } from "./mapping";
@@ -233,6 +234,11 @@ function mapFieldValue(
   // Handle ICPC-2 code fields
   if (ICPC_CODE_FIELDS.has(fieldKey)) {
     return parseIcpcCodes(rawValue, specialtyCode);
+  }
+
+  // Handle referrence-list fields (specialty + ICPC-2 motive pairs)
+  if (field?.type === "referrence-list") {
+    return parseReferrenceList(rawValue, specialtyCode);
   }
 
   // Handle profession code field (single field, pattern: digits.digit, e.g., 5230.2)

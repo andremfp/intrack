@@ -28,6 +28,7 @@ import {
   formatWithOptions,
   formatTextList,
   formatIcpcCodes,
+  formatReferrenceList,
   formatDate,
   formatNumber,
   getDetailsValue,
@@ -389,14 +390,8 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
     key: "referrence",
     header: "Referenciação",
     source: "details",
-    formatter: (value) =>
-      formatWithOptions(mgfFieldByKey.get("referrence"), value),
-  },
-  {
-    key: "referrence_motive",
-    header: "Motivo da Referenciação (ICPC-2)",
-    source: "details",
-    formatter: (value) => formatIcpcCodes(value),
+    // Renders each ReferrenceEntry as "Specialty: code1, code2"; entries joined by "; "
+    formatter: (value) => formatReferrenceList(value),
   },
   {
     key: "procedure",
