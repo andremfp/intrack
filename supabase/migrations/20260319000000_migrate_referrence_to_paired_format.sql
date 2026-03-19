@@ -57,10 +57,14 @@ SET details = jsonb_set(
   )
 )
 WHERE
-  details->'referrence' IS NOT NULL
-  AND jsonb_typeof(details->'referrence') = 'array'
-  AND jsonb_array_length(details->'referrence') > 0
-  AND jsonb_typeof(details->'referrence'->0) = 'string';
+  jsonb_typeof(details->'referrence') = 'array'
+  AND CASE WHEN jsonb_typeof(details->'referrence') = 'array'
+           THEN jsonb_array_length(details->'referrence') > 0
+           ELSE false END
+  AND CASE WHEN jsonb_typeof(details->'referrence') = 'array'
+            AND jsonb_array_length(details->'referrence') > 0
+           THEN jsonb_typeof(details->'referrence'->0) = 'string'
+           ELSE false END;
 
 -- Step 2: Remove referrence_motive from any remaining rows
 --         (e.g. null or empty referrence that were skipped by step 1).
