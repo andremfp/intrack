@@ -6,6 +6,7 @@ import {
   formatDate,
   formatIcpcCodes,
   formatNumber,
+  formatReferrenceList,
   formatTextList,
   formatWithOptions,
   getFieldSource,
@@ -263,3 +264,46 @@ describe("formatNumber", () => {
     expect(formatNumber("")).toBeNull();
   });
 });
+
+describe("formatReferrenceList", () => {
+  it("returns null for null", () => {
+    expect(formatReferrenceList(null)).toBeNull();
+  });
+
+  it("returns null for undefined", () => {
+    expect(formatReferrenceList(undefined)).toBeNull();
+  });
+
+  it("returns null for an empty array", () => {
+    expect(formatReferrenceList([])).toBeNull();
+  });
+
+  it("returns the specialty label alone when the entry has no codes", () => {
+    expect(formatReferrenceList([{ cardio: [] }])).toBe("Cardiologia");
+  });
+
+  it("renders a single code after a colon when the entry has one code", () => {
+    expect(formatReferrenceList([{ cardio: ["D11 - Diarreia"] }])).toBe(
+      "Cardiologia: D11 - Diarreia"
+    );
+  });
+
+  it("joins multiple codes with ', ' for a single entry", () => {
+    expect(
+      formatReferrenceList([{ cardio: ["D11 - Diarreia", "A01 - Dor"] }])
+    ).toBe("Cardiologia: D11 - Diarreia, A01 - Dor");
+  });
+
+  it("joins multiple entries with '; '", () => {
+    expect(
+      formatReferrenceList([{ cardio: ["D11"] }, { endocrino: [] }])
+    ).toBe("Cardiologia: D11; Endocrinologia");
+  });
+
+  it("falls back to the raw key when the specialty value is not recognised", () => {
+    expect(formatReferrenceList([{ unknown_spec: ["A01"] }])).toBe(
+      "unknown_spec: A01"
+    );
+  });
+});
+

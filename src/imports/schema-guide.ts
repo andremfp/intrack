@@ -176,18 +176,23 @@ const FIELD_DOCUMENTATION: Record<
     notes: "Para diagnósticos identificados nesta consulta",
   },
   referrence: {
-    description: "Especialidade para onde o paciente foi referido",
-    validationRules: [
-      "Deve corresponder a uma especialidade válida se preenchido",
+    description:
+      "Lista de referenciações, cada uma associada à sua especialidade e motivos ICPC-2",
+    acceptedFormats: [
+      "Especialidade: CODE - Descrição, CODE; Especialidade2",
+      "Especialidade (sem motivos)",
     ],
-    notes: "Lista de especialidades médicas",
-  },
-  referrence_motive: {
-    description: "Códigos ICPC-2 do motivo da referenciação",
-    acceptedFormats: ["Código ICPC-2 com ou sem descrição"],
-    examples: ["A01", "A01 - Dor de garganta"],
-    validationRules: ["Códigos devem existir na lista ICPC-2"],
-    notes: "Explica por que o paciente foi referido",
+    examples: [
+      "Cardiologia: D11 - Diarreia; Endocrinologia",
+      "Urgência: A01 - Cefaleia, B02",
+    ],
+    validationRules: [
+      "Cada especialidade deve corresponder a uma opção válida",
+      "Especialidades desconhecidas são ignoradas",
+      "Códigos ICPC-2 inválidos são ignorados",
+    ],
+    notes:
+      "Entradas separadas por ';'; códigos de motivo separados por ','. Os motivos fazem parte de cada referenciação — não usar a coluna 'Motivo da Referenciação' (obsoleta).",
   },
   contraceptive: {
     description: "Método contraceptivo atual do paciente",

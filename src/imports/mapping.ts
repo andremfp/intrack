@@ -10,6 +10,7 @@
  */
 
 import { getICPC2Codes } from "@/constants";
+import type { ReferrenceEntry } from "@/constants";
 import { PROFESSIONS } from "@/professions";
 import type { ValidationError } from "./types";
 import type { ConsultationInsert } from "@/lib/api/consultations";
@@ -25,6 +26,7 @@ import {
   ICPC_CODE_PATTERN,
   PROFESSION_CODE_PATTERN,
   TOP_LEVEL_FIELDS,
+  mgfFieldByKey,
 } from "./constants";
 import {
   getFieldByKey,
@@ -309,7 +311,7 @@ export function parseTextList(value: unknown): string[] | null {
 /**
  * Parses and validates ICPC-2 codes from semicolon-separated string
  *
- * Fields: diagnosis, problems, new_diagnosis, referrence_motive
+ * Fields: diagnosis, problems, new_diagnosis
  *
  * Format: "A01 - Description; B02; C03 - Another Description"
  * - Multiple codes separated by semicolon
@@ -356,6 +358,94 @@ export function parseIcpcCodes(
   }
 
   return validCodes.length > 0 ? validCodes : null;
+}
+
+/**
+ * Parses a referrence list from the export format back into ReferrenceEntry[]
+ *
+ * Field: referrence (type: "referrence-list")
+ *
+ * Format: "Cardiologia: D11 - Diarreia, A01 - Cefaleia; Endocrinologia"
+ * - Entries separated by "; "
+ * - Within each entry: "Specialty Label: code1, code2" (codes separated by ", ")
+ * - Specialty matched by label (diacritic-insensitive) against referrence field options
+ * - Each code validated against the specialty's ICPC-2 list; unrecognised codes dropped
+ *
+ * Validation: LENIENT — unknown specialties and invalid ICPC-2 codes are silently
+ * dropped. Returns null only if no valid entries remain.
+ *
+ * Returns: ReferrenceEntry[] | null
+ */
+export function parseReferrenceList(
+  value: unknown,
+  specialtyCode: string
+): ReferrenceEntry[] | null {
+  if (value === null || value === undefined || value === "") return null;
+
+  const str = String(value).trim();
+  if (!str) return null;
+
+  const referrenceOptions = mgfFieldByKey.get("referrence")?.options ?? [];
+
+  const icpc2Codes = getICPC2Codes(specialtyCode);
+  const codeSet = new Set(icpc2Codes.map((c) => c.code));
+
+  const normalize = (s: string) =>
+    s
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .toLowerCase()
+      .trim();
+
+  const entries = str
+    .split(";")
+    .map((e) => e.trim())
+    .filter(Boolean);
+
+  if (entries.length === 0) return null;
+
+  const result: ReferrenceEntry[] = [];
+
+  for (const entry of entries) {
+    const colonIdx = entry.indexOf(":");
+    const label = (colonIdx >= 0 ? entry.slice(0, colonIdx) : entry).trim();
+    const codesStr = colonIdx >= 0 ? entry.slice(colonIdx + 1).trim() : "";
+
+    // Map specialty label → option value (diacritic-insensitive); skip unknown specialties
+    const normalizedLabel = normalize(label);
+    const option =
+      referrenceOptions.find(
+        (opt) => opt.label && normalize(opt.label) === normalizedLabel
+      ) ??
+      referrenceOptions.find(
+        (opt) => opt.value && normalize(opt.value) === normalizedLabel
+      );
+
+    if (!option?.value) continue; // Unknown specialty — skip this entry
+
+    // Parse ICPC-2 codes, silently dropping any that are unrecognised
+    const codes: string[] = [];
+    if (codesStr) {
+      const codeEntries = codesStr
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean);
+
+      for (const codeEntry of codeEntries) {
+        const match = codeEntry.match(ICPC_CODE_PATTERN);
+        const code = match ? match[1] : codeEntry.toUpperCase();
+
+        if (!codeSet.has(code)) continue; // Invalid ICPC-2 code — skip
+
+        const codeData = icpc2Codes.find((c) => c.code === code);
+        codes.push(codeData ? `${code} - ${codeData.description}` : code);
+      }
+    }
+
+    result.push({ [option.value]: codes });
+  }
+
+  return result.length > 0 ? result : null;
 }
 
 /**

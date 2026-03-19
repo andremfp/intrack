@@ -56,7 +56,11 @@ export type FieldType =
   | "combobox"
   | "number"
   | "text-list"
-  | "code-search";
+  | "code-search"
+  | "referrence-list";
+
+// A single referrence entry: maps one referrence to its ICPC-2 motives (may be empty array)
+export type ReferrenceEntry = { [referrence: string]: string[] };
 
 export type FieldRuleContext = {
   location?: string;
@@ -78,6 +82,8 @@ export interface SpecialtyField {
   visibleWhen?: FieldRule;
   defaultValue?: string | number | boolean | null;
   options?: SpecialtyFieldOption[];
+  /** Secondary ICPC-2 code options — used by "referrence-list" fields for the motive search */
+  icpcOptions?: SpecialtyFieldOption[];
   placeholder?: string;
   units?: string;
   section?: string; // Optional section grouping for UI organization
@@ -441,7 +447,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
   {
     key: "referrence",
     label: "Referenciação",
-    type: "multi-select",
+    type: "referrence-list",
     placeholder: "Referenciação",
     section: "referral",
     visibleWhen: (ctx) => ctx.location === "unidade",
@@ -451,16 +457,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
       { value: "ivg", label: "Consulta de IVG" },
       { value: "cir pediatrica", label: "Cirurgia Pediátrica" },
     ],
-  },
-  {
-    key: "referrence_motive",
-    label: "Motivo da referenciação",
-    type: "code-search",
-    placeholder: "Motivo da referenciação",
-    section: "referral",
-    visibleWhen: (ctx) => ctx.location === "unidade",
-    options: MGF_ICPC2_CODES,
-    multiple: true, // Multiple selection
+    icpcOptions: MGF_ICPC2_CODES, // ICPC-2 codes for the optional motive search per entry
   },
   // Planeamento Familiar
   {
@@ -724,7 +721,7 @@ export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
 // Type for specialty details JSONB
 export type SpecialtyDetails = Record<
   string,
-  string | number | boolean | null | string[]
+  string | number | boolean | null | string[] | ReferrenceEntry[]
 >;
 
 const resolveFieldDefault = (
@@ -740,6 +737,10 @@ const resolveFieldDefault = (
     field.type === "code-search"
   ) {
     return [] as string[];
+  }
+
+  if (field.type === "referrence-list") {
+    return [] as ReferrenceEntry[];
   }
 
   return null;

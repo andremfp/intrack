@@ -1,4 +1,4 @@
-import type { SpecialtyField } from "@/constants";
+import type { SpecialtyField, ReferrenceEntry } from "@/constants";
 import { TextField } from "./fields/text-field";
 import { NumberField } from "./fields/number-field";
 import { BooleanField } from "./fields/boolean-field";
@@ -10,12 +10,13 @@ import {
   type CodeSearchItem,
 } from "./fields/code-search-field";
 import { MultiSelectField } from "./fields/multi-select-field";
+import { ReferrenceListField } from "./fields/referrence-list-field";
 
 interface ConsultationFieldProps {
   field: SpecialtyField;
-  value: string | string[];
+  value: string | string[] | ReferrenceEntry[];
   errorMessage?: string;
-  onUpdate: (value: string | string[]) => void;
+  onUpdate: (value: string | string[] | ReferrenceEntry[]) => void;
   isRequired?: boolean; // Optional override for required status
 }
 
@@ -26,11 +27,12 @@ export function ConsultationField({
   onUpdate,
   isRequired,
 }: ConsultationFieldProps) {
+  // commonProps is safe for all non-referrence-list fields, which only use string | string[]
   const commonProps = {
     field,
-    value,
+    value: value as string | string[],
     errorMessage,
-    onUpdate,
+    onUpdate: onUpdate as (value: string | string[]) => void,
     isRequired,
   };
 
@@ -80,7 +82,7 @@ export function ConsultationField({
               const match = value.match(/^([A-Z]\d{2})/);
               return match ? match[1] : value;
             }}
-            value={Array.isArray(value) ? value : []}
+            value={Array.isArray(value) ? (value as string[]) : []}
             onUpdate={(v) => onUpdate(Array.isArray(v) ? v : [])}
           />
         );
@@ -91,7 +93,7 @@ export function ConsultationField({
           typeof value === "string"
             ? value
             : Array.isArray(value) && value.length > 0
-            ? value[0]
+            ? (value as string[])[0]
             : "";
         return (
           <CodeSearchField
@@ -110,10 +112,30 @@ export function ConsultationField({
       return (
         <MultiSelectField
           {...commonProps}
-          value={Array.isArray(value) ? value : []}
+          value={Array.isArray(value) ? (value as string[]) : []}
           onUpdate={(v) => onUpdate(v)}
         />
       );
+    case "referrence-list": {
+      // Convert the field's icpcOptions to CodeSearchItem format for the motive search
+      const icpcItems: CodeSearchItem[] = (field.icpcOptions ?? [])
+        .filter(
+          (opt): opt is { code: string; description: string } =>
+            "code" in opt && "description" in opt
+        )
+        .map((opt) => ({ code: opt.code, description: opt.description }));
+
+      return (
+        <ReferrenceListField
+          field={field}
+          value={value as ReferrenceEntry[]}
+          onUpdate={(v) => onUpdate(v)}
+          icpcItems={icpcItems}
+          errorMessage={errorMessage}
+          isRequired={isRequired}
+        />
+      );
+    }
     default:
       return null;
   }
@@ -137,7 +159,6 @@ export function ConsultationFieldWithLayout({
       "diagnosis",
       "problems",
       "referrence",
-      "referrence_motive",
       "new_diagnosis",
       "notes",
     ].includes(field.key);

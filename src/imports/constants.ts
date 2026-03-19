@@ -178,7 +178,6 @@ export const ICPC_CODE_FIELDS = new Set([
   "diagnosis",
   "problems",
   "new_diagnosis",
-  "referrence_motive",
 ]);
 
 /**

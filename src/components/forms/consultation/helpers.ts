@@ -1,5 +1,5 @@
 import { toasts } from "@/utils/toasts";
-import type { FieldRule, FieldRuleContext, SpecialtyField } from "@/constants";
+import type { FieldRule, FieldRuleContext, ReferrenceEntry, SpecialtyField } from "@/constants";
 import {
   COMMON_CONSULTATION_FIELDS,
   MGF_CONSULTATION_TYPE_SECTIONS,
@@ -90,10 +90,16 @@ function getAllRequiredFields(
   return requiredFields;
 }
 
-function isEmpty(value: string | string[] | undefined): boolean {
+function isEmpty(value: string | string[] | ReferrenceEntry[] | undefined): boolean {
   if (value === undefined || value === null) return true;
   if (Array.isArray(value)) {
-    return value.every((item) => !item?.trim());
+    // ReferrenceEntry[] is empty when the array has no entries
+    if (value.length === 0) return true;
+    // string[] is empty when every item is blank
+    if (typeof value[0] === "string") {
+      return (value as string[]).every((item) => !item?.trim());
+    }
+    return false;
   }
   return typeof value === "string" && value.trim() === "";
 }
@@ -189,10 +195,16 @@ export function validateForm(
 
 function serializeFieldValue(
   field: SpecialtyField,
-  value: string | string[]
+  value: string | string[] | ReferrenceEntry[]
 ): SpecialtyDetails[string] {
+  // Referrence-list fields: pass through the ReferrenceEntry[] directly
+  if (field.type === "referrence-list") {
+    const entries = Array.isArray(value) ? (value as ReferrenceEntry[]) : [];
+    return entries.length > 0 ? entries : null;
+  }
+
   if (field.type === "text-list") {
-    const filteredItems = (Array.isArray(value) ? value : [])
+    const filteredItems = (Array.isArray(value) ? (value as string[]) : [])
       .map((item) => item.trim())
       .filter((item) => item.length > 0);
 

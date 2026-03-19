@@ -291,37 +291,43 @@ export function calculateMetrics(
       }
     });
 
-    // Referral counting
-    const referral = getDetail(c, "referrence");
-    // Referrals are always arrays (migrated from legacy string format)
-    const referralValues = Array.isArray(referral)
-      ? referral.filter(
-          (v): v is string => typeof v === "string" && v.length > 0
+    // Referrals stored as ReferrenceEntry[]: each entry is { [specialtyCode]: string[] }
+    const referrence = getDetail(c, "referrence");
+    const referrenceEntries = Array.isArray(referrence)
+      ? referrence.filter(
+          (v): v is Record<string, unknown> =>
+            v !== null && typeof v === "object" && !Array.isArray(v)
         )
       : [];
 
-    // Count each referral type
-    referralValues.forEach((referralValue) => {
+    // Count each referrence specialty and its paired ICPC-2 motives
+    referrenceEntries.forEach((entry) => {
+      const pair = Object.entries(entry)[0];
+      if (!pair) return;
+      const [specialty, motives] = pair;
+
       referralCounts.set(
-        referralValue,
-        (referralCounts.get(referralValue) || 0) + 1
+        specialty,
+        (referralCounts.get(specialty) || 0) + 1
       );
 
-      // Track motives for this referral
-      const referralMotive = getDetail(c, "referrence_motive");
-      const motiveCodes = Array.isArray(referralMotive) ? referralMotive : [];
-      if (motiveCodes.length > 0) {
-        if (!referralMotiveCounts.has(referralValue)) {
-          referralMotiveCounts.set(referralValue, new Map<string, number>());
-        }
-        const motiveMap = referralMotiveCounts.get(referralValue)!;
-        motiveCodes.forEach((code) => {
-          const normalized = String(code).trim();
-          if (normalized) {
-            motiveMap.set(normalized, (motiveMap.get(normalized) || 0) + 1);
+      // Support string[] (new format); also handle legacy string for backward compat
+      const motiveList = Array.isArray(motives)
+        ? motives
+        : typeof motives === "string" && motives.trim()
+          ? [motives]
+          : [];
+
+      motiveList.forEach((motive) => {
+        if (typeof motive === "string" && motive.trim().length > 0) {
+          if (!referralMotiveCounts.has(specialty)) {
+            referralMotiveCounts.set(specialty, new Map<string, number>());
           }
-        });
-      }
+          const motiveMap = referralMotiveCounts.get(specialty)!;
+          const normalized = motive.trim();
+          motiveMap.set(normalized, (motiveMap.get(normalized) || 0) + 1);
+        }
+      });
     });
   });
   // Calculate final metrics using data from single-pass iteration

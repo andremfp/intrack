@@ -1,5 +1,6 @@
 import type { ConsultationsSorting, ConsultationMGF, ConsultationsFilters } from "@/lib/api/consultations";
 import type { AppError } from "@/errors";
+import type { ReferrenceEntry } from "@/constants";
 
 export interface UseConsultationsParams {
   userId: string | undefined;
@@ -32,7 +33,7 @@ export interface UseConsultationsResult {
 }
 
 export interface FormValues {
-  [key: string]: string | string[];
+  [key: string]: string | string[] | ReferrenceEntry[];
 }
 
 export interface FieldError {
