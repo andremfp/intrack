@@ -37,3 +37,6 @@ dummy_consultations_*.sql
 # Playwright
 playwright-report/
 test-results/
+
+# Supabase
+supabase/snippets/

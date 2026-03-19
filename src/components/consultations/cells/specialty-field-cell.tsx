@@ -5,6 +5,7 @@ import { TextListCell } from "./text-list-cell";
 import { CodeSearchCell } from "./code-search-cell";
 import { TextCell } from "./text-cell";
 import { MultiSelectCell } from "./multi-select-cell";
+import { ReferrenceListCell } from "./referrence-list-cell";
 
 interface SpecialtyFieldCellProps {
   value: unknown;
@@ -20,7 +21,7 @@ export function SpecialtyFieldCell({ value, field }: SpecialtyFieldCellProps) {
     case "boolean":
       return <BooleanCell value={value as boolean} />;
     case "select":
-    case "combobox":
+    case "combobox": {
       // Convert SpecialtyFieldOption[] to { value: string; label: string }[]
       const selectOptions = field.options
         ?.map((opt) => {
@@ -36,12 +37,15 @@ export function SpecialtyFieldCell({ value, field }: SpecialtyFieldCellProps) {
         | { value: string; label: string }[]
         | undefined;
       return <SelectCell value={String(value)} options={selectOptions} />;
+    }
     case "text-list":
       return <TextListCell value={value} />;
     case "multi-select":
       return <MultiSelectCell value={value} field={field} />;
     case "code-search":
       return <CodeSearchCell value={value} field={field} />;
+    case "referrence-list":
+      return <ReferrenceListCell value={value} field={field} />;
     case "text":
       return <TextCell value={String(value)} />;
     default:

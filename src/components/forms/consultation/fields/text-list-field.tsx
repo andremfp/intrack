@@ -64,6 +64,7 @@ export function TextListField({
           type="button"
           variant="outline"
           size="sm"
+          disabled={listValue[listValue.length - 1] === ""}
           onClick={() => onUpdate([...listValue, ""])}
           className="w-full"
         >

@@ -9,7 +9,7 @@
  * - Support both single and multiple value formats
  */
 
-import type { SpecialtyField } from "@/constants";
+import type { ReferrenceEntry, SpecialtyField } from "@/constants";
 import type { ConsultationMGF } from "@/lib/api/consultations";
 import type { ConsultationExportCell } from "./types";
 import {
@@ -131,6 +131,35 @@ export function formatTextList(value: unknown): ConsultationExportCell {
  */
 export function formatIcpcCodes(value: unknown): ConsultationExportCell {
   return formatTextList(value);
+}
+
+/**
+ * Formats a ReferrenceEntry[] for export
+ *
+ * Each entry renders as "Specialty Label: code1, code2" (or just "Specialty Label" if no codes).
+ * Entries are separated by "; ".
+ *
+ * Example: [{ cardio: ["D11 - Diarreia"] }, { endocrino: [] }] → "Cardiologia: D11 - Diarreia; Endocrinologia"
+ */
+export function formatReferrenceList(value: unknown): ConsultationExportCell {
+  if (!value || !Array.isArray(value) || value.length === 0) return null;
+
+  const referrenceOptions = mgfFieldByKey.get("referrence")?.options ?? [];
+
+  const parts = (value as ReferrenceEntry[]).map((entry) => {
+    const [specialtyKey, codes] = Object.entries(entry)[0] ?? [];
+    if (!specialtyKey) return null;
+
+    const label =
+      referrenceOptions.find((opt) => opt.value === specialtyKey)?.label ??
+      specialtyKey;
+
+    if (!codes || codes.length === 0) return label;
+    return `${label}: ${codes.join(", ")}`;
+  });
+
+  const filtered = parts.filter((p): p is string => p !== null);
+  return filtered.length > 0 ? filtered.join("; ") : null;
 }
 
 /**

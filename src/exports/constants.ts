@@ -67,7 +67,6 @@ export const KEY_TO_HEADER_MAP: Record<string, string> = {
   problems: "Problemas (ICPC-2)",
   new_diagnosis: "Novo Diagnóstico (ICPC-2)",
   referrence: "Referenciação",
-  referrence_motive: "Motivo da Referenciação (ICPC-2)",
   procedure: "Procedimento",
   notes: "Notas",
 };
@@ -101,7 +100,6 @@ export const ICPC_CODE_FIELDS = new Set([
   "diagnosis",
   "problems",
   "new_diagnosis",
-  "referrence_motive",
 ]);
 
 /**

@@ -311,7 +311,7 @@ export function ConsultationModal({
                               <Input
                                 id={field.key}
                                 type="number"
-                                value={formValues[field.key] || ""}
+                                value={(formValues[field.key] as string) || ""}
                                 onChange={(
                                   e: React.ChangeEvent<HTMLInputElement>
                                 ) => updateField(field.key, e.target.value)}

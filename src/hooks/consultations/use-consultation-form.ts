@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import type { ConsultationMGF } from "@/lib/api/consultations";
-import { getSpecialtyFields, type SpecialtyField } from "@/constants";
+import { getSpecialtyFields, type SpecialtyField, type ReferrenceEntry } from "@/constants";
 import { resolveTypeSections } from "@/components/forms/consultation/helpers";
 import type { FormValues, FieldError } from "./types";
 import { initializeFormValues, getFieldValue } from "./helpers";
@@ -79,7 +79,7 @@ export function useConsultationForm(
    * Updates a single field value and clears any error for that field.
    * When the 'type' field is updated, also initializes type-specific fields.
    */
-  const updateField = (key: string, value: string | string[]) => {
+  const updateField = (key: string, value: string | string[] | ReferrenceEntry[]) => {
     setFormValues((prev) => {
       let newFormValues = { ...prev, [key]: value };
 
