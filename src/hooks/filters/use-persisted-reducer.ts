@@ -41,7 +41,7 @@ export function usePersistedReducer<
     } catch (error) {
       console.error(`Error saving state to cache for key "${key}":`, error);
     }
-  }, [key, state]);
+  }, [key, state, storage]);
 
   return [state, dispatch] as const;
 }

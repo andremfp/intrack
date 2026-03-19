@@ -75,15 +75,15 @@ function DashboardContent() {
   // Memoize refresh callbacks to prevent unnecessary re-renders
   const handleConsultationsRefreshReady = useCallback((refresh: () => Promise<void>) => {
     refreshConsultationsRef.current = refresh;
-  }, []);
+  }, [refreshConsultationsRef]);
 
   const handleMetricsRefreshReady = useCallback((refresh: () => Promise<void>) => {
     refreshMetricsRef.current = refresh;
-  }, []);
+  }, [refreshMetricsRef]);
 
   const handleReportsRefreshReady = useCallback((refresh: () => Promise<void>) => {
     refreshReportsRef.current = refresh;
-  }, []);
+  }, [refreshReportsRef]);
 
   // Recover specialty details if the ID exists in the user profile but the cached specialty is missing
   useEffect(() => {

@@ -230,7 +230,7 @@ export function useConsultations({
     } finally {
       setIsCheckingDeleteRateLimit(false);
     }
-  }, [ensureBulkDeleteAllowedRateLimit, isCheckingDeleteRateLimit]);
+  }, [isCheckingDeleteRateLimit]);
 
   const handleBulkDelete = useCallback(
     async (
