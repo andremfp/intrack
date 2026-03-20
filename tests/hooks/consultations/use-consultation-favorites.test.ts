@@ -2,13 +2,14 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useFavorites } from "@/hooks/consultations/use-consultation-favorites";
 import { makeConsultationMGF } from "../../factories/consultation";
+import { AppError, type ApiResponse } from "@/errors";
 
 // Mock the API layer so tests never touch Supabase
 vi.mock("@/lib/api/consultations", () => ({
   updateConsultation: vi.fn(),
 }));
 
-import { updateConsultation } from "@/lib/api/consultations";
+import { updateConsultation, type Consultation } from "@/lib/api/consultations";
 
 const mockUpdateConsultation = vi.mocked(updateConsultation);
 
@@ -35,7 +36,7 @@ describe("useFavorites", () => {
     });
 
     it("reflects the optimistic override immediately after toggleStar", async () => {
-      mockUpdateConsultation.mockResolvedValue({ success: true });
+      mockUpdateConsultation.mockResolvedValue({ success: true, data: c1 as unknown as Consultation });
 
       const { result } = renderHook(() =>
         useFavorites({ consultations: defaultConsultations })
@@ -69,7 +70,7 @@ describe("useFavorites", () => {
     });
 
     it("applies the optimistic favorite override to the matching consultation", async () => {
-      mockUpdateConsultation.mockResolvedValue({ success: true });
+      mockUpdateConsultation.mockResolvedValue({ success: true, data: c1 as unknown as Consultation });
 
       const { result } = renderHook(() =>
         useFavorites({ consultations: defaultConsultations })
@@ -88,7 +89,7 @@ describe("useFavorites", () => {
     });
 
     it("does not modify consultations whose favorite already matches the optimistic value", async () => {
-      mockUpdateConsultation.mockResolvedValue({ success: true });
+      mockUpdateConsultation.mockResolvedValue({ success: true, data: c1 as unknown as Consultation });
 
       const { result } = renderHook(() =>
         useFavorites({ consultations: defaultConsultations })
@@ -107,9 +108,9 @@ describe("useFavorites", () => {
 
   describe("toggleStar", () => {
     it("applies an optimistic update immediately (before the API call resolves)", () => {
-      let resolveUpdate!: (value: { success: boolean }) => void;
+      let resolveUpdate!: (value: ApiResponse<Consultation>) => void;
       mockUpdateConsultation.mockReturnValue(
-        new Promise<{ success: boolean }>((res) => {
+        new Promise<ApiResponse<Consultation>>((res) => {
           resolveUpdate = res;
         })
       );
@@ -128,12 +129,12 @@ describe("useFavorites", () => {
 
       // Clean up pending promise
       act(() => {
-        resolveUpdate({ success: true });
+        resolveUpdate({ success: true, data: c1 as unknown as Consultation });
       });
     });
 
     it("calls onFavoriteToggle on success", async () => {
-      mockUpdateConsultation.mockResolvedValue({ success: true });
+      mockUpdateConsultation.mockResolvedValue({ success: true, data: c1 as unknown as Consultation });
       const onFavoriteToggle = vi.fn();
 
       const { result } = renderHook(() =>
@@ -148,7 +149,7 @@ describe("useFavorites", () => {
     });
 
     it("keeps the optimistic update in place after a successful API call", async () => {
-      mockUpdateConsultation.mockResolvedValue({ success: true });
+      mockUpdateConsultation.mockResolvedValue({ success: true, data: c1 as unknown as Consultation });
 
       const { result } = renderHook(() =>
         useFavorites({ consultations: defaultConsultations })
@@ -163,7 +164,7 @@ describe("useFavorites", () => {
     });
 
     it("reverts the optimistic update when updateConsultation returns success = false", async () => {
-      mockUpdateConsultation.mockResolvedValue({ success: false, error: "db error" });
+      mockUpdateConsultation.mockResolvedValue({ success: false, error: new AppError("db error") });
 
       const { result } = renderHook(() =>
         useFavorites({ consultations: defaultConsultations })
@@ -178,7 +179,7 @@ describe("useFavorites", () => {
     });
 
     it("does not call onFavoriteToggle when updateConsultation returns success = false", async () => {
-      mockUpdateConsultation.mockResolvedValue({ success: false, error: "db error" });
+      mockUpdateConsultation.mockResolvedValue({ success: false, error: new AppError("db error") });
       const onFavoriteToggle = vi.fn();
 
       const { result } = renderHook(() =>
@@ -223,7 +224,7 @@ describe("useFavorites", () => {
     });
 
     it("toggles from true to false when the consultation is currently a favorite", async () => {
-      mockUpdateConsultation.mockResolvedValue({ success: true });
+      mockUpdateConsultation.mockResolvedValue({ success: true, data: c1 as unknown as Consultation });
 
       const { result } = renderHook(() =>
         useFavorites({ consultations: defaultConsultations })
@@ -240,7 +241,7 @@ describe("useFavorites", () => {
 
   describe("optimistic cleanup on consultations prop update", () => {
     it("removes the entry from the map when the DB value matches the optimistic value", async () => {
-      mockUpdateConsultation.mockResolvedValue({ success: true });
+      mockUpdateConsultation.mockResolvedValue({ success: true, data: c1 as unknown as Consultation });
 
       // Start with c1 (favorite = false); after toggle, optimistic = true
       const { result, rerender } = renderHook(
@@ -274,7 +275,7 @@ describe("useFavorites", () => {
     });
 
     it("keeps the optimistic entry when the DB value still differs from the optimistic value", async () => {
-      mockUpdateConsultation.mockResolvedValue({ success: true });
+      mockUpdateConsultation.mockResolvedValue({ success: true, data: c1 as unknown as Consultation });
 
       const { result, rerender } = renderHook(
         (props: { consultations: typeof defaultConsultations }) =>

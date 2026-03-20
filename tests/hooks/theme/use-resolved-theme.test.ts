@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { useResolvedTheme, type ResolvedTheme } from "@/hooks/theme/use-resolved-theme";
+import { useResolvedTheme } from "@/hooks/theme/use-resolved-theme";
 import type { ThemeProviderState } from "@/components/theme/theme-context";
 
 // Mock the theme context so tests can control which theme value the hook sees

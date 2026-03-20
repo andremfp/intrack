@@ -2,6 +2,7 @@ import { renderHook, act } from "@testing-library/react";
 import { useCachedUserProfile } from "@/hooks/user/use-cached-user-profile";
 import { userCache } from "@/utils/user-cache";
 import type { UserData } from "@/lib/api/users";
+import { vi } from "vitest";
 
 vi.mock("@/utils/user-cache", () => ({
   userCache: {

@@ -39,7 +39,7 @@ describe("getConsultationFieldValue", () => {
   });
 
   it("returns null when details is null and top-level is absent", () => {
-    const consultation = makeConsultationMGF({ details: null as unknown as Record<string, unknown> });
+    const consultation = makeConsultationMGF({ details: null });
     expect(getConsultationFieldValue(consultation, "nonexistent")).toBeNull();
   });
 });

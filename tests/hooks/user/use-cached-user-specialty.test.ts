@@ -2,6 +2,7 @@ import { renderHook, act } from "@testing-library/react";
 import { useCachedUserSpecialty } from "@/hooks/user/use-cached-user-specialty";
 import { userCache } from "@/utils/user-cache";
 import type { Specialty } from "@/lib/api/specialties";
+import { vi } from "vitest";
 
 vi.mock("@/utils/user-cache", () => ({
   userCache: {
@@ -14,7 +15,11 @@ const mockUserCache = vi.mocked(userCache);
 
 /** Minimal Specialty stub */
 function makeSpecialty(id = "sp1", code = "MGF"): Specialty {
-  return { id, code, name: "Medicina Geral e Familiar" } as unknown as Specialty;
+  return {
+    id,
+    code,
+    name: "Medicina Geral e Familiar",
+  } as unknown as Specialty;
 }
 
 describe("useCachedUserSpecialty", () => {
