@@ -36,8 +36,6 @@ export function NumberField({
           onChange={(e) => onUpdate(e.target.value)}
           placeholder={field.placeholder}
           required={required}
-          min="0"
-          max={field.key === "age" ? "150" : "999999999"}
           className={`flex-1 min-w-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
             isInvalid ? "border-destructive" : ""
           }`}
