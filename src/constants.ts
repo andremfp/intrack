@@ -519,10 +519,10 @@ export const MGF_FIELDS: SpecialtyField[] = [
   },
 ];
 
-// Shared HTA (Hipertensão Arterial) sections - used by dm, hta, and sm
-const HTA_EXAMS_SECTION: ConstultationTypeSection = {
-  key: "hta_exams",
-  label: "Hipertensão Arterial - Exames",
+// Shared exams section - used by hta and sa
+const EXAMS_SECTION: ConstultationTypeSection = {
+  key: "exams",
+  label: "Exames",
   section: "type_specific",
   fields: [
     {
@@ -598,45 +598,25 @@ export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
   ConstultationTypeSection[]
 > = {
   dm: [
+    // Shared exams section (same fields as HTA/SA): db path dm.exams.*
+    EXAMS_SECTION,
+    // DM-specific exams: db path dm.dm_exams.*
     {
       key: "dm_exams",
       label: "Diabetes - Exames",
       section: "type_specific",
       fields: [
         {
-          key: "creatinina",
-          label: "Creatinina",
+          key: "hba1c",
+          label: "HbA1c",
           type: "number",
-          units: "mg/dL",
-        },
-        {
-          key: "score2",
-          label: "Score2",
-          type: "text",
-          units: "",
-        },
-        {
-          key: "albuminuria",
-          label: "Albuminuria",
-          type: "number",
-          units: "mg/g",
-        },
-        {
-          key: "ldl",
-          label: "LDL",
-          type: "number",
-          units: "mg/dL",
-        },
-        {
-          key: "tfg",
-          label: "TFG",
-          type: "number",
-          units: "mL/min",
+          units: "%",
         },
       ],
     },
+    // DM history: db path dm.history.*
     {
-      key: "dm_history",
+      key: "history",
       label: "Diabetes - Historial",
       section: "type_specific",
       fields: [
@@ -666,16 +646,24 @@ export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
         },
       ],
     },
-    HTA_EXAMS_SECTION,
-    HTA_HISTORY_SECTION,
+    // HTA history within DM context: db path dm.hta_history.*
+    // Field keys are prefixed (hta_medicamentos, hta_complicacoes) to avoid
+    // collision with dm_history fields in the flat formValues map.
+    {
+      ...HTA_HISTORY_SECTION,
+      fields: HTA_HISTORY_SECTION.fields.map((f) => ({
+        ...f,
+        key: `hta_${f.key}`,
+      })),
+    },
   ],
   hta: [
-    { ...HTA_EXAMS_SECTION, key: "exams" },
+    EXAMS_SECTION,
     { ...HTA_HISTORY_SECTION, key: "history" },
   ],
   sa: [
-    { ...HTA_EXAMS_SECTION, key: "exams" },
-    { ...HTA_HISTORY_SECTION, key: "history" },
+    EXAMS_SECTION,
+    HTA_HISTORY_SECTION,
   ],
   sm: [
     {

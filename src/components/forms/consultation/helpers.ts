@@ -1,5 +1,11 @@
 import { toasts } from "@/utils/toasts";
-import type { FieldRule, FieldRuleContext, ReferrenceEntry, SpecialtyField } from "@/constants";
+import type {
+  ConstultationTypeSection,
+  FieldRule,
+  FieldRuleContext,
+  ReferrenceEntry,
+  SpecialtyField,
+} from "@/constants";
 import {
   COMMON_CONSULTATION_FIELDS,
   MGF_CONSULTATION_TYPE_SECTIONS,
@@ -15,7 +21,7 @@ export function resolveTypeSections(typeValue: string | null | undefined) {
 }
 
 export function buildFieldRuleContext(
-  formValues: FormValues
+  formValues: FormValues,
 ): FieldRuleContext {
   // Convert boolean string values to actual booleans
   const ownListValue = formValues.own_list;
@@ -23,8 +29,8 @@ export function buildFieldRuleContext(
     typeof ownListValue === "string" && ownListValue === "true"
       ? true
       : typeof ownListValue === "string" && ownListValue === "false"
-      ? false
-      : undefined;
+        ? false
+        : undefined;
 
   return {
     location:
@@ -38,7 +44,7 @@ export function buildFieldRuleContext(
 export function evaluateFieldRule(
   rule: FieldRule | undefined,
   ctx: FieldRuleContext,
-  defaultValue: boolean
+  defaultValue: boolean,
 ): boolean {
   if (rule === undefined) return defaultValue;
   if (rule === "always") return true;
@@ -48,14 +54,14 @@ export function evaluateFieldRule(
 
 export function isFieldVisible(
   field: SpecialtyField,
-  ctx: FieldRuleContext
+  ctx: FieldRuleContext,
 ): boolean {
   return evaluateFieldRule(field.visibleWhen, ctx, true);
 }
 
 export function isFieldRequired(
   field: SpecialtyField,
-  ctx: FieldRuleContext
+  ctx: FieldRuleContext,
 ): boolean {
   return evaluateFieldRule(field.requiredWhen, ctx, false);
 }
@@ -63,16 +69,16 @@ export function isFieldRequired(
 function getAllRequiredFields(
   specialtyFields: SpecialtyField[],
   consultationType?: string,
-  formValues?: FormValues
+  formValues?: FormValues,
 ): SpecialtyField[] {
   const ctx = formValues ? buildFieldRuleContext(formValues) : {};
 
   const requiredFields = [
     ...COMMON_CONSULTATION_FIELDS.filter(
-      (f) => isFieldRequired(f, ctx) && isFieldVisible(f, ctx)
+      (f) => isFieldRequired(f, ctx) && isFieldVisible(f, ctx),
     ),
     ...specialtyFields.filter(
-      (f) => isFieldRequired(f, ctx) && isFieldVisible(f, ctx)
+      (f) => isFieldRequired(f, ctx) && isFieldVisible(f, ctx),
     ),
   ];
 
@@ -82,7 +88,7 @@ function getAllRequiredFields(
 
     section.fields
       .filter(
-        (field) => isFieldRequired(field, ctx) && isFieldVisible(field, ctx)
+        (field) => isFieldRequired(field, ctx) && isFieldVisible(field, ctx),
       )
       .forEach((field) => requiredFields.push(field));
   });
@@ -90,7 +96,9 @@ function getAllRequiredFields(
   return requiredFields;
 }
 
-function isEmpty(value: string | string[] | ReferrenceEntry[] | undefined): boolean {
+function isEmpty(
+  value: string | string[] | ReferrenceEntry[] | undefined,
+): boolean {
   if (value === undefined || value === null) return true;
   if (Array.isArray(value)) {
     // ReferrenceEntry[] is empty when the array has no entries
@@ -117,14 +125,14 @@ function parseIntSafe(value: string): number | null {
 export function validateForm(
   formValues: FormValues,
   specialtyFields: SpecialtyField[],
-  specialtyId: string | null
+  specialtyId: string | null,
 ): FieldError | null {
   const consultationType =
     typeof formValues.type === "string" ? formValues.type : undefined;
   const requiredFields = getAllRequiredFields(
     specialtyFields,
     consultationType,
-    formValues
+    formValues,
   );
 
   // Check required fields
@@ -139,36 +147,35 @@ export function validateForm(
   if (!specialtyId) {
     toasts.error(
       "Especialidade não encontrada",
-      "Por favor seleciona uma especialidade."
+      "Por favor seleciona uma especialidade.",
     );
     return { key: "specialty", message: "Especialidade não encontrada" };
   }
 
-  // Validate age (0-150 inclusive)
+  // Validate age (1-150 inclusive)
   const ageValue = getStringValue(formValues, "age");
   const ageNum = parseIntSafe(ageValue);
-  if (ageNum === null || ageNum < 0 || ageNum > 150) {
-    toasts.error("Idade inválida", "A idade deve estar entre 0 e 150.");
-    return { key: "age", message: "A idade deve estar entre 0 e 150." };
+  if (ageNum === null || ageNum < 1 || ageNum > 150) {
+    toasts.error("Idade inválida", "A idade deve estar entre 1 e 150.");
+    return { key: "age", message: "A idade deve estar entre 1 e 150." };
   }
 
-  // Validate process number (9 digits)
+  // Validate process number: 3–9 digits, preserving leading zeros
   const processNumberValue = getStringValue(formValues, "process_number");
-  const processNumberNum = parseIntSafe(processNumberValue);
-  if (processNumberValue.length > 9) {
+  if (processNumberValue.length < 3 || processNumberValue.length > 9) {
     toasts.error(
       "Número de processo inválido",
-      "O número de processo tem um máximo de 9 dígitos."
+      "O número de processo deve ter entre 3 e 9 dígitos.",
     );
     return {
       key: "process_number",
-      message: "O número de processo deve ser um número válido.",
+      message: "O número de processo deve ter entre 3 e 9 dígitos.",
     };
   }
-  if (processNumberNum === null || processNumberNum < 0) {
+  if (!/^\d+$/.test(processNumberValue)) {
     toasts.error(
       "Número de processo inválido",
-      "O número de processo deve ser um número válido."
+      "O número de processo deve ser um número válido.",
     );
     return {
       key: "process_number",
@@ -182,7 +189,7 @@ export function validateForm(
   if (specialtyYearNum === null || specialtyYearNum < 1) {
     toasts.error(
       "Ano de especialidade inválido",
-      "Por favor seleciona o ano da especialidade."
+      "Por favor seleciona o ano da especialidade.",
     );
     return {
       key: "specialty_year",
@@ -195,7 +202,7 @@ export function validateForm(
 
 function serializeFieldValue(
   field: SpecialtyField,
-  value: string | string[] | ReferrenceEntry[]
+  value: string | string[] | ReferrenceEntry[],
 ): SpecialtyDetails[string] {
   // Referrence-list fields: pass through the ReferrenceEntry[] directly
   if (field.type === "referrence-list") {
@@ -253,9 +260,81 @@ function serializeFieldValue(
   return typeof value === "string" && value.length > 0 ? value : null; // string or null
 }
 
+export type ClearedItems = {
+  /** Specialty-level fields (e.g. Tipologia, Lista Própria) that will be cleared. */
+  fields: SpecialtyField[];
+  /** Type-specific sections (e.g. "Diabetes - Exames") that have values and won't be serialized. */
+  sections: ConstultationTypeSection[];
+};
+
+/**
+ * Returns the specialty fields and type-specific sections that currently have
+ * non-empty values but would be cleared on the next submit.
+ *
+ * Used to warn the user before submitting an update that would destroy data.
+ */
+export function getFieldsThatWouldBeCleared(
+  formValues: FormValues,
+  specialtyFields: SpecialtyField[],
+): ClearedItems {
+  const ctx = buildFieldRuleContext(formValues);
+  const fields: SpecialtyField[] = [];
+
+  // 1. Check specialty-level fields (e.g. type, own_list, contraceptive…)
+  specialtyFields.forEach((field) => {
+    if (!isFieldVisible(field, ctx) && !isEmpty(formValues[field.key])) {
+      fields.push(field);
+    }
+  });
+
+  // 2. Determine the effective type for the next serialization.
+  //    If 'type' itself will be cleared, serializeFormValues will receive an empty
+  //    type, which means resolveTypeSections("") = [] and no sections will be written.
+  const typeWillBeCleared = fields.some((f) => f.key === "type");
+  const effectiveType = typeWillBeCleared ? "" : ctx.type;
+
+  // 3. Build the set of field keys that WILL be serialized in the next update.
+  const willBeSerializedKeys = new Set<string>();
+  resolveTypeSections(effectiveType).forEach((section) => {
+    const sectionVisible = evaluateFieldRule(section.visibleWhen, ctx, true);
+    if (!sectionVisible) return;
+    section.fields.forEach((field) => {
+      if (isFieldVisible(field, ctx)) {
+        willBeSerializedKeys.add(field.key);
+      }
+    });
+  });
+
+  // 4. Find sections whose data will be lost.
+  //    Primary source: sections for the current type — these are what the user filled in.
+  //    Fallback: all sections across all types when the current type has no sections
+  //    (e.g. switching to SIJ) so orphaned data from the previous type is still surfaced.
+  const sourceForSectionSearch =
+    resolveTypeSections(ctx.type).length > 0
+      ? resolveTypeSections(ctx.type)
+      : Object.values(MGF_CONSULTATION_TYPE_SECTIONS).flat();
+
+  const seenSectionLabels = new Set<string>();
+  const sections: ConstultationTypeSection[] = [];
+
+  sourceForSectionSearch.forEach((section) => {
+    // Deduplicate by label — HTA sections share the same label across DM/HTA/SA
+    if (seenSectionLabels.has(section.label)) return;
+    const hasOrphanedValues = section.fields.some(
+      (f) => !willBeSerializedKeys.has(f.key) && !isEmpty(formValues[f.key]),
+    );
+    if (hasOrphanedValues) {
+      seenSectionLabels.add(section.label);
+      sections.push(section);
+    }
+  });
+
+  return { fields, sections };
+}
+
 export function serializeFormValues(
   formValues: FormValues,
-  specialtyFields: SpecialtyField[]
+  specialtyFields: SpecialtyField[],
 ): SpecialtyDetails {
   const details: SpecialtyDetails = {};
   const consultationType =
@@ -265,7 +344,7 @@ export function serializeFormValues(
   specialtyFields.forEach((field) => {
     details[field.key] = serializeFieldValue(
       field,
-      formValues[field.key] || ""
+      formValues[field.key] || "",
     );
   });
 
@@ -290,7 +369,7 @@ export function serializeFormValues(
       section.fields.forEach((field) => {
         nestedStructures[typeKey][section.key][field.key] = serializeFieldValue(
           field,
-          formValues[field.key] || ""
+          formValues[field.key] || "",
         );
       });
     } else {
@@ -298,7 +377,7 @@ export function serializeFormValues(
       section.fields.forEach((field) => {
         details[field.key] = serializeFieldValue(
           field,
-          formValues[field.key] || ""
+          formValues[field.key] || "",
         );
       });
     }
@@ -316,7 +395,7 @@ export function serializeFormValues(
 
       Object.entries(typeSections).forEach(([sectionKey, sectionData]) => {
         const hasValues = Object.values(sectionData).some(
-          (field) => field !== null
+          (field) => field !== null,
         );
         if (hasValues) {
           includedSections[sectionKey] = sectionData;

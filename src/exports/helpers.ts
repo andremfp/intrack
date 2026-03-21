@@ -405,7 +405,7 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
     source: "details",
     formatter: (value) => formatTextList(value),
   },
-  // Type-specific fields: DM (Diabetes)
+  // Type-specific fields: DM (Diabetes) — shared exams (dm.exams.*)
   {
     key: "dm_exams_creatinina",
     header: "DM - Creatinina (mg/dL)",
@@ -458,20 +458,6 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
         : null,
   },
   {
-    key: "dm_exams_hba1c",
-    header: "DM - HbA1C (%)",
-    source: "type_specific",
-    typeKey: "dm",
-    sectionKey: "exams",
-    fieldKey: "hba1c",
-    formatter: (value) =>
-      typeof value === "number"
-        ? value
-        : value
-        ? Number(value) || String(value)
-        : null,
-  },
-  {
     key: "dm_exams_tfg",
     header: "DM - TFG (mL/min)",
     source: "type_specific",
@@ -485,6 +471,22 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
         ? Number(value) || String(value)
         : null,
   },
+  // DM-specific exams (dm.dm_exams.*)
+  {
+    key: "dm_exams_hba1c",
+    header: "DM - HbA1C (%)",
+    source: "type_specific",
+    typeKey: "dm",
+    sectionKey: "dm_exams",
+    fieldKey: "hba1c",
+    formatter: (value) =>
+      typeof value === "number"
+        ? value
+        : value
+        ? Number(value) || String(value)
+        : null,
+  },
+  // DM history (dm.history.*)
   {
     key: "dm_history_medicamentos",
     header: "DM - Medicamentos",
@@ -501,6 +503,25 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
     typeKey: "dm",
     sectionKey: "history",
     fieldKey: "complicacoes",
+    formatter: (value) => formatTextList(value),
+  },
+  // HTA history within DM context (dm.hta_history.*)
+  {
+    key: "dm_hta_history_hta_medicamentos",
+    header: "DM - HTA Medicamentos",
+    source: "type_specific",
+    typeKey: "dm",
+    sectionKey: "hta_history",
+    fieldKey: "hta_medicamentos",
+    formatter: (value) => formatTextList(value),
+  },
+  {
+    key: "dm_hta_history_hta_complicacoes",
+    header: "DM - HTA Complicações",
+    source: "type_specific",
+    typeKey: "dm",
+    sectionKey: "hta_history",
+    fieldKey: "hta_complicacoes",
     formatter: (value) => formatTextList(value),
   },
   // Type-specific fields: HTA (Hipertensão Arterial)

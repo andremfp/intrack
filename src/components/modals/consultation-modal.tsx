@@ -28,6 +28,8 @@ import { useConsultationForm } from "@/hooks/consultations/use-consultation-form
 import {
   validateForm,
   serializeFormValues,
+  getFieldsThatWouldBeCleared,
+  type ClearedItems,
 } from "@/components/forms/consultation/helpers";
 import {
   buildFieldRuleContext,
@@ -36,6 +38,14 @@ import {
   isFieldVisible,
   resolveTypeSections,
 } from "@/components/forms/consultation/helpers";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ConsultationFieldWithLayout } from "@/components/forms/consultation/consultation-form";
 import type { FormValues } from "@/hooks/consultations/types";
 
@@ -59,6 +69,9 @@ export function ConsultationModal({
   const isEditing = !!editingConsultation;
   const [isSaving, setIsSaving] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  // Items (specialty fields + type sections) that would be cleared; non-null triggers the confirmation dialog.
+  const [itemsToBeCleared, setItemsToBeCleared] =
+    useState<ClearedItems | null>(null);
 
   /**
    * For updates, clear values for fields that are hidden by the current UI conditions
@@ -143,43 +156,9 @@ export function ConsultationModal({
     };
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const validationError = validateForm(
-      formValues,
-      specialtyFields,
-      specialty?.id || null
-    );
-
-    if (validationError) {
-      showFieldError(validationError.key, validationError.message);
-      return;
-    }
-
-    // Pre-submit uniqueness check for new consultations:
-    // block creation if another consultation exists with the same date + process_number.
-    if (!isEditing) {
-      const date = formValues.date as string;
-      const processNumber = parseInt(formValues.process_number as string, 10);
-
-      if (!Number.isNaN(processNumber)) {
-        const duplicateCheck = await getConsultationByDateAndProcessNumber({
-          userId,
-          date,
-          processNumber,
-        });
-
-        if (duplicateCheck.success && duplicateCheck.data) {
-          const message =
-            "Já existe uma consulta com esta data e número de processo.";
-          toasts.error(message);
-          showFieldError("process_number", message);
-          return;
-        }
-      }
-    }
-
+  // Performs the actual API save (create or update). Called either directly from
+  // handleSubmit or after the user confirms the "fields will be cleared" dialog.
+  const doSave = async () => {
     setIsSaving(true);
 
     try {
@@ -228,6 +207,58 @@ export function ConsultationModal({
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const validationError = validateForm(
+      formValues,
+      specialtyFields,
+      specialty?.id || null
+    );
+
+    if (validationError) {
+      showFieldError(validationError.key, validationError.message);
+      return;
+    }
+
+    // Pre-submit uniqueness check for new consultations:
+    // block creation if another consultation exists with the same date + process_number.
+    if (!isEditing) {
+      const date = formValues.date as string;
+      const processNumber = parseInt(formValues.process_number as string, 10);
+
+      if (!Number.isNaN(processNumber)) {
+        const duplicateCheck = await getConsultationByDateAndProcessNumber({
+          userId,
+          date,
+          processNumber,
+        });
+
+        if (duplicateCheck.success && duplicateCheck.data) {
+          const message =
+            "Já existe uma consulta com esta data e número de processo.";
+          toasts.error(message);
+          showFieldError("process_number", message);
+          return;
+        }
+      }
+    }
+
+    // For updates: warn if any fields or sections with data would be cleared on save.
+    if (isEditing) {
+      const toBeCleared = getFieldsThatWouldBeCleared(
+        formValues as FormValues,
+        specialtyFields
+      );
+      if (toBeCleared.fields.length > 0 || toBeCleared.sections.length > 0) {
+        setItemsToBeCleared(toBeCleared);
+        return;
+      }
+    }
+
+    await doSave();
   };
 
   return (
@@ -661,6 +692,51 @@ export function ConsultationModal({
           </div>
         </Card>
       </div>
+
+      {/* Confirmation dialog shown when submitting would irreversibly clear data */}
+      <Dialog
+        open={!!itemsToBeCleared}
+        onOpenChange={(open) => {
+          if (!open) setItemsToBeCleared(null);
+        }}
+      >
+        <DialogContent showCloseButton={false} className="z-[60] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Dados serão apagados</DialogTitle>
+            <DialogDescription>
+              Guardar esta consulta irá apagar os seguintes dados:
+            </DialogDescription>
+          </DialogHeader>
+          <ul className="text-sm list-disc pl-5 space-y-1">
+            {itemsToBeCleared?.sections.map((section) => (
+              <li key={section.key}>{section.label}</li>
+            ))}
+            {itemsToBeCleared?.fields.map((field) => (
+              <li key={field.key}>{field.label}</li>
+            ))}
+          </ul>
+          <p className="text-sm font-medium text-destructive">
+            Esta acção é irreversível.
+          </p>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setItemsToBeCleared(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                setItemsToBeCleared(null);
+                await doSave();
+              }}
+            >
+              Guardar mesmo assim
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
