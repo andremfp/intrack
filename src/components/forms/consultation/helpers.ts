@@ -1,5 +1,6 @@
 import { toasts } from "@/utils/toasts";
 import type {
+  ConstultationTypeSection,
   FieldRule,
   FieldRuleContext,
   ReferrenceEntry,
@@ -257,6 +258,78 @@ function serializeFieldValue(
   }
 
   return typeof value === "string" && value.length > 0 ? value : null; // string or null
+}
+
+export type ClearedItems = {
+  /** Specialty-level fields (e.g. Tipologia, Lista Própria) that will be cleared. */
+  fields: SpecialtyField[];
+  /** Type-specific sections (e.g. "Diabetes - Exames") that have values and won't be serialized. */
+  sections: ConstultationTypeSection[];
+};
+
+/**
+ * Returns the specialty fields and type-specific sections that currently have
+ * non-empty values but would be cleared on the next submit.
+ *
+ * Used to warn the user before submitting an update that would destroy data.
+ */
+export function getFieldsThatWouldBeCleared(
+  formValues: FormValues,
+  specialtyFields: SpecialtyField[],
+): ClearedItems {
+  const ctx = buildFieldRuleContext(formValues);
+  const fields: SpecialtyField[] = [];
+
+  // 1. Check specialty-level fields (e.g. type, own_list, contraceptive…)
+  specialtyFields.forEach((field) => {
+    if (!isFieldVisible(field, ctx) && !isEmpty(formValues[field.key])) {
+      fields.push(field);
+    }
+  });
+
+  // 2. Determine the effective type for the next serialization.
+  //    If 'type' itself will be cleared, serializeFormValues will receive an empty
+  //    type, which means resolveTypeSections("") = [] and no sections will be written.
+  const typeWillBeCleared = fields.some((f) => f.key === "type");
+  const effectiveType = typeWillBeCleared ? "" : ctx.type;
+
+  // 3. Build the set of field keys that WILL be serialized in the next update.
+  const willBeSerializedKeys = new Set<string>();
+  resolveTypeSections(effectiveType).forEach((section) => {
+    const sectionVisible = evaluateFieldRule(section.visibleWhen, ctx, true);
+    if (!sectionVisible) return;
+    section.fields.forEach((field) => {
+      if (isFieldVisible(field, ctx)) {
+        willBeSerializedKeys.add(field.key);
+      }
+    });
+  });
+
+  // 4. Find sections whose data will be lost.
+  //    Primary source: sections for the current type — these are what the user filled in.
+  //    Fallback: all sections across all types when the current type has no sections
+  //    (e.g. switching to SIJ) so orphaned data from the previous type is still surfaced.
+  const sourceForSectionSearch =
+    resolveTypeSections(ctx.type).length > 0
+      ? resolveTypeSections(ctx.type)
+      : Object.values(MGF_CONSULTATION_TYPE_SECTIONS).flat();
+
+  const seenSectionLabels = new Set<string>();
+  const sections: ConstultationTypeSection[] = [];
+
+  sourceForSectionSearch.forEach((section) => {
+    // Deduplicate by label — HTA sections share the same label across DM/HTA/SA
+    if (seenSectionLabels.has(section.label)) return;
+    const hasOrphanedValues = section.fields.some(
+      (f) => !willBeSerializedKeys.has(f.key) && !isEmpty(formValues[f.key]),
+    );
+    if (hasOrphanedValues) {
+      seenSectionLabels.add(section.label);
+      sections.push(section);
+    }
+  });
+
+  return { fields, sections };
 }
 
 export function serializeFormValues(
