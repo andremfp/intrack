@@ -162,7 +162,7 @@ export function initializeFormValues(
         let databaseValueFromNestedStructure: unknown = undefined;
 
         // Section fields are ALWAYS stored in nested structure: details[type][section.key][field.key]
-        // Example: details["dm"]["exams"]["creatinina"]
+        // Example: details["dm"]["exams"]["hba1c"]
         // They are NEVER stored as flat fields in details
         if (section.key && selectedConsultationType) {
           const typeKey = selectedConsultationType.toLowerCase();

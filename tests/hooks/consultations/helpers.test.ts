@@ -306,7 +306,7 @@ describe("initializeFormValues", () => {
   // -------------------------------------------------------------------------
 
   describe("Source 3: nested type-specific fields in details JSONB", () => {
-    // Use real DM sections from constants; path is details.dm["dm_exams"]["creatinina"]
+    // Use real DM sections from constants; path is details.dm["dm_exams"]["hba1c"]
     const dmSpecialtyFields: SpecialtyField[] = [
       { key: "type", label: "Tipo", type: "select" },
     ];
@@ -315,13 +315,13 @@ describe("initializeFormValues", () => {
       const consultation = makeConsultationMGF({
         details: {
           type: "DM",
-          dm: { dm_exams: { creatinina: "1.2" } },
+          dm: { dm_exams: { hba1c: "5.5" } },
         },
       });
 
       const result = initializeFormValues(dmSpecialtyFields, consultation);
 
-      expect(result.creatinina).toBe("1.2");
+      expect(result.hba1c).toBe("5.5");
     });
 
     it("defaults nested field to empty string when nested structure is absent", () => {
@@ -331,27 +331,27 @@ describe("initializeFormValues", () => {
 
       const result = initializeFormValues(dmSpecialtyFields, consultation);
 
-      // creatinina is a number field with no defaultValue → falls back to ""
-      expect(result.creatinina).toBe("");
+      // hba1c is a number field with no defaultValue → falls back to ""
+      expect(result.hba1c).toBe("");
     });
 
     it("does not overwrite a key already set by Source 2 with Source 3 value", () => {
-      // creatinina appears as a flat Source-2 field AND in DM nested sections
-      const creatininaAlsoFlat: SpecialtyField[] = [
+      // hba1c appears as a flat Source-2 field AND in DM nested sections
+      const hba1cAlsoFlat: SpecialtyField[] = [
         { key: "type", label: "Tipo", type: "select" },
-        { key: "creatinina", label: "Creatinina", type: "number" }, // flat in details
+        { key: "hba1c", label: "HbA1c", type: "number" }, // flat in details
       ];
       const consultation = makeConsultationMGF({
         details: {
           type: "DM",
-          creatinina: "from_source_2",
-          dm: { dm_exams: { creatinina: "from_source_3" } },
+          hba1c: "from_source_2",
+          dm: { dm_exams: { hba1c: "from_source_3" } },
         },
       });
 
-      const result = initializeFormValues(creatininaAlsoFlat, consultation);
+      const result = initializeFormValues(hba1cAlsoFlat, consultation);
 
-      expect(result.creatinina).toBe("from_source_2");
+      expect(result.hba1c).toBe("from_source_2");
     });
 
     it("produces no type-specific keys when consultation type is empty", () => {
@@ -360,7 +360,7 @@ describe("initializeFormValues", () => {
       const result = initializeFormValues(minimalSpecialtyFields, consultation);
 
       // DM-specific field should not be present
-      expect(result.creatinina).toBeUndefined();
+      expect(result.hba1c).toBeUndefined();
     });
   });
 

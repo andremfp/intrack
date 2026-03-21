@@ -235,8 +235,8 @@ describe("getFieldsThatWouldBeCleared", () => {
     const formValues: FormValues = {
       location: "urgência",
       type: "DM",
-      creatinina: "1.2",
-      medicamentos: ["ieca"],
+      hba1c: "5.5",
+      medicamentos: ["biaguan"],
     };
     const dmTypeField: SpecialtyField = {
       key: "type",
@@ -247,9 +247,9 @@ describe("getFieldsThatWouldBeCleared", () => {
     const result = getFieldsThatWouldBeCleared(formValues, [dmTypeField]);
     expect(result.fields.some((f) => f.key === "type")).toBe(true);
     expect(result.sections.length).toBeGreaterThan(0);
-    // Sections should contain the ones that had values (creatinina → dm_exams, medicamentos → dm_history)
+    // Sections should contain the ones that had values (hba1c → exams, medicamentos → dm_history)
     expect(
-      result.sections.some((s) => s.fields.some((f) => f.key === "creatinina")),
+      result.sections.some((s) => s.fields.some((f) => f.key === "hba1c")),
     ).toBe(true);
     expect(
       result.sections.some((s) =>
@@ -264,8 +264,8 @@ describe("getFieldsThatWouldBeCleared", () => {
     const formValues: FormValues = {
       location: "unidade",
       type: "SIJ",
-      creatinina: "1.2",
-      medicamentos: ["ieca"],
+      hba1c: "5.5",
+      medicamentos: ["biaguan"],
     };
     const dmTypeField: SpecialtyField = {
       key: "type",
@@ -277,7 +277,7 @@ describe("getFieldsThatWouldBeCleared", () => {
     expect(result.fields.some((f) => f.key === "type")).toBe(false);
     expect(result.sections.length).toBeGreaterThan(0);
     expect(
-      result.sections.some((s) => s.fields.some((f) => f.key === "creatinina")),
+      result.sections.some((s) => s.fields.some((f) => f.key === "hba1c")),
     ).toBe(true);
   });
 
