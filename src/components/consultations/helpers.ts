@@ -157,8 +157,12 @@ export function makeConsultationKeyFromInsert(
  * same calendar-day date + process number.
  */
 export function areConsultationsSameIdentity<
-  T extends { date: string; process_number: number | string }
+  T extends { date: string | null; process_number: number | string | null }
 >(a: T, b: T): boolean {
+  // Consultations with a null date or process number cannot share an identity
+  if (a.date === null || b.date === null) return false;
+  if (a.process_number === null || b.process_number === null) return false;
+
   const keyA = makeConsultationKey({
     date: a.date,
     processNumber: a.process_number,
