@@ -456,6 +456,9 @@ export const MGF_FIELDS: SpecialtyField[] = [
       { value: "urgencia", label: "Serviço de Urgência" },
       { value: "ivg", label: "Consulta de IVG" },
       { value: "cir pediatrica", label: "Cirurgia Pediátrica" },
+      { value: "nutri", label: "Nutrição" },
+      { value: "psico", label: "Psicologia" },
+      { value: "med dentaria", label: "Medicina Dentária" },
     ],
     icpcOptions: MGF_ICPC2_CODES, // ICPC-2 codes for the optional motive search per entry
   },
@@ -657,14 +660,8 @@ export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
       })),
     },
   ],
-  hta: [
-    EXAMS_SECTION,
-    { ...HTA_HISTORY_SECTION, key: "history" },
-  ],
-  sa: [
-    EXAMS_SECTION,
-    HTA_HISTORY_SECTION,
-  ],
+  hta: [EXAMS_SECTION, { ...HTA_HISTORY_SECTION, key: "history" }],
+  sa: [EXAMS_SECTION, HTA_HISTORY_SECTION],
   sm: [
     {
       key: "history",
