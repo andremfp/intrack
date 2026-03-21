@@ -85,17 +85,8 @@ export const HEADER_TO_KEY_MAP: Record<string, string> = {
   "Motivo da Referenciacao": "referrence_motive",
   "PNV Cumprido": "vaccination_plan",
   // Type-specific fields: DM (Diabetes)
-  "DM - Creatinina (mg/dL)": "dm_exams_creatinina",
-  "DM - Creatinina": "dm_exams_creatinina",
-  "DM - Score2": "dm_exams_score2",
-  "DM - Albuminuria (mg/g)": "dm_exams_albuminuria",
-  "DM - Albuminuria": "dm_exams_albuminuria",
-  "DM - LDL (mg/dL)": "dm_exams_ldl",
-  "DM - LDL": "dm_exams_ldl",
-  "DM - HbA1C (%)": "dm_exams_hba1c",
-  "DM - HbA1C": "dm_exams_hba1c",
-  "DM - TFG (mL/min)": "dm_exams_tfg",
-  "DM - TFG": "dm_exams_tfg",
+  "DM - HbA1C (%)": "dm_dm_exams_hba1c",
+  "DM - HbA1C": "dm_dm_exams_hba1c",
   "DM - Medicamentos": "dm_history_medicamentos",
   "DM - Complicações": "dm_history_complicacoes",
   "DM - Complicacoes": "dm_history_complicacoes",
@@ -209,33 +200,40 @@ export const MAX_TEXT_LIST_ITEM_LENGTH = 100;
  *
  * Format: "{typeKey}_{sectionKey}_{fieldKey}"
  * Examples:
- * - "dm_exams_creatinina" → { typeKey: "dm", sectionKey: "exams", fieldKey: "creatinina" }
- * - "sm_history_plano_vigilancia" → { typeKey: "sm", sectionKey: "history", fieldKey: "plano-vigilancia" }
+ * - "dm_exams_creatinina"       → { typeKey: "dm",  sectionKey: "exams",       fieldKey: "creatinina" }
+ * - "dm_dm_exams_hba1c"         → { typeKey: "dm",  sectionKey: "dm_exams",    fieldKey: "hba1c" }
+ * - "dm_hta_history_hta_medicamentos" → { typeKey: "dm", sectionKey: "hta_history", fieldKey: "hta_medicamentos" }
+ * - "sm_history_plano_vigilancia" → null (field key in constants uses hyphen, not underscore)
+ *
+ * Section keys may contain underscores (e.g. "hta_history", "dm_exams"), so the parser
+ * tries progressively longer section key candidates until a matching section+field is found.
  *
  * Returns: parsed info or null if not a type-specific field
  */
 export function parseTypeSpecificKey(
   fieldKey: string
 ): { typeKey: string; sectionKey: string; fieldKey: string } | null {
-  // Type-specific fields follow pattern: {type}_{section}_{field}
-  // We need to handle cases where fieldKey itself contains underscores (e.g., "plano-vigilancia")
   const parts = fieldKey.split("_");
   if (parts.length < 3) return null;
 
   const typeKey = parts[0];
-  const sectionKey = parts[1];
-  // Join remaining parts as fieldKey (handles fields with underscores/hyphens)
-  const actualFieldKey = parts.slice(2).join("_");
-
-  // Validate that this is a known type-specific field
   const typeSections = MGF_CONSULTATION_TYPE_SECTIONS[typeKey];
   if (!typeSections) return null;
 
-  const section = typeSections.find((s) => s.key === sectionKey);
-  if (!section) return null;
+  // Try progressively longer section key candidates to support section keys that
+  // contain underscores (e.g. "hta_history" in "dm_hta_history_hta_medicamentos").
+  for (let sectionParts = 1; sectionParts < parts.length - 1; sectionParts++) {
+    const sectionKey = parts.slice(1, 1 + sectionParts).join("_");
+    const section = typeSections.find((s) => s.key === sectionKey);
+    if (!section) continue;
 
-  const field = section.fields.find((f) => f.key === actualFieldKey);
-  if (!field) return null;
+    // Join remaining parts as fieldKey (handles field keys that contain underscores)
+    const actualFieldKey = parts.slice(1 + sectionParts).join("_");
+    if (!actualFieldKey) continue;
 
-  return { typeKey, sectionKey, fieldKey: actualFieldKey };
+    const field = section.fields.find((f) => f.key === actualFieldKey);
+    if (field) return { typeKey, sectionKey, fieldKey: actualFieldKey };
+  }
+
+  return null;
 }

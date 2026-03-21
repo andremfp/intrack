@@ -22,7 +22,7 @@ describe("parseTypeSpecificKey", () => {
   });
 
   it("returns null for an unknown section key within a valid type", () => {
-    // "unknown" is not a section key on the hta type (only "exams" and "history" exist)
+    // "unknown" is not a section key on the hta type (sections: "exams", "history")
     expect(parseTypeSpecificKey("hta_unknown_creatinina")).toBeNull();
   });
 
@@ -30,10 +30,9 @@ describe("parseTypeSpecificKey", () => {
     expect(parseTypeSpecificKey("hta_exams_nonexistent")).toBeNull();
   });
 
-  it("returns null for a dm-prefixed key because dm section keys are prefixed ('dm_exams', not 'exams')", () => {
-    // The dm type stores sections under full keys like "dm_exams" and "dm_history",
-    // so parts[1] = "exams" does not match any section key.
-    expect(parseTypeSpecificKey("dm_exams_creatinina")).toBeNull();
+  it("returns null for an unknown field in the shared exams section", () => {
+    // hba1c lives in the dm-specific section (dm_exams), not the shared exams section.
+    expect(parseTypeSpecificKey("dm_exams_hba1c")).toBeNull();
   });
 
   it("returns null for an sm multi-word key whose field uses a hyphen delimiter", () => {
@@ -43,6 +42,32 @@ describe("parseTypeSpecificKey", () => {
   });
 
   // --- valid cases ---
+
+  it("parses a valid DM shared exams key", () => {
+    // creatinina lives in the shared exams section (dm.exams) — same as HTA/SA
+    expect(parseTypeSpecificKey("dm_exams_creatinina")).toEqual({
+      typeKey: "dm",
+      sectionKey: "exams",
+      fieldKey: "creatinina",
+    });
+  });
+
+  it("parses a valid DM dm_exams key (section key contains underscore)", () => {
+    // hba1c lives in dm.dm_exams — encoded as dm_dm_exams_hba1c
+    expect(parseTypeSpecificKey("dm_dm_exams_hba1c")).toEqual({
+      typeKey: "dm",
+      sectionKey: "dm_exams",
+      fieldKey: "hba1c",
+    });
+  });
+
+  it("parses a valid DM hta_history key (section and field key both contain underscore)", () => {
+    expect(parseTypeSpecificKey("dm_hta_history_hta_medicamentos")).toEqual({
+      typeKey: "dm",
+      sectionKey: "hta_history",
+      fieldKey: "hta_medicamentos",
+    });
+  });
 
   it("parses a valid HTA exams key", () => {
     expect(parseTypeSpecificKey("hta_exams_creatinina")).toEqual({
