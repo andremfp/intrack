@@ -132,11 +132,11 @@ Deno.test("Rate Limit Configuration Tests", () => {
   assertEquals(importConfig.windowMs, 60 * 60 * 1000); // 1 hour
 
   const exportConfig = rateLimitUtils.getRateLimitConfig("export");
-  assertEquals(exportConfig.maxRequests, 20);
+  assertEquals(exportConfig.maxRequests, 10);
   assertEquals(exportConfig.windowMs, 60 * 60 * 1000);
 
   const reportConfig = rateLimitUtils.getRateLimitConfig("report");
-  assertEquals(reportConfig.maxRequests, 40);
+  assertEquals(reportConfig.maxRequests, 10);
   assertEquals(reportConfig.windowMs, 60 * 60 * 1000);
 
   const bulkDeleteConfig = rateLimitUtils.getRateLimitConfig("bulk_delete");
