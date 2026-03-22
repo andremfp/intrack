@@ -53,11 +53,11 @@ jobs:
 
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: "2.83.0"
 
       - uses: denoland/setup-deno@v1
         with:
-          deno-version: "2.6.3"
+          deno-version: "2.7.7"
 
       - name: Start Local Supabase
         run: |
