@@ -1,7 +1,7 @@
 {
   "name": "intrack",
   "private": true,
-  "version": "0.5.1",
+  "version": "0.5.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,7 +17,7 @@
     "sb:local:db:seed:users": "node supabase/seed-users.js",
     "sb:local:stop": "npx supabase stop",
     "sb:local:status": "npx supabase status",
-    "sb:local:db:redeploy": "npx supabase db reset",
+    "sb:local:db:recreate": "npx supabase db reset",
     "sb:local:functions:deploy": "npx supabase functions serve rate-limit &",
     "sb:local:db:pull": "npx supabase db pull",
     "sb:local:db:diff": "npx supabase db diff",
