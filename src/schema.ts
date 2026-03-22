@@ -223,6 +223,18 @@ export type Database = {
       }
     }
     Functions: {
+      check_and_increment_rate_limit: {
+        Args: {
+          p_max_requests: number
+          p_operation_type: string
+          p_user_id: string
+          p_window_start: string
+        }
+        Returns: {
+          allowed: boolean
+          request_count: number
+        }[]
+      }
       delete_user: { Args: never; Returns: undefined }
     }
     Enums: {
