@@ -18,11 +18,6 @@ import type {
 } from "../functions/rate-limit/types.ts";
 
 // Mock Supabase client for testing
-type RateLimitRecordInput = Pick<
-  DatabaseRateLimitRecord,
-  "user_id" | "operation_type" | "window_start" | "request_count" | "updated_at"
-> & { created_at?: string };
-
 type RateLimitFilterKeys = "user_id" | "operation_type" | "window_start";
 type RateLimitFilterMap = Partial<Record<RateLimitFilterKeys, string>>;
 
@@ -67,43 +62,57 @@ class MockSupabaseClient {
   from(_table: string) {
     void _table;
     const builder = new MockQueryBuilder(this.rateLimitRecords);
-
     return {
       select: (columns?: string) => builder.select(columns),
-      upsert: (data: RateLimitRecordInput) => ({
-        select: () => ({
-          single: async () => {
-            const existingIndex = this.rateLimitRecords.findIndex(
-              (r) =>
-                r.user_id === data.user_id &&
-                r.operation_type === data.operation_type &&
-                r.window_start === data.window_start
-            );
-            let storedRecord: DatabaseRateLimitRecord;
-
-            if (existingIndex >= 0) {
-              storedRecord = {
-                ...this.rateLimitRecords[existingIndex],
-                ...data,
-              };
-              this.rateLimitRecords[existingIndex] = storedRecord;
-            } else {
-              storedRecord = {
-                id: crypto.randomUUID(),
-                ...data,
-                created_at: data.created_at ?? new Date().toISOString(),
-              };
-              this.rateLimitRecords.push(storedRecord);
-            }
-
-            return {
-              data: storedRecord,
-              error: null,
-            };
-          },
-        }),
-      }),
     };
+  }
+
+  // Mirrors the Postgres check_and_increment_rate_limit function:
+  // always increments first, then checks against the limit.
+  rpc(
+    _fn: string,
+    args: {
+      p_user_id: string;
+      p_operation_type: string;
+      p_window_start: string;
+      p_max_requests: number;
+    }
+  ): Promise<{
+    data: Array<{ allowed: boolean; request_count: number }> | null;
+    error: null;
+  }> {
+    const existingIndex = this.rateLimitRecords.findIndex(
+      (r) =>
+        r.user_id === args.p_user_id &&
+        r.operation_type === args.p_operation_type &&
+        r.window_start === args.p_window_start
+    );
+
+    let newCount: number;
+    if (existingIndex >= 0) {
+      newCount = this.rateLimitRecords[existingIndex].request_count + 1;
+      this.rateLimitRecords[existingIndex] = {
+        ...this.rateLimitRecords[existingIndex],
+        request_count: newCount,
+        updated_at: new Date().toISOString(),
+      };
+    } else {
+      newCount = 1;
+      this.rateLimitRecords.push({
+        id: crypto.randomUUID(),
+        user_id: args.p_user_id,
+        operation_type: args.p_operation_type as RateLimitOperation,
+        window_start: args.p_window_start,
+        request_count: 1,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    }
+
+    return Promise.resolve({
+      data: [{ allowed: newCount <= args.p_max_requests, request_count: newCount }],
+      error: null,
+    });
   }
 
   // Method to inspect records for testing
@@ -123,11 +132,11 @@ Deno.test("Rate Limit Configuration Tests", () => {
   assertEquals(importConfig.windowMs, 60 * 60 * 1000); // 1 hour
 
   const exportConfig = rateLimitUtils.getRateLimitConfig("export");
-  assertEquals(exportConfig.maxRequests, 20);
+  assertEquals(exportConfig.maxRequests, 10);
   assertEquals(exportConfig.windowMs, 60 * 60 * 1000);
 
   const reportConfig = rateLimitUtils.getRateLimitConfig("report");
-  assertEquals(reportConfig.maxRequests, 40);
+  assertEquals(reportConfig.maxRequests, 10);
   assertEquals(reportConfig.windowMs, 60 * 60 * 1000);
 
   const bulkDeleteConfig = rateLimitUtils.getRateLimitConfig("bulk_delete");
@@ -180,9 +189,11 @@ Deno.test("Rate Limiting Logic Tests", async (t) => {
       assertEquals(status.allowed, false);
       assertEquals(status.remainingRequests, 0);
 
-      // Check that count didn't increase
+      // Check that getRateLimitStatus didn't increment the count further.
+      // After step 2 the blocked request already pushed the count to maxRequests+1
+      // (the atomic RPC always increments before checking), so we expect 11 here.
       const records = mockSupabase.getRecords();
-      assertEquals(records[0].request_count, 10); // Still 10, not 11
+      assertEquals(records[0].request_count, 11); // Still 11; getRateLimitStatus does not increment
     }
   );
 

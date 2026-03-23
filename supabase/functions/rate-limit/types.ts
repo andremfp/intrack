@@ -41,3 +41,9 @@ export interface RateLimitError {
   message: string;
   details?: Record<string, unknown>;
 }
+
+/** Row returned by the check_and_increment_rate_limit Postgres function */
+export interface RpcCheckRateLimitResult {
+  allowed: boolean;
+  request_count: number;
+}

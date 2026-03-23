@@ -42,12 +42,10 @@ type QueryChain = {
   select: (cols?: string) => QueryChain;
   eq: (col: string, val: string) => QueryChain;
   single: () => Promise<QuerySingleResult>;
-  upsert: (
-    data: unknown
-  ) => { select: () => { single: () => Promise<{ data: unknown; error: null }> } };
 };
 
-// Minimal shape that satisfies the rate-limit.ts SupabaseClient interface.
+// Minimal shape that satisfies the rate-limit.ts SupabaseClient.from() interface
+// (used by getRateLimitStatus for read-only status queries).
 function makeDbChain(
   record: DatabaseRateLimitRecord | null,
   shouldThrow = false
@@ -62,11 +60,6 @@ function makeDbChain(
         error: record ? null : { code: "PGRST116" },
       });
     },
-    upsert: (data: unknown) => ({
-      select: () => ({
-        single: () => Promise.resolve({ data, error: null }),
-      }),
-    }),
   };
   return chain;
 }
@@ -96,9 +89,22 @@ function makeMockCreateClient(opts: {
         },
       };
     }
-    // Service client — only from("rate_limits") is used by the handler
-    const chain = makeDbChain(opts.dbRecord ?? null, opts.throwOnDb ?? false);
-    return { from: () => chain };
+    // Service client — from("rate_limits") for getRateLimitStatus (GET),
+    // rpc("check_and_increment_rate_limit") for checkRateLimit (POST).
+    const chain = makeDbChain(opts.dbRecord ?? null, false);
+    return {
+      from: () => chain,
+      // Mirrors the Postgres function: increment then check.
+      rpc: (_fn: string, args: { p_max_requests: number }) => {
+        if (opts.throwOnDb) throw new Error("Simulated DB error");
+        const existingCount = opts.dbRecord?.request_count ?? 0;
+        const newCount = existingCount + 1;
+        return Promise.resolve({
+          data: [{ allowed: newCount <= args.p_max_requests, request_count: newCount }],
+          error: null,
+        });
+      },
+    };
   };
 
   return mockFn as unknown as HandlerDeps["createClient"];

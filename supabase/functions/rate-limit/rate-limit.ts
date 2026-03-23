@@ -7,6 +7,7 @@ import type {
   RateLimitRequest,
   RateLimitResponse,
   RateLimitOperation,
+  RpcCheckRateLimitResult,
 } from "./types.ts";
 import {
   getRateLimitConfig,
@@ -14,11 +15,6 @@ import {
   getNextWindowReset,
   getSecondsUntilReset,
 } from "./utils.ts";
-
-type RateLimitTableUpsertData = Pick<
-  DatabaseRateLimitRecord,
-  "user_id" | "operation_type" | "window_start" | "request_count" | "updated_at"
->;
 
 type RateLimitQuery = {
   select(columns?: string): RateLimitQuery;
@@ -34,18 +30,19 @@ type RateLimitQuery = {
 
 type RateLimitTable = {
   select(columns?: string): RateLimitQuery;
-  upsert(
-    values: RateLimitTableUpsertData,
-    options: { onConflict: string }
-  ): {
-    select(): {
-      single(): Promise<{ data: DatabaseRateLimitRecord | null; error: null }>;
-    };
-  };
 };
 
 export interface SupabaseClient {
   from(table: "rate_limits"): RateLimitTable;
+  rpc(
+    fn: "check_and_increment_rate_limit",
+    args: {
+      p_user_id: string;
+      p_operation_type: string;
+      p_window_start: string;
+      p_max_requests: number;
+    }
+  ): Promise<{ data: RpcCheckRateLimitResult[] | null; error: { code: string } | null }>;
 }
 
 /**
@@ -66,26 +63,27 @@ export async function checkRateLimit(
   const windowStartStr = windowStart.toISOString();
 
   try {
-    // Check current request count in the database
-    const { data: existingRecord, error: selectError } = await supabase
-      .from("rate_limits")
-      .select("*")
-      .eq("user_id", userId)
-      .eq("operation_type", operationType)
-      .eq("window_start", windowStartStr)
-      .single();
+    // Atomically increment the counter and check the limit in one DB round-trip,
+    // eliminating the race condition of the old SELECT + UPSERT two-step.
+    const { data, error } = await supabase.rpc(
+      "check_and_increment_rate_limit",
+      {
+        p_user_id: userId,
+        p_operation_type: operationType,
+        p_window_start: windowStartStr,
+        p_max_requests: config.maxRequests,
+      }
+    );
 
-    if (selectError && selectError.code !== "PGRST116") {
-      // PGRST116 = no rows returned
-      throw selectError;
+    if (error) {
+      throw error;
     }
 
-    const currentCount = existingRecord?.request_count ?? 0;
-    const newCount = currentCount + 1;
+    // RPC returns a single-row TABLE result
+    const result = data![0];
+    const nextReset = getNextWindowReset(windowStart, config.windowMs);
 
-    // Check if limit exceeded
-    if (currentCount >= config.maxRequests) {
-      const nextReset = getNextWindowReset(windowStart, config.windowMs);
+    if (!result.allowed) {
       return {
         allowed: false,
         remainingRequests: 0,
@@ -94,36 +92,9 @@ export async function checkRateLimit(
       };
     }
 
-    // Update or insert the rate limit record
-    const upsertData: RateLimitTableUpsertData = {
-      user_id: userId,
-      operation_type: operationType,
-      window_start: windowStartStr,
-      request_count: newCount,
-      updated_at: new Date().toISOString(),
-    };
-
-    const { error: upsertError } = await supabase
-      .from("rate_limits")
-      // IMPORTANT: PostgREST upserts match on the table's primary key by default.
-      // Our table uses a surrogate `id` PK plus a composite UNIQUE constraint on
-      // (user_id, operation_type, window_start). Without onConflict, repeated requests
-      // will try to INSERT again and violate the unique constraint.
-      .upsert(upsertData, {
-        onConflict: "user_id,operation_type,window_start",
-      })
-      .select()
-      .single();
-
-    if (upsertError) {
-      throw upsertError;
-    }
-
-    const nextReset = getNextWindowReset(windowStart, config.windowMs);
-
     return {
       allowed: true,
-      remainingRequests: Math.max(0, config.maxRequests - newCount),
+      remainingRequests: Math.max(0, config.maxRequests - result.request_count),
       resetTime: nextReset.toISOString(),
     };
   } catch (error) {

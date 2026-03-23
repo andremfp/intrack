@@ -3,6 +3,7 @@
  */
 
 import type { RateLimitConfig, RateLimitOperation } from "./types.ts";
+import { RATE_LIMIT_CONFIGS } from "./config.ts";
 
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,14 +18,7 @@ export const corsHeaders = {
 export function getRateLimitConfig(
   operationType: RateLimitOperation
 ): RateLimitConfig {
-  const configs: Record<RateLimitOperation, RateLimitConfig> = {
-    import: { maxRequests: 10, windowMs: 60 * 60 * 1000 }, // 10 per hour
-    export: { maxRequests: 20, windowMs: 60 * 60 * 1000 }, // 20 per hour
-    report: { maxRequests: 40, windowMs: 60 * 60 * 1000 }, // 40 per hour
-    bulk_delete: { maxRequests: 10, windowMs: 5 * 60 * 1000 }, // 10 per 5 minutes
-  };
-
-  return configs[operationType];
+  return RATE_LIMIT_CONFIGS[operationType];
 }
 
 /**
