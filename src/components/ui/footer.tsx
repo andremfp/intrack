@@ -44,12 +44,9 @@ export function Footer() {
             <span className="text-xs font-normal text-[color:var(--muted-foreground)]">
               Precisas de ajuda?
             </span>
-            <a
-              href="mailto:contact@intrack.pt"
-              className="text-xs text-[color:var(--muted-foreground)] select-all"
-            >
+            <p className="text-xs text-muted-foreground select-all">
               contact@intrack.pt
-            </a>
+            </p>
           </div>
         </div>
 

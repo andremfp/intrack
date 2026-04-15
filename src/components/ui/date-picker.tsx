@@ -38,6 +38,14 @@ function formatDate(date: Date | undefined) {
   });
 }
 
+/** Formats a Date as YYYY-MM-DD using local time, avoiding the UTC shift from toISOString(). */
+function toLocalISODate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function isValidDate(date: Date | undefined) {
   if (!date) {
     return false;
@@ -88,7 +96,7 @@ export function DatePicker({
       const formattedDate = formatDate(selectedDate);
       setInputValue(formattedDate);
       // Convert to YYYY-MM-DD format for the onChange callback
-      const isoDate = selectedDate.toISOString().split("T")[0];
+      const isoDate = toLocalISODate(selectedDate);
       onChange?.(isoDate);
     } else {
       setInputValue("");
@@ -106,7 +114,7 @@ export function DatePicker({
     if (isValidDate(date)) {
       setDate(date);
       setMonth(date);
-      const isoDate = date.toISOString().split("T")[0];
+      const isoDate = toLocalISODate(date);
       onChange?.(isoDate);
     } else if (inputValue === "") {
       setDate(undefined);
