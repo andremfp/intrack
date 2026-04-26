@@ -118,8 +118,8 @@ export function ResetPasswordForm({
 
       toasts.success("Password atualizada", "Password redefinida com sucesso");
 
-      // Sign out to force re-login with new password
-      await supabase.auth.signOut();
+      // Revoke all sessions globally to invalidate any hijacked sessions
+      await supabase.auth.signOut({ scope: 'global' });
 
       // Redirect to login after a short delay
       setTimeout(() => {
