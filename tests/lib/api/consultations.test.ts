@@ -438,15 +438,10 @@ describe("consultations API", () => {
       expect(hoisted.query.range).toHaveBeenCalledWith(0, 0);
     });
 
-    it("sorts in memory and paginates manually for age sort — no DB order or range", async () => {
-      const unsorted = [
-        { id: "a", age: 30, age_unit: "years", favorite: false },
-        { id: "b", age: 20, age_unit: "years", favorite: false },
-        { id: "c", age: 40, age_unit: "years", favorite: false },
-      ] as ConsultationMGF[];
-      resolveQuery(unsorted, null, 3);
+    it("uses age_years column for DB-level age sorting and applies pagination", async () => {
+      const consultations = [mockConsultation] as unknown as ConsultationMGF[];
+      resolveQuery(consultations, null, 5);
 
-      // page=1, pageSize=2, sort by age descending
       const result = await getMGFConsultations(
         "u1",
         undefined,
@@ -457,15 +452,18 @@ describe("consultations API", () => {
       );
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.totalCount).toBe(3);
-        expect(result.data.consultations).toHaveLength(2);
-        // Age desc: c(40) → a(30) → b(20); first page = [c, a]
-        expect(result.data.consultations[0].id).toBe("c");
-        expect(result.data.consultations[1].id).toBe("a");
+        expect(result.data.totalCount).toBe(5);
       }
-      // No DB-level ordering or range for the age sort path
-      expect(hoisted.query.order).not.toHaveBeenCalled();
-      expect(hoisted.query.range).not.toHaveBeenCalled();
+      // Age sorting must go through DB using the computed age_years column
+      expect(hoisted.query.order).toHaveBeenCalledWith("favorite", {
+        ascending: false,
+        nullsFirst: false,
+      });
+      expect(hoisted.query.order).toHaveBeenCalledWith("age_years", {
+        ascending: false,
+      });
+      // Pagination must be applied via DB range (not sliced in JS)
+      expect(hoisted.query.range).toHaveBeenCalledWith(0, 1);
     });
   });
 

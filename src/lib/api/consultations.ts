@@ -9,7 +9,6 @@ import {
   PAGINATION_CONSTANTS,
   type ConsultationsSortingField,
 } from "@/constants";
-import { sortConsultationsWithFavorites } from "@/lib/api/helpers";
 import { checkRateLimit, clearRateLimitCache } from "@/lib/api/rate-limit";
 import type { RateLimitOperation } from "@/lib/api/rate-limit";
 import {
@@ -309,36 +308,14 @@ export async function getMGFConsultations(
   const sortField = sorting?.field || "date";
   const sortOrder = sorting?.order || "desc";
 
-  // Special handling for age sorting - need to convert all ages to years first
-  // Since Supabase doesn't support computed expressions in ORDER BY, we need to
-  // fetch all matching records, sort in JavaScript, then apply pagination
-  if (sortField === "age") {
-    // Fetch all matching records (without pagination limit)
-    const { data: allData, error, count } = await query;
+  // Map "age" to the computed "age_years" column so Postgres can sort and
+  // paginate natively without a full table fetch + JavaScript in-memory sort.
+  const dbSortField = sortField === "age" ? "age_years" : sortField;
 
-    if (error) return failure(error, "getMGFConsultations");
-    if (!allData) return success({ consultations: [], totalCount: 0 });
-
-    // Sort by favorites first, then by age using utility function
-    const sortedData = sortConsultationsWithFavorites(allData, {
-      field: "age",
-      order: sortOrder,
-    });
-
-    // Apply pagination manually
-    const paginatedData = sortedData.slice(from, to + 1);
-
-    return success({
-      consultations: paginatedData,
-      totalCount: count || 0,
-    });
-  }
-
-  // For non-age sorting, use database sorting
   // Sort by favorites first (favorites at top), then by the selected field
   query = query
     .order("favorite", { ascending: false, nullsFirst: false })
-    .order(sortField, { ascending: sortOrder === "asc" });
+    .order(dbSortField, { ascending: sortOrder === "asc" });
 
   // Apply pagination
   query = query.range(from, to);
@@ -387,23 +364,12 @@ export async function getMGFConsultationsForExport(
   const sortField = sorting?.field || "date";
   const sortOrder = sorting?.order || "desc";
 
-  if (sortField === "age") {
-    const { data, error } = await query;
-
-    if (error) return failure(error, "getMGFConsultationsForExport");
-    if (!data) return successWithClear([], "export");
-
-    const sortedData = sortConsultationsWithFavorites(data, {
-      field: "age",
-      order: sortOrder,
-    });
-
-    return successWithClear(sortedData, "export");
-  }
+  // Map "age" to the computed "age_years" column so Postgres can sort natively.
+  const dbSortField = sortField === "age" ? "age_years" : sortField;
 
   query = query
     .order("favorite", { ascending: false, nullsFirst: false })
-    .order(sortField, { ascending: sortOrder === "asc" });
+    .order(dbSortField, { ascending: sortOrder === "asc" });
 
   const { data, error } = await query;
 
