@@ -165,7 +165,22 @@ Deno.test(
   "handler: no auth header and no TEST_USER_ID returns 401 UNAUTHORIZED",
   async () => {
     const handler = createRateLimitHandler({
-      getEnv: makeGetEnv(), // no TEST_USER_ID
+      getEnv: makeGetEnv(), // no TEST_USER_ID, no ENVIRONMENT
+      createClient: makeMockCreateClient({}),
+    });
+    const response = await handler.fetch(makeRequest("POST"));
+
+    assertEquals(response.status, 401);
+    const body = await parseErrorBody(response);
+    assertEquals(body.error.code, "UNAUTHORIZED");
+  }
+);
+
+Deno.test(
+  "handler: TEST_USER_ID set but ENVIRONMENT is not development returns 401 UNAUTHORIZED",
+  async () => {
+    const handler = createRateLimitHandler({
+      getEnv: makeGetEnv({ TEST_USER_ID: "test-user" }), // no ENVIRONMENT=development
       createClient: makeMockCreateClient({}),
     });
     const response = await handler.fetch(makeRequest("POST"));
@@ -202,7 +217,7 @@ Deno.test(
   "handler: GET with missing operation_type returns 400 INVALID_OPERATION",
   async () => {
     const handler = createRateLimitHandler({
-      getEnv: makeGetEnv({ TEST_USER_ID: "test-user" }),
+      getEnv: makeGetEnv({ TEST_USER_ID: "test-user", ENVIRONMENT: "development" }),
       createClient: makeMockCreateClient({}),
     });
     // Empty string → url.searchParams.get returns "" which is falsy
@@ -220,7 +235,7 @@ Deno.test(
   "handler: GET with invalid operation_type returns 400 INVALID_OPERATION",
   async () => {
     const handler = createRateLimitHandler({
-      getEnv: makeGetEnv({ TEST_USER_ID: "test-user" }),
+      getEnv: makeGetEnv({ TEST_USER_ID: "test-user", ENVIRONMENT: "development" }),
       createClient: makeMockCreateClient({}),
     });
     const response = await handler.fetch(
@@ -235,7 +250,7 @@ Deno.test(
 
 Deno.test("handler: POST with invalid JSON returns 400 INVALID_JSON", async () => {
   const handler = createRateLimitHandler({
-    getEnv: makeGetEnv({ TEST_USER_ID: "test-user" }),
+    getEnv: makeGetEnv({ TEST_USER_ID: "test-user", ENVIRONMENT: "development" }),
     createClient: makeMockCreateClient({}),
   });
   const request = new Request(
@@ -257,7 +272,7 @@ Deno.test(
   "handler: POST with invalid operation_type returns 400 INVALID_OPERATION",
   async () => {
     const handler = createRateLimitHandler({
-      getEnv: makeGetEnv({ TEST_USER_ID: "test-user" }),
+      getEnv: makeGetEnv({ TEST_USER_ID: "test-user", ENVIRONMENT: "development" }),
       createClient: makeMockCreateClient({}),
     });
     const response = await handler.fetch(
@@ -290,7 +305,7 @@ Deno.test(
     };
 
     const handler = createRateLimitHandler({
-      getEnv: makeGetEnv({ TEST_USER_ID: "test-user" }),
+      getEnv: makeGetEnv({ TEST_USER_ID: "test-user", ENVIRONMENT: "development" }),
       createClient: makeMockCreateClient({ dbRecord: exhaustedRecord }),
     });
     const response = await handler.fetch(
@@ -321,7 +336,7 @@ Deno.test(
   "handler: unexpected DB error returns 500 INTERNAL_ERROR",
   async () => {
     const handler = createRateLimitHandler({
-      getEnv: makeGetEnv({ TEST_USER_ID: "test-user" }),
+      getEnv: makeGetEnv({ TEST_USER_ID: "test-user", ENVIRONMENT: "development" }),
       createClient: makeMockCreateClient({ throwOnDb: true }),
     });
     const response = await handler.fetch(

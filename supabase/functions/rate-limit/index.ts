@@ -62,15 +62,19 @@ export function createRateLimitHandler(deps: HandlerDeps = {}) {
           getRequiredEnv("SERVICE_ROLE_KEY") ??
           getRequiredEnv("SUPABASE_SERVICE_ROLE_KEY");
 
-        console.log(
-          "Environment check:",
-          JSON.stringify({
-            supabaseUrl: supabaseUrl ?? "MISSING",
-            supabaseAnonKey: supabaseAnonKey ? "SET" : "MISSING",
-            supabaseServiceKey: supabaseServiceKey ? "SET" : "MISSING",
-            testUserId: getEnv("TEST_USER_ID") ? "SET" : "MISSING",
-          })
-        );
+        const isDev = getEnv("ENVIRONMENT") === "development";
+
+        if (isDev) {
+          console.log(
+            "Environment check:",
+            JSON.stringify({
+              supabaseUrl: supabaseUrl ?? "MISSING",
+              supabaseAnonKey: supabaseAnonKey ? "SET" : "MISSING",
+              supabaseServiceKey: supabaseServiceKey ? "SET" : "MISSING",
+              testUserId: getEnv("TEST_USER_ID") ? "SET" : "MISSING",
+            })
+          );
+        }
 
         if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
           return createErrorResponse(
@@ -114,9 +118,9 @@ export function createRateLimitHandler(deps: HandlerDeps = {}) {
         let userId: string;
 
         if (!authHeader) {
-          // For testing: allow requests without auth header by using a test user ID
+          // Only allow the test bypass in development environments
           const testUserId = getEnv("TEST_USER_ID");
-          if (testUserId) {
+          if (testUserId && isDev) {
             userId = testUserId;
           } else {
             return createErrorResponse(
