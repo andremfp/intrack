@@ -1,5 +1,6 @@
 import { Eye, EyeOff, Check, X, Mail } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 
 import { cn, validatePasswordCriteria, isPasswordValid } from "@/utils/utils";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,8 @@ export function SignupForm({
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
   const passwordCriteria = validatePasswordCriteria(password);
+  const captchaRef = useRef<TurnstileInstance>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   async function handleGoogleSignup() {
     setError(null);
@@ -75,6 +78,7 @@ export function SignupForm({
         options: {
           data: { full_name: name },
           emailRedirectTo: `${window.location.origin}/dashboard`,
+          captchaToken: captchaToken ?? undefined,
         },
       });
 
@@ -112,6 +116,8 @@ export function SignupForm({
           : "Não foi possível criar a conta";
       setError(message);
     } finally {
+      captchaRef.current?.reset();
+      setCaptchaToken(null);
       setIsLoading(false);
     }
   }
@@ -343,7 +349,17 @@ export function SignupForm({
             )}
           </Field>
           <Field>
-            <Button type="submit" disabled={isLoading}>
+            <Turnstile
+              ref={captchaRef}
+              siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+              onSuccess={(token) => setCaptchaToken(token)}
+              onError={() => setCaptchaToken(null)}
+              onExpire={() => setCaptchaToken(null)}
+              options={{ theme: "auto" }}
+            />
+          </Field>
+          <Field>
+            <Button type="submit" disabled={isLoading || !captchaToken}>
               Criar conta
             </Button>
           </Field>

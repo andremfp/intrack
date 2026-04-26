@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 
 import { cn } from "@/utils/utils";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,8 @@ export function ForgotPasswordForm({
 }: React.ComponentProps<"div">) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const captchaRef = useRef<TurnstileInstance>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -27,12 +30,15 @@ export function ForgotPasswordForm({
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
+      captchaToken: captchaToken ?? undefined,
     });
 
     if (import.meta.env.DEV && error) {
       console.error("[ForgotPassword] resetPasswordForEmail error:", error);
     }
 
+    captchaRef.current?.reset();
+    setCaptchaToken(null);
     setIsSubmitted(true);
     setIsLoading(false);
   }
@@ -99,7 +105,17 @@ export function ForgotPasswordForm({
             />
           </Field>
           <Field>
-            <Button type="submit" disabled={isLoading}>
+            <Turnstile
+              ref={captchaRef}
+              siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+              onSuccess={(token) => setCaptchaToken(token)}
+              onError={() => setCaptchaToken(null)}
+              onExpire={() => setCaptchaToken(null)}
+              options={{ theme: "auto" }}
+            />
+          </Field>
+          <Field>
+            <Button type="submit" disabled={isLoading || !captchaToken}>
               {isLoading ? "A enviar..." : "Enviar link de recuperação"}
             </Button>
           </Field>
