@@ -11,4 +11,5 @@ export const RATE_LIMIT_CONFIGS: Record<RateLimitOperation, RateLimitConfig> =
     export: { maxRequests: 10, windowMs: 60 * 60 * 1000 }, // 10 per hour
     report: { maxRequests: 10, windowMs: 60 * 60 * 1000 }, // 10 per hour
     bulk_delete: { maxRequests: 10, windowMs: 5 * 60 * 1000 }, // 10 per 5 minutes
+    metrics: { maxRequests: 30, windowMs: 60 * 1000 }, // 30 per minute
   };

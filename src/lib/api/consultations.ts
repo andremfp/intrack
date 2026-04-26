@@ -394,6 +394,11 @@ export async function getConsultationMetrics(
   excludeType?: string
 ): Promise<ApiResponse<ConsultationMetrics>> {
   try {
+    const rateLimitError = await ensureOperationAllowed("metrics");
+    if (rateLimitError) {
+      return failure(rateLimitError, "getConsultationMetrics");
+    }
+
     // Build query with database-level filtering
     const viewName = specialtyCode
       ? `consultations_${specialtyCode}`
@@ -409,11 +414,11 @@ export async function getConsultationMetrics(
     const { data, error } = await query;
 
     if (error) return failure(error, "getConsultationMetrics");
-    if (!data) return success(getEmptyMetrics());
+    if (!data) return successWithClear(getEmptyMetrics(), "metrics");
 
     // Calculate metrics (data is already filtered at database level)
     const metrics = calculateMetrics(data as unknown as ConsultationMGF[]);
-    return success(metrics);
+    return successWithClear(metrics, "metrics");
   } catch (error) {
     return failure(error as Error, "getConsultationMetrics");
   }
@@ -435,6 +440,11 @@ export async function getConsultationTimeSeries(
   excludeType?: string
 ): Promise<ApiResponse<TimeSeriesDataPoint[]>> {
   try {
+    const rateLimitError = await ensureOperationAllowed("metrics");
+    if (rateLimitError) {
+      return failure(rateLimitError, "getConsultationTimeSeries");
+    }
+
     // Build query with database-level filtering
     const viewName = specialtyCode
       ? `consultations_${specialtyCode}`
@@ -452,7 +462,7 @@ export async function getConsultationTimeSeries(
     const { data, error } = await query;
 
     if (error) return failure(error, "getConsultationTimeSeries");
-    if (!data) return success([]);
+    if (!data) return successWithClear([], "metrics");
 
     // Aggregate by day
     const dayCounts = new Map<string, number>();
@@ -471,7 +481,7 @@ export async function getConsultationTimeSeries(
       .map(([date, count]) => ({ date, count }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    return success(timeSeriesData);
+    return successWithClear(timeSeriesData, "metrics");
   } catch (error) {
     return failure(error as Error, "getConsultationTimeSeries");
   }
