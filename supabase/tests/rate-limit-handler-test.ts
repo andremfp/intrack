@@ -134,12 +134,39 @@ function parseErrorBody(
 // ── Tests ──────────────────────────────────────────────────────────────────────
 
 Deno.test("handler: OPTIONS returns 204 with CORS headers", async () => {
-  const handler = createRateLimitHandler({});
-  const response = await handler.fetch(makeRequest("OPTIONS"));
+  const handler = createRateLimitHandler({
+    getEnv: makeGetEnv({ CORS_ALLOWED_ORIGINS: "https://intrack.pt" }),
+  });
+  const request = new Request(
+    "https://test.supabase.co/functions/v1/rate-limit",
+    { method: "OPTIONS", headers: { Origin: "https://intrack.pt" } }
+  );
+  const response = await handler.fetch(request);
 
   assertEquals(response.status, 204);
-  assert(response.headers.get("Access-Control-Allow-Origin") !== null);
+  assertEquals(
+    response.headers.get("Access-Control-Allow-Origin"),
+    "https://intrack.pt"
+  );
   assert(response.headers.get("Access-Control-Allow-Methods") !== null);
+  assertEquals(response.headers.get("Vary"), "Origin");
+});
+
+Deno.test("handler: OPTIONS with unlisted origin falls back to production origin", async () => {
+  const handler = createRateLimitHandler({
+    getEnv: makeGetEnv({ CORS_ALLOWED_ORIGINS: "https://intrack.pt" }),
+  });
+  const request = new Request(
+    "https://test.supabase.co/functions/v1/rate-limit",
+    { method: "OPTIONS", headers: { Origin: "https://evil.com" } }
+  );
+  const response = await handler.fetch(request);
+
+  assertEquals(response.status, 204);
+  assertEquals(
+    response.headers.get("Access-Control-Allow-Origin"),
+    "https://intrack.pt"
+  );
 });
 
 Deno.test("handler: invalid method (DELETE) returns 405 METHOD_NOT_ALLOWED", async () => {

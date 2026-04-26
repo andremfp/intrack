@@ -88,6 +88,7 @@
         "npm:@types/react@^19.1.16",
         "npm:@types/testing-library__jest-dom@^5.14.9",
         "npm:@types/xlsx@^0.0.35",
+        "npm:@types/zxcvbn@^4.4.5",
         "npm:@vitejs/plugin-react@^5.0.4",
         "npm:class-variance-authority@~0.7.1",
         "npm:clsx@^2.1.1",
@@ -120,7 +121,8 @@
         "npm:vite@^7.1.7",
         "npm:vitest@^1.5.3",
         "npm:xlsx@~0.18.5",
-        "npm:zod@^3.25.76"
+        "npm:zod@^3.25.76",
+        "npm:zxcvbn@^4.4.2"
       ]
     }
   }

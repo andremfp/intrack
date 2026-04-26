@@ -5,12 +5,24 @@
 import type { RateLimitConfig, RateLimitOperation } from "./types.ts";
 import { RATE_LIMIT_CONFIGS } from "./config.ts";
 
-export const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-};
+const PRODUCTION_ORIGIN = "https://intrack.pt";
+
+export function getCorsHeaders(
+  requestOrigin: string | null,
+  allowedOrigins: string[]
+): Record<string, string> {
+  const origin =
+    requestOrigin && allowedOrigins.includes(requestOrigin)
+      ? requestOrigin
+      : PRODUCTION_ORIGIN;
+  return {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+    "Vary": "Origin",
+  };
+}
 
 /**
  * Get rate limit configuration for an operation type
@@ -67,6 +79,7 @@ export function createErrorResponse(
   code: string,
   message: string,
   status: number = 400,
+  corsHeaders: Record<string, string>,
   details?: Record<string, unknown>
 ) {
   return new Response(
@@ -83,7 +96,11 @@ export function createErrorResponse(
 /**
  * Create standardized success response
  */
-export function createSuccessResponse(data: unknown, status: number = 200) {
+export function createSuccessResponse(
+  data: unknown,
+  corsHeaders: Record<string, string>,
+  status: number = 200
+) {
   return new Response(JSON.stringify(data), {
     status,
     headers: { "Content-Type": "application/json", ...corsHeaders },

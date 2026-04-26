@@ -13,7 +13,7 @@ import {
 } from "./rate-limit.ts";
 import {
   isValidOperationType,
-  corsHeaders,
+  getCorsHeaders,
   createErrorResponse,
   createSuccessResponse,
 } from "./utils.ts";
@@ -40,9 +40,18 @@ export function createRateLimitHandler(deps: HandlerDeps = {}) {
 
   return {
     async fetch(request: Request): Promise<Response> {
+      const requestOrigin = request.headers.get("origin");
+      const rawOrigins =
+        getEnv("CORS_ALLOWED_ORIGINS") ?? "https://intrack.pt";
+      const allowedOrigins = rawOrigins
+        .split(",")
+        .map((o) => o.trim())
+        .filter(Boolean);
+      const cors = getCorsHeaders(requestOrigin, allowedOrigins);
+
       // Handle CORS preflight requests
       if (request.method === "OPTIONS") {
-        return new Response(null, { status: 204, headers: corsHeaders });
+        return new Response(null, { status: 204, headers: cors });
       }
 
       try {
@@ -51,7 +60,8 @@ export function createRateLimitHandler(deps: HandlerDeps = {}) {
           return createErrorResponse(
             "METHOD_NOT_ALLOWED",
             "Method not allowed",
-            405
+            405,
+            cors
           );
         }
 
@@ -80,7 +90,8 @@ export function createRateLimitHandler(deps: HandlerDeps = {}) {
           return createErrorResponse(
             "CONFIG_ERROR",
             "Missing required Supabase environment variables (SUPABASE_URL, SUPABASE_ANON_KEY, SERVICE_ROLE_KEY/SUPABASE_SERVICE_ROLE_KEY). For local dev, Supabase injects `SUPABASE_SERVICE_ROLE_KEY`, so set whichever name you rely on via `supabase secrets set` or your shell.",
-            500
+            500,
+            cors
           );
         }
 
@@ -126,7 +137,8 @@ export function createRateLimitHandler(deps: HandlerDeps = {}) {
             return createErrorResponse(
               "UNAUTHORIZED",
               "Authorization header required",
-              401
+              401,
+              cors
             );
           }
         } else {
@@ -143,7 +155,8 @@ export function createRateLimitHandler(deps: HandlerDeps = {}) {
             return createErrorResponse(
               "UNAUTHORIZED",
               "Invalid or expired token",
-              401
+              401,
+              cors
             );
           }
 
@@ -160,6 +173,7 @@ export function createRateLimitHandler(deps: HandlerDeps = {}) {
               "INVALID_OPERATION",
               "Valid operation_type parameter required",
               400,
+              cors,
               { validOperations: ["import", "export", "report", "bulk_delete"] }
             );
           }
@@ -181,7 +195,7 @@ export function createRateLimitHandler(deps: HandlerDeps = {}) {
               source: "edge_function",
             })
           );
-          return createSuccessResponse(status);
+          return createSuccessResponse(status, cors);
         } else if (request.method === "POST") {
           // POST request: Check and increment rate limit counter
           let requestBody: RateLimitRequest;
@@ -192,7 +206,8 @@ export function createRateLimitHandler(deps: HandlerDeps = {}) {
             return createErrorResponse(
               "INVALID_JSON",
               "Invalid JSON in request body",
-              400
+              400,
+              cors
             );
           }
 
@@ -204,6 +219,7 @@ export function createRateLimitHandler(deps: HandlerDeps = {}) {
               "INVALID_OPERATION",
               "Valid operation_type required in request body",
               400,
+              cors,
               { validOperations: ["import", "export", "report", "bulk_delete"] }
             );
           }
@@ -261,6 +277,7 @@ export function createRateLimitHandler(deps: HandlerDeps = {}) {
               "RATE_LIMIT_EXCEEDED",
               `Rate limit exceeded for ${operationType} operation`,
               429,
+              cors,
               {
                 operationType,
                 remainingRequests: result.remainingRequests,
@@ -276,14 +293,15 @@ export function createRateLimitHandler(deps: HandlerDeps = {}) {
             allowed: true,
             remainingRequests: result.remainingRequests,
             resetTime: result.resetTime,
-          });
+          }, cors);
         }
 
         // Should not reach here
         return createErrorResponse(
           "INTERNAL_ERROR",
           "Unexpected request handling",
-          500
+          500,
+          cors
         );
       } catch (error) {
         console.error(
@@ -300,6 +318,7 @@ export function createRateLimitHandler(deps: HandlerDeps = {}) {
           "INTERNAL_ERROR",
           "An unexpected error occurred",
           500,
+          cors,
           {
             error: error instanceof Error ? error.message : String(error),
             errorType: error instanceof Error ? error.name : typeof error,
@@ -312,5 +331,3 @@ export function createRateLimitHandler(deps: HandlerDeps = {}) {
 }
 
 export default createRateLimitHandler();
-
-export { corsHeaders };
