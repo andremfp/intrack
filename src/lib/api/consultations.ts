@@ -7,6 +7,7 @@ import {
   getDefaultSpecialtyDetails,
   type SpecialtyDetails,
   PAGINATION_CONSTANTS,
+  EXPORT_MAX_ROWS,
   type ConsultationsSortingField,
 } from "@/constants";
 import { checkRateLimit, clearRateLimitCache } from "@/lib/api/rate-limit";
@@ -336,7 +337,7 @@ export async function getMGFConsultationsForExport(
   specialtyYear?: number,
   filters?: ConsultationsFilters,
   sorting?: ConsultationsSorting,
-  maxRows: number = 10000
+  maxRows: number = EXPORT_MAX_ROWS
 ): Promise<ApiResponse<ConsultationMGF[]>> {
   if (!userId) {
     return success([]);
