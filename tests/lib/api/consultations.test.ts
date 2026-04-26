@@ -14,6 +14,7 @@ import {
   createConsultation,
   updateConsultation,
   deleteConsultation,
+  bulkDeleteConsultations,
   getUserConsultationsInDateRange,
   getConsultationByDateAndProcessNumber,
   createConsultationsBatch,
@@ -62,11 +63,12 @@ const hoisted = vi.hoisted(() => {
     });
 
   const from = vi.fn(() => query);
-  return { query, from };
+  const rpc = vi.fn();
+  return { query, from, rpc };
 });
 
 vi.mock("@/supabase", () => ({
-  supabase: { from: hoisted.from },
+  supabase: { from: hoisted.from, rpc: hoisted.rpc },
 }));
 
 vi.mock("@/lib/api/rate-limit", () => ({
@@ -167,6 +169,7 @@ beforeEach(() => {
   // Full reset on rate-limit mocks (each test provides its own setup)
   mockCheckRateLimit.mockReset();
   mockClearRateLimitCache.mockReset();
+  hoisted.rpc.mockReset();
 
   // Clear call records only; factory implementations (q => q, () => {}) are preserved
   mockApplyMGFFilters.mockClear();
@@ -591,6 +594,36 @@ describe("consultations API", () => {
     it("returns failure on DB error", async () => {
       resolveQuery(null, DB_ERROR);
       const result = await getConsultationTimeSeries("u1");
+      expect(result.success).toBe(false);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  describe("bulkDeleteConsultations", () => {
+    it("returns success with deleted count when RPC succeeds", async () => {
+      hoisted.rpc.mockResolvedValueOnce({ data: { deleted: 3 }, error: null });
+      const result = await bulkDeleteConsultations(["a", "b", "c"]);
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data.deleted).toBe(3);
+      expect(hoisted.rpc).toHaveBeenCalledWith("bulk_delete_with_rate_limit", {
+        ids: ["a", "b", "c"],
+      });
+    });
+
+    it("returns failure with TOO_MANY_REQUESTS when RPC reports rate limit exceeded", async () => {
+      hoisted.rpc.mockResolvedValueOnce({
+        data: { error: "RATE_LIMIT_EXCEEDED" },
+        error: null,
+      });
+      const result = await bulkDeleteConsultations(["a", "b"]);
+      expect(result.success).toBe(false);
+      if (!result.success)
+        expect(result.error.userMessage).toContain("Demasiados pedidos");
+    });
+
+    it("returns failure on DB/network error from RPC", async () => {
+      hoisted.rpc.mockResolvedValueOnce({ data: null, error: DB_ERROR });
+      const result = await bulkDeleteConsultations(["a"]);
       expect(result.success).toBe(false);
     });
   });

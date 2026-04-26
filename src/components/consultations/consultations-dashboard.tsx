@@ -72,7 +72,7 @@ export function ConsultationsDashboard({
     handlePageChange,
     handleBulkDelete,
     refreshConsultations,
-    isCheckingDeleteRateLimit,
+    isBulkDeleting,
   } = useConsultations({
     userId,
     specialtyYear,
@@ -209,7 +209,7 @@ export function ConsultationsDashboard({
             isExportingExcel,
             onImport: () => setIsImportModalOpen(true),
             onRefresh: refreshConsultations,
-            isBulkDeleting: isCheckingDeleteRateLimit,
+            isBulkDeleting: isBulkDeleting,
           }}
           isLoading={isLoading}
         />

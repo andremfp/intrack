@@ -132,6 +132,28 @@ export async function deleteConsultation(
   return success();
 }
 
+type BulkDeleteRpcResult = { deleted: number } | { error: string };
+
+export async function bulkDeleteConsultations(
+  ids: string[]
+): Promise<ApiResponse<{ deleted: number }>> {
+  const { data, error } = await supabase.rpc("bulk_delete_with_rate_limit", {
+    ids,
+  });
+
+  if (error) return failure(error, "bulkDeleteConsultations");
+
+  const result = data as BulkDeleteRpcResult;
+  if ("error" in result && result.error === "RATE_LIMIT_EXCEEDED") {
+    return failure(
+      new AppError(ErrorMessages.TOO_MANY_REQUESTS),
+      "bulkDeleteConsultations"
+    );
+  }
+
+  return success({ deleted: (result as { deleted: number }).deleted });
+}
+
 export async function createConsultationsBatch(
   consultations: ConsultationInsert[]
 ): Promise<
