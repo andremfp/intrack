@@ -204,7 +204,8 @@ export function ResetPasswordForm({
                 autoComplete="new-password"
                 required
                 disabled={isLoading}
-                minLength={8}
+                minLength={12}
+                maxLength={72}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="pr-10"
@@ -238,7 +239,7 @@ export function ResetPasswordForm({
                           : "text-muted-foreground"
                       }
                     >
-                      Pelo menos 8 caracteres
+                      Pelo menos 12 caracteres
                     </span>
                   </div>
                 </FieldDescription>
@@ -314,6 +315,24 @@ export function ResetPasswordForm({
                     </span>
                   </div>
                 </FieldDescription>
+                <FieldDescription className="text-xs">
+                  <div className="flex items-center gap-1.5">
+                    {passwordCriteria.notWeak ? (
+                      <Check className="size-3 text-green-600" />
+                    ) : (
+                      <X className="size-3 text-destructive" />
+                    )}
+                    <span
+                      className={
+                        passwordCriteria.notWeak
+                          ? "text-green-600"
+                          : "text-muted-foreground"
+                      }
+                    >
+                      Password suficientemente forte
+                    </span>
+                  </div>
+                </FieldDescription>
               </div>
             )}
           </Field>
@@ -329,7 +348,8 @@ export function ResetPasswordForm({
                 autoComplete="new-password"
                 required
                 disabled={isLoading}
-                minLength={8}
+                minLength={12}
+                maxLength={72}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="pr-10"

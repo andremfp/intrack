@@ -210,7 +210,8 @@ export function SignupForm({
                 type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
                 required
-                minLength={8}
+                minLength={12}
+                maxLength={72}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="pr-10"
@@ -244,7 +245,7 @@ export function SignupForm({
                           : "text-muted-foreground"
                       }
                     >
-                      Pelo menos 8 caracteres
+                      Pelo menos 12 caracteres
                     </span>
                   </span>
                 </FieldDescription>
@@ -317,6 +318,24 @@ export function SignupForm({
                       }
                     >
                       Um carácter especial (!@#$%^&*...)
+                    </span>
+                  </span>
+                </FieldDescription>
+                <FieldDescription className="text-xs">
+                  <span className="inline-flex items-center gap-1.5">
+                    {passwordCriteria.notWeak ? (
+                      <Check className="size-3 text-green-600" />
+                    ) : (
+                      <X className="size-3 text-destructive" />
+                    )}
+                    <span
+                      className={
+                        passwordCriteria.notWeak
+                          ? "text-green-600"
+                          : "text-muted-foreground"
+                      }
+                    >
+                      Password suficientemente forte
                     </span>
                   </span>
                 </FieldDescription>
