@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/supabase";
-import { toasts } from "@/utils/toasts";
 
 export function ForgotPasswordForm({
   className,
@@ -18,60 +17,24 @@ export function ForgotPasswordForm({
 }: React.ComponentProps<"div">) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setError(null);
     setIsLoading(true);
 
     const form = new FormData(e.currentTarget);
     const email = String(form.get("email") || "").trim();
 
-    if (!email) {
-      setError("Por favor, introduz o teu email");
-      setIsLoading(false);
-      return;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    if (import.meta.env.DEV && error) {
+      console.error("[ForgotPassword] resetPasswordForEmail error:", error);
     }
 
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-
-      if (error) throw error;
-
-      setIsSubmitted(true);
-      toasts.success(
-        "Email enviado",
-        "Verifica a tua caixa de entrada para redefinir a tua password"
-      );
-    } catch (e: unknown) {
-      const errorMessage =
-        e instanceof Error
-          ? e.message
-          : typeof e === "object" && e !== null && "message" in e
-          ? String((e as { message?: unknown }).message)
-          : "Não foi possível enviar o email de recuperação";
-
-      // Check if error indicates OAuth-only user
-      const lowerMessage = errorMessage.toLowerCase();
-      if (
-        lowerMessage.includes("email not confirmed") ||
-        lowerMessage.includes("user not found") ||
-        lowerMessage.includes("no email")
-      ) {
-        const message =
-          "Este email está associado a uma conta Google. Por favor, utiliza o login com Google.";
-        setError(message);
-        toasts.error("Conta Google", message);
-      } else {
-        setError(errorMessage);
-        toasts.error("Erro", errorMessage);
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    setIsSubmitted(true);
+    setIsLoading(false);
   }
 
   if (isSubmitted) {
@@ -140,11 +103,6 @@ export function ForgotPasswordForm({
               {isLoading ? "A enviar..." : "Enviar link de recuperação"}
             </Button>
           </Field>
-          {error ? (
-            <FieldDescription className="text-center text-destructive">
-              {error}
-            </FieldDescription>
-          ) : null}
           <FieldDescription className="text-center">
             <a href="/login" className="underline-offset-4 hover:underline">
               Voltar ao login
