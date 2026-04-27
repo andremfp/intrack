@@ -89,3 +89,29 @@ export function DefaultErrorFallback({
     />
   );
 }
+
+/**
+ * Full-screen fallback for the top-level error boundary.
+ * Shown when a critical error escapes all other error boundaries.
+ */
+export function RootErrorFallback({
+  resetError,
+}: {
+  error: Error | null;
+  resetError: () => void;
+}) {
+  return (
+    <div className="h-screen flex items-center justify-center">
+      <DataErrorDisplay
+        error={
+          new Error(
+            "Não foi possível carregar a aplicação. Verifique a sua ligação à internet e tente novamente."
+          )
+        }
+        onRetry={resetError}
+        title="Serviço temporariamente indisponível"
+        retryLabel="Recarregar"
+      />
+    </div>
+  );
+}
