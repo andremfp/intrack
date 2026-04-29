@@ -348,17 +348,16 @@ export function SignupForm({
               </div>
             )}
           </Field>
-          <Field>
+          <div className="flex justify-center">
             <Turnstile
               ref={captchaRef}
-              className="mx-auto"
               siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
               onSuccess={(token) => setCaptchaToken(token)}
               onError={() => setCaptchaToken(null)}
               onExpire={() => setCaptchaToken(null)}
               options={{ theme: "auto" }}
             />
-          </Field>
+          </div>
           <Field>
             <Button type="submit" disabled={isLoading || !captchaToken}>
               Criar conta
