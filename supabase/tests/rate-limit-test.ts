@@ -12,6 +12,7 @@ import {
   getRateLimitStatus,
 } from "../functions/rate-limit/rate-limit.ts";
 import * as rateLimitUtils from "../functions/rate-limit/utils.ts";
+import { getCorsHeaders } from "../functions/rate-limit/utils.ts";
 import type {
   DatabaseRateLimitRecord,
   RateLimitOperation,
@@ -245,3 +246,43 @@ Deno.test("Different Users Isolation", async () => {
 });
 
 console.log("✅ All rate limiting tests passed!");
+
+// ── getCorsHeaders tests ───────────────────────────────────────────────────────
+
+Deno.test("getCorsHeaders: echoes allowed origin back", () => {
+  const headers = getCorsHeaders("https://intrack.pt", ["https://intrack.pt"]);
+  assertEquals(headers["Access-Control-Allow-Origin"], "https://intrack.pt");
+  assertEquals(headers["Vary"], "Origin");
+});
+
+Deno.test("getCorsHeaders: falls back to production origin for unlisted origin", () => {
+  const headers = getCorsHeaders(
+    "https://evil.com",
+    ["https://intrack.pt", "https://staging.intrack.pt"]
+  );
+  assertEquals(headers["Access-Control-Allow-Origin"], "https://intrack.pt");
+  assertEquals(headers["Vary"], "Origin");
+});
+
+Deno.test("getCorsHeaders: falls back to production origin when origin is null", () => {
+  const headers = getCorsHeaders(null, ["https://intrack.pt"]);
+  assertEquals(headers["Access-Control-Allow-Origin"], "https://intrack.pt");
+  assertEquals(headers["Vary"], "Origin");
+});
+
+Deno.test("getCorsHeaders: echoes staging origin when it is in the allowlist", () => {
+  const headers = getCorsHeaders(
+    "https://staging.intrack.pt",
+    ["https://intrack.pt", "https://staging.intrack.pt"]
+  );
+  assertEquals(
+    headers["Access-Control-Allow-Origin"],
+    "https://staging.intrack.pt"
+  );
+});
+
+Deno.test("getCorsHeaders: falls back when allowedOrigins list is empty", () => {
+  const headers = getCorsHeaders("https://intrack.pt", []);
+  assertEquals(headers["Access-Control-Allow-Origin"], "https://intrack.pt");
+});
+

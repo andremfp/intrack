@@ -7,7 +7,7 @@ import {
   getMGFConsultationsForExport,
   type ConsultationMGF,
 } from "@/lib/api/consultations";
-import { PAGINATION_CONSTANTS, TAB_CONSTANTS } from "@/constants";
+import { PAGINATION_CONSTANTS, TAB_CONSTANTS, EXPORT_MAX_ROWS } from "@/constants";
 import { useFilters } from "@/hooks/filters/use-filters";
 import {
   defaultConsultationsFilters,
@@ -21,6 +21,15 @@ import type { ExportSheet } from "@/exports/types";
 import { toasts } from "@/utils/toasts";
 import { buildConsultationsExportMetadataRows } from "@/components/consultations/helpers";
 import { ImportConsultationModal } from "@/components/modals/import-consultation-modal";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface ConsultationsDashboardProps {
   userId: string | undefined;
@@ -58,6 +67,9 @@ export function ConsultationsDashboard({
   const [isExportingCsv, setIsExportingCsv] = useState(false);
   const [isExportingExcel, setIsExportingExcel] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [exportConfirm, setExportConfirm] = useState<{
+    format: "csv" | "xlsx";
+  } | null>(null);
 
   const {
     consultations,
@@ -72,7 +84,7 @@ export function ConsultationsDashboard({
     handlePageChange,
     handleBulkDelete,
     refreshConsultations,
-    isCheckingDeleteRateLimit,
+    isBulkDeleting,
   } = useConsultations({
     userId,
     specialtyYear,
@@ -80,7 +92,7 @@ export function ConsultationsDashboard({
     filters,
   });
 
-  const handleExport = async (format: "csv" | "xlsx") => {
+  const executeExport = async (format: "csv" | "xlsx") => {
     if (!userId || specialtyYear === undefined) return;
 
     if (format === "csv") {
@@ -148,6 +160,18 @@ export function ConsultationsDashboard({
     }
   };
 
+  const handleExport = (format: "csv" | "xlsx") => {
+    if (!userId || specialtyYear === undefined) return;
+    setExportConfirm({ format });
+  };
+
+  const handleExportConfirm = async () => {
+    if (!exportConfirm) return;
+    const format = exportConfirm.format;
+    setExportConfirm(null);
+    await executeExport(format);
+  };
+
   // Expose refresh function to parent
   useEffect(() => {
     onRefreshReady?.(refreshConsultations);
@@ -175,6 +199,9 @@ export function ConsultationsDashboard({
       />
     );
   }
+
+  const exportCount = Math.min(totalCount, EXPORT_MAX_ROWS);
+  const isCapped = totalCount > EXPORT_MAX_ROWS;
 
   return (
     <>
@@ -209,11 +236,48 @@ export function ConsultationsDashboard({
             isExportingExcel,
             onImport: () => setIsImportModalOpen(true),
             onRefresh: refreshConsultations,
-            isBulkDeleting: isCheckingDeleteRateLimit,
+            isBulkDeleting: isBulkDeleting,
           }}
           isLoading={isLoading}
         />
       </div>
+
+      <Dialog
+        open={exportConfirm !== null}
+        onOpenChange={(open) => {
+          if (!open) setExportConfirm(null);
+        }}
+      >
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>Exportar consultas</DialogTitle>
+            <DialogDescription>
+              {isCapped ? (
+                <>
+                  Serão exportadas as primeiras{" "}
+                  <strong>{exportCount.toLocaleString("pt-PT")}</strong>{" "}
+                  consultas (limite máximo por exportação).{" "}
+                  <span className="text-foreground">
+                    Aplique filtros para reduzir o número de resultados.
+                  </span>
+                </>
+              ) : (
+                <>
+                  Vai exportar{" "}
+                  <strong>{exportCount.toLocaleString("pt-PT")}</strong>{" "}
+                  consulta{exportCount !== 1 ? "s" : ""}.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExportConfirm(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleExportConfirm}>Exportar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {isImportModalOpen &&
         userId &&

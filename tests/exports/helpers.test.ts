@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { buildCsvString } from "@/exports/helpers";
+import { buildCsvString, mapConsultationsToExportTable } from "@/exports/helpers";
 import type { ExportTable } from "@/exports/types";
+import { makeConsultationMGF } from "../factories/consultation";
 
 // Helpers to parse the CSV output back into lines for readable assertions
 function lines(csv: string): string[] {
@@ -110,5 +111,53 @@ describe("buildCsvString", () => {
     it("converts boolean false to 'false'", () => {
       expect(singleCell(false)).toBe("false");
     });
+  });
+});
+
+describe("mapConsultationsToExportTable — Excel formula injection sanitization", () => {
+  const FORMULA_CHARS = ["=", "+", "-", "@", "\t", "\r"] as const;
+
+  // `other_list` is a free-text details field whose formatter is just
+  // `value ? String(value) : null`, so it passes user strings through
+  // unchanged into the cell — making it the right field to test injection.
+  function rowWithOtherList(value: string) {
+    return mapConsultationsToExportTable([
+      makeConsultationMGF({ details: { other_list: value } }),
+    ]).rows[0];
+  }
+
+  it("leaves a safe string value unchanged", () => {
+    expect(rowWithOtherList("Normal text")).toContain("Normal text");
+  });
+
+  it("leaves number cell values unchanged (numbers cannot be formulas)", () => {
+    const { rows } = mapConsultationsToExportTable([
+      makeConsultationMGF({ process_number: 12345 }),
+    ]);
+    expect(rows[0]).toContain(12345);
+  });
+
+  it.each(FORMULA_CHARS)(
+    "prefixes a string starting with '%s' with a single quote",
+    (char) => {
+      const dangerous = `${char}dangerous_formula`;
+      const row = rowWithOtherList(dangerous);
+      expect(row).toContain(`'${dangerous}`);
+      expect(row).not.toContain(dangerous);
+    }
+  );
+
+  it("does not prefix a string that contains (but does not start with) a formula character", () => {
+    const safe = "Revenue=100";
+    const row = rowWithOtherList(safe);
+    expect(row).toContain(safe);
+    expect(row).not.toContain(`'${safe}`);
+  });
+
+  it("null details fields remain null in the output", () => {
+    const { rows } = mapConsultationsToExportTable([
+      makeConsultationMGF({ details: { other_list: null } }),
+    ]);
+    expect(rows[0]).toContain(null);
   });
 });

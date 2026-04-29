@@ -4,7 +4,7 @@ import { AppError, ErrorMessages, failure, success } from "@/errors";
 
 const RATE_LIMIT_FUNCTION_PATH = "rate-limit";
 
-export type RateLimitOperation = "import" | "export" | "report" | "bulk_delete";
+export type RateLimitOperation = "import" | "export" | "report" | "bulk_delete" | "metrics";
 
 export interface RateLimitStatus {
   allowed: boolean;

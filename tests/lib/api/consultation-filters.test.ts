@@ -142,6 +142,20 @@ describe("applyMGFFilters", () => {
     expect(query.lte).toHaveBeenCalledWith("date", "2024-12-31");
   });
 
+  it("throws when dateFrom is after dateTo", () => {
+    const query = makeQuery();
+    expect(() =>
+      applyMGFFilters(query, { dateFrom: "2024-12-31", dateTo: "2024-01-01" })
+    ).toThrow("dateFrom must be before or equal to dateTo");
+  });
+
+  it("does not throw when dateFrom equals dateTo", () => {
+    const query = makeQuery();
+    expect(() =>
+      applyMGFFilters(query, { dateFrom: "2024-06-15", dateTo: "2024-06-15" })
+    ).not.toThrow();
+  });
+
   // -------------------------------------------------------------------------
   // processNumber — parsed to integer
   // -------------------------------------------------------------------------
@@ -234,6 +248,20 @@ describe("applyMGFFilters", () => {
     const orArg: string = (query.or.mock.calls[0] as [string])[0];
     expect(orArg).toContain("age.gte.18");
     expect(orArg).toContain("age.lte.65");
+  });
+
+  it("throws when ageMin is greater than ageMax", () => {
+    const query = makeQuery();
+    expect(() =>
+      applyMGFFilters(query, { ageMin: 65, ageMax: 18 })
+    ).toThrow("ageMin must be less than or equal to ageMax");
+  });
+
+  it("does not throw when ageMin equals ageMax", () => {
+    const query = makeQuery();
+    expect(() =>
+      applyMGFFilters(query, { ageMin: 30, ageMax: 30 })
+    ).not.toThrow();
   });
 
   // -------------------------------------------------------------------------

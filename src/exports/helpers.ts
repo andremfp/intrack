@@ -678,16 +678,25 @@ export function mapConsultationsToExportTable(
         rawValue = getDetailsValue(consultation, fieldKey);
       }
 
+      let cellValue: ConsultationExportCell;
+
       if (col.formatter) {
-        return col.formatter(rawValue, consultation);
+        cellValue = col.formatter(rawValue, consultation);
+      } else if (rawValue === null || rawValue === undefined) {
+        cellValue = null;
+      } else if (typeof rawValue === "number") {
+        cellValue = rawValue;
+      } else {
+        cellValue = String(rawValue);
       }
 
-      if (rawValue === null || rawValue === undefined) return null;
-      if (typeof rawValue === "string" || typeof rawValue === "number") {
-        return rawValue;
+      // Prevent Excel formula injection: prefix any string starting with a
+      // formula-trigger character with a single quote so Excel treats it as
+      // a literal (applies to both formatter output and raw fallback values).
+      if (typeof cellValue === "string" && /^[=+\-@\t\r]/.test(cellValue)) {
+        return `'${cellValue}`;
       }
-
-      return String(rawValue);
+      return cellValue;
     });
   });
 

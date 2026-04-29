@@ -20,6 +20,7 @@ function makeMGFConsultation(
     sex: null,
     age: null,
     age_unit: null,
+    age_years: null,
     type: null,
     presential: null,
     location: null,

@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import zxcvbn from "zxcvbn";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -34,15 +35,17 @@ export interface PasswordCriteria {
   hasLowercase: boolean;
   hasNumber: boolean;
   hasSpecialChar: boolean;
+  notWeak: boolean;
 }
 
 export function validatePasswordCriteria(password: string): PasswordCriteria {
   return {
-    minLength: password.length >= 8,
+    minLength: password.length >= 12,
     hasUppercase: /[A-Z]/.test(password),
     hasLowercase: /[a-z]/.test(password),
     hasNumber: /[0-9]/.test(password),
     hasSpecialChar: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password),
+    notWeak: password.length > 0 && zxcvbn(password).score >= 3,
   };
 }
 
@@ -53,6 +56,7 @@ export function isPasswordValid(password: string): boolean {
     criteria.hasUppercase &&
     criteria.hasLowercase &&
     criteria.hasNumber &&
-    criteria.hasSpecialChar
+    criteria.hasSpecialChar &&
+    criteria.notWeak
   );
 }

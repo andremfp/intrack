@@ -6,9 +6,10 @@ import {
 } from "@tanstack/react-query";
 import { toasts } from "@/utils/toasts";
 import type { AppError } from "@/errors";
+import { ErrorMessages } from "@/errors";
 import {
   getMGFConsultations,
-  deleteConsultation,
+  bulkDeleteConsultations,
   type ConsultationsSorting,
   type ConsultationMGF,
 } from "@/lib/api/consultations";
@@ -17,8 +18,6 @@ import { PAGINATION_CONSTANTS, TAB_CONSTANTS } from "@/constants";
 import { mergeFilters } from "@/hooks/filters/helpers";
 import { useConsultationsSorting } from "@/hooks/consultations/use-consultations-sorting";
 import { consultations as consultationKeys } from "@/lib/query/keys";
-import { clearRateLimitCache } from "@/lib/api/rate-limit";
-import { ensureBulkDeleteAllowed as ensureBulkDeleteAllowedRateLimit } from "@/lib/api/bulk-delete-rate-limit";
 
 // Query function that receives parameters from query context
 async function fetchConsultations({
@@ -88,7 +87,7 @@ interface UseConsultationsResult {
     ids: string[]
   ) => Promise<{ deletedIds: string[]; failedIds: string[] }>;
   refreshConsultations: () => Promise<void>;
-  isCheckingDeleteRateLimit: boolean;
+  isBulkDeleting: boolean;
 }
 
 /**
@@ -107,8 +106,7 @@ export function useConsultations({
   const [currentPage, setCurrentPage] = useState(1);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const hasLoadedConsultationsRef = useRef(false); // Only depend on specialtyYear
-  const [isCheckingDeleteRateLimit, setIsCheckingDeleteRateLimit] =
-    useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   const pageSize = PAGINATION_CONSTANTS.CONSULTATIONS_PAGE_SIZE;
 
@@ -219,19 +217,6 @@ export function useConsultations({
     [userId, specialtyYear]
   );
 
-  const ensureBulkDeleteAllowed = useCallback(async () => {
-    if (isCheckingDeleteRateLimit) {
-      return false;
-    }
-
-    setIsCheckingDeleteRateLimit(true);
-    try {
-      return await ensureBulkDeleteAllowedRateLimit();
-    } finally {
-      setIsCheckingDeleteRateLimit(false);
-    }
-  }, [isCheckingDeleteRateLimit]);
-
   const handleBulkDelete = useCallback(
     async (
       ids: string[]
@@ -239,78 +224,48 @@ export function useConsultations({
       deletedIds: string[];
       failedIds: string[];
     }> => {
-      const canDelete = await ensureBulkDeleteAllowed();
-      if (!canDelete) {
+      if (isBulkDeleting) {
         return { deletedIds: [], failedIds: ids };
       }
-
-      clearRateLimitCache("bulk_delete");
 
       if (!userId || !specialtyYear) {
         return { deletedIds: [], failedIds: ids };
       }
 
-      const deletedIds: string[] = [];
-      const failedIds: string[] = [];
-
+      setIsBulkDeleting(true);
       try {
-        const deletePromises = ids.map((id) => deleteConsultation(id));
-        const results = await Promise.allSettled(deletePromises);
+        const result = await bulkDeleteConsultations(ids);
 
-        results.forEach((result, index) => {
-          if (result.status === "fulfilled" && result.value.success) {
-            deletedIds.push(ids[index]);
+        if (!result.success) {
+          const isRateLimit =
+            result.error.userMessage === ErrorMessages.TOO_MANY_REQUESTS;
+          if (isRateLimit) {
+            toasts.error("Erro", ErrorMessages.TOO_MANY_REQUESTS);
           } else {
-            failedIds.push(ids[index]);
-            const errorMsg =
-              result.status === "rejected"
-                ? result.reason
-                : !result.value.success
-                ? result.value.error
-                : "Unknown error";
-            console.error(
-              `Failed to delete consultation ${ids[index]}:`,
-              errorMsg
+            toasts.error(
+              "Erro ao eliminar consultas",
+              "Ocorreu um erro inesperado."
             );
           }
+          return { deletedIds: [], failedIds: ids };
+        }
+
+        toasts.success(`${ids.length} consulta(s) eliminada(s) com sucesso`);
+
+        await queryClient.invalidateQueries({
+          queryKey: consultationKeys.prefix({ userId, specialtyYear }),
         });
 
-        if (deletedIds.length > 0 && failedIds.length === 0) {
-          toasts.success(
-            `${deletedIds.length} consulta(s) eliminada(s) com sucesso`
-          );
-        } else if (deletedIds.length > 0 && failedIds.length > 0) {
-          toasts.warning(
-            "Eliminação parcial",
-            `${deletedIds.length} eliminada(s), ${failedIds.length} falharam.`
-          );
-        } else {
-          toasts.error(
-            "Erro ao eliminar consultas",
-            "Nenhuma consulta foi eliminada."
-          );
-        }
-
-        // Invalidate consultations queries to refresh data
-        if (deletedIds.length > 0) {
-          await queryClient.invalidateQueries({
-            queryKey: consultationKeys.prefix({ userId, specialtyYear }),
-          });
-        }
-
-        // Return results for optimistic update handling
-        return { deletedIds, failedIds };
+        return { deletedIds: ids, failedIds: [] };
       } catch (error) {
         console.error("Unexpected error during bulk delete:", error);
-        toasts.error(
-          "Erro ao eliminar consultas",
-          "Ocorreu um erro inesperado."
-        );
-        // On unexpected error, mark all as failed
+        toasts.error("Erro ao eliminar consultas", "Ocorreu um erro inesperado.");
         return { deletedIds: [], failedIds: ids };
+      } finally {
+        setIsBulkDeleting(false);
       }
     },
-    [userId, specialtyYear, queryClient, ensureBulkDeleteAllowed]
+    [userId, specialtyYear, queryClient, isBulkDeleting]
   );
 
   const refreshConsultations = useCallback(async () => {
@@ -377,6 +332,6 @@ export function useConsultations({
     handlePageChange,
     handleBulkDelete,
     refreshConsultations,
-    isCheckingDeleteRateLimit,
+    isBulkDeleting,
   };
 }

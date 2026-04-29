@@ -16,8 +16,9 @@ test.describe("consultation", () => {
   });
 
   test("creates a consultation via the modal happy path", async ({ page }) => {
-    // Use a timestamp-based process number to avoid collisions on repeated local runs
-    const processNumber = String(Date.now()).slice(-6);
+    // Prefix "1" to distinguish from export.spec.ts ("2" prefix) —
+    // both specs run in parallel and use Date.now(), which can collide.
+    const processNumber = "1" + String(Date.now()).slice(-5);
 
     // Open the consultation creation modal
     await page.getByTestId("nova-consulta-btn").click();

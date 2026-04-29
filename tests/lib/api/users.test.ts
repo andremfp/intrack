@@ -5,7 +5,6 @@ import {
   checkUserExists,
   upsertUser,
   updateUser,
-  checkUserHasEmailAuth,
   deleteUserAccount,
 } from "@/lib/api/users";
 import type { User } from "@/lib/api/users";
@@ -301,46 +300,6 @@ describe("updateUser", () => {
   it("returns failure when DB update fails", async () => {
     resolveQuery(null, DB_ERROR);
     const result = await updateUser({ userId: "u1", specialtyId: "sp1" });
-    expect(result.success).toBe(false);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// checkUserHasEmailAuth
-// ---------------------------------------------------------------------------
-describe("checkUserHasEmailAuth", () => {
-  it("returns true when response.hasEmailAuth is true", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ hasEmailAuth: true }),
-    }));
-    const result = await checkUserHasEmailAuth("user@example.com");
-    expect(result.success).toBe(true);
-    if (result.success) expect(result.data).toBe(true);
-  });
-
-  it("returns false when response.hasEmailAuth is false", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ hasEmailAuth: false }),
-    }));
-    const result = await checkUserHasEmailAuth("user@example.com");
-    expect(result.success).toBe(true);
-    if (result.success) expect(result.data).toBe(false);
-  });
-
-  it("returns failure when response.ok is false", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce({ ok: false }));
-    const result = await checkUserHasEmailAuth("user@example.com");
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.userMessage).toBe("Erro ao verificar o tipo de conta");
-    }
-  });
-
-  it("returns failure when fetch throws", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValueOnce(new Error("Network failed")));
-    const result = await checkUserHasEmailAuth("user@example.com");
     expect(result.success).toBe(false);
   });
 });

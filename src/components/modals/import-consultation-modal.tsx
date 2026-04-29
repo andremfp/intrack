@@ -100,7 +100,17 @@ export function ImportConsultationModal({
       setDuplicateExistingIds({});
       setIsParsing(true);
 
+      const MAX_IMPORT_FILE_SIZE_MB = 20;
+      const MAX_IMPORT_FILE_SIZE_BYTES = MAX_IMPORT_FILE_SIZE_MB * 1024 * 1024;
+      const MAX_IMPORT_ROWS = 10_000;
+
       try {
+        if (selectedFile.size > MAX_IMPORT_FILE_SIZE_BYTES) {
+          throw new Error(
+            `Ficheiro demasiado grande. Tamanho máximo: ${MAX_IMPORT_FILE_SIZE_MB}MB.`
+          );
+        }
+
         const isCsv = selectedFile.name.toLowerCase().endsWith(".csv");
         const isXlsx =
           selectedFile.name.toLowerCase().endsWith(".xlsx") ||
@@ -119,6 +129,12 @@ export function ImportConsultationModal({
 
         if (rows.length === 0) {
           throw new Error("O ficheiro não contém dados.");
+        }
+
+        if (rows.length > MAX_IMPORT_ROWS) {
+          throw new Error(
+            `O ficheiro contém demasiadas linhas. Máximo: ${MAX_IMPORT_ROWS.toLocaleString("pt-PT")}.`
+          );
         }
 
         if (!specialty) {
@@ -521,6 +537,9 @@ export function ImportConsultationModal({
                           <IconFileSpreadsheet className="h-4 w-4" />
                           <span>CSV, XLSX, Numbers</span>
                         </div>
+                        <p className="text-xs text-muted-foreground/70 mt-2">
+                          Máx. 20 MB · 10 000 linhas
+                        </p>
                       </>
                     )}
                   </div>
