@@ -348,7 +348,7 @@ export function SignupForm({
               </div>
             )}
           </Field>
-          <Field>
+          <Field className="items-center">
             <Turnstile
               ref={captchaRef}
               siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
