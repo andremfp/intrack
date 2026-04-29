@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { success } from "@/errors";
+import { success, ErrorMessages } from "@/errors";
 import type { RateLimitStatus } from "@/lib/api/rate-limit";
 import { checkRateLimit, clearRateLimitCache } from "@/lib/api/rate-limit";
 import {
@@ -247,6 +247,21 @@ describe("consultations API", () => {
       expect(result.success).toBe(false);
       if (!result.success)
         expect(result.error.userMessage).toBe("Erro ao criar consulta.");
+    });
+    it("returns the consultation limit error when the DB trigger fires (P0001)", async () => {
+      const LIMIT_ERROR = {
+        code: "P0001",
+        message: "consultation_limit_exceeded",
+        details: null,
+        hint: null,
+      };
+      resolveQuery(null, LIMIT_ERROR);
+      const result = await createConsultation(
+        { user_id: "u1" } as ConsultationInsert
+      );
+      expect(result.success).toBe(false);
+      if (!result.success)
+        expect(result.error.userMessage).toBe(ErrorMessages.CONSULTATION_LIMIT);
     });
   });
 
@@ -517,6 +532,7 @@ describe("consultations API", () => {
       mockCalculateMetrics.mockReturnValueOnce(
         mockMetrics as ReturnType<typeof calculateMetrics>
       );
+      mockCheckRateLimit.mockResolvedValueOnce(allowedStatus());
       resolveQuery(data);
 
       const filters = { year: 1 };
@@ -537,6 +553,7 @@ describe("consultations API", () => {
       mockGetEmptyMetrics.mockReturnValueOnce(
         emptyMetrics as ReturnType<typeof getEmptyMetrics>
       );
+      mockCheckRateLimit.mockResolvedValueOnce(allowedStatus());
       resolveQuery(null);
       const result = await getConsultationMetrics("u1");
       expect(result.success).toBe(true);
@@ -546,6 +563,7 @@ describe("consultations API", () => {
     });
 
     it("returns failure on DB error", async () => {
+      mockCheckRateLimit.mockResolvedValueOnce(allowedStatus());
       resolveQuery(null, DB_ERROR);
       const result = await getConsultationMetrics("u1");
       expect(result.success).toBe(false);
@@ -555,6 +573,7 @@ describe("consultations API", () => {
   // -------------------------------------------------------------------------
   describe("getConsultationTimeSeries", () => {
     it("aggregates consultations by day and sorts ascending", async () => {
+      mockCheckRateLimit.mockResolvedValueOnce(allowedStatus());
       resolveQuery([
         { date: "2024-01-10" },
         { date: "2024-01-15" },
@@ -571,6 +590,7 @@ describe("consultations API", () => {
     });
 
     it("normalizes ISO datetime strings to date-only keys before aggregating", async () => {
+      mockCheckRateLimit.mockResolvedValueOnce(allowedStatus());
       resolveQuery([
         { date: "2024-01-15T10:30:00Z" },
         { date: "2024-01-15T14:00:00Z" },
@@ -583,6 +603,7 @@ describe("consultations API", () => {
     });
 
     it("returns empty array when data is null", async () => {
+      mockCheckRateLimit.mockResolvedValueOnce(allowedStatus());
       resolveQuery(null);
       const result = await getConsultationTimeSeries("u1");
       expect(result.success).toBe(true);
@@ -590,6 +611,7 @@ describe("consultations API", () => {
     });
 
     it("returns failure on DB error", async () => {
+      mockCheckRateLimit.mockResolvedValueOnce(allowedStatus());
       resolveQuery(null, DB_ERROR);
       const result = await getConsultationTimeSeries("u1");
       expect(result.success).toBe(false);
