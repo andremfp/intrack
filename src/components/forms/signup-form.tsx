@@ -348,9 +348,10 @@ export function SignupForm({
               </div>
             )}
           </Field>
-          <Field className="items-center">
+          <Field>
             <Turnstile
               ref={captchaRef}
+              className="mx-auto"
               siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
               onSuccess={(token) => setCaptchaToken(token)}
               onError={() => setCaptchaToken(null)}
