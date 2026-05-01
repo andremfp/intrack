@@ -65,6 +65,22 @@ export function applyMGFFilters<Q extends FilterableQuery>(
   filters: ConsultationsFilters,
   excludeType?: string
 ): Q {
+  if (
+    filters.dateFrom &&
+    filters.dateTo &&
+    new Date(filters.dateFrom) > new Date(filters.dateTo)
+  ) {
+    throw new Error("dateFrom must be before or equal to dateTo");
+  }
+
+  if (
+    filters.ageMin !== undefined &&
+    filters.ageMax !== undefined &&
+    filters.ageMin > filters.ageMax
+  ) {
+    throw new Error("ageMin must be less than or equal to ageMax");
+  }
+
   // Work with a FilterableQuery-typed variable to satisfy intermediate
   // assignments, then cast back to Q at the end.  The cast is safe because
   // Supabase filter methods return `this` (the same object).

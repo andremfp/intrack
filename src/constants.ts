@@ -11,6 +11,7 @@ export const PAGINATION_CONSTANTS = {
   CONSULTATIONS_PAGE_SIZE: 50,
 } as const;
 
+export const EXPORT_MAX_ROWS = 5_000;
 // Tab constants
 export const TAB_CONSTANTS = {
   MAIN_TABS: {

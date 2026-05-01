@@ -1,9 +1,11 @@
 import { StrictMode, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, QueryCache } from "@tanstack/react-query";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
+import { toast } from "sonner";
+import { ErrorBoundary, RootErrorFallback } from "@/components/error-boundary";
 import "./index.css";
 
 // Route components are lazy-loaded so each page is emitted as its own chunk
@@ -15,13 +17,40 @@ const Dashboard = lazy(() => import("@/app/dashboard/page"));
 const ForgotPassword = lazy(() => import("@/app/forgot-password/page"));
 const ResetPassword = lazy(() => import("@/app/reset-password/page"));
 
+function isNetworkError(error: unknown): boolean {
+  return error instanceof TypeError && error.message.toLowerCase().includes("fetch");
+}
+
+function isPGRSTError(error: unknown): boolean {
+  return (
+    error !== null &&
+    typeof error === "object" &&
+    "code" in error &&
+    typeof (error as { code: unknown }).code === "string" &&
+    (error as { code: string }).code.startsWith("PGRST")
+  );
+}
+
 // Create a client with memory-only caching and event-based freshness
 const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error) => {
+      if (isNetworkError(error) || isPGRSTError(error)) {
+        toast.error("Serviço temporariamente indisponível", {
+          description:
+            "Não foi possível contactar o servidor. Verifique a sua ligação à internet.",
+          duration: Infinity,
+          closeButton: true,
+          id: "service-unavailable",
+        });
+      }
+    },
+  }),
   defaultOptions: {
     queries: {
       staleTime: Infinity, // Data never becomes stale automatically
       refetchOnWindowFocus: false, // Don't refetch when window regains focus
-      retry: 1, // Retry failed requests once
+      retry: 2, // Retry failed requests twice
     },
   },
 });
@@ -31,16 +60,18 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         {/* Suspense is required by React.lazy — shows a minimal fallback while the route chunk loads */}
-        <Suspense fallback={<div>A carregar...</div>}>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-          </Routes>
-        </Suspense>
+        <ErrorBoundary fallback={RootErrorFallback}>
+          <Suspense fallback={<div>A carregar...</div>}>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
       </BrowserRouter>
       {import.meta.env.DEV && (
         <TanStackDevtools

@@ -132,6 +132,24 @@ export function ConsultationFilters({
     hasValue(v)
   );
 
+  // Validate range filters in local state
+  const rangeErrors = useMemo(() => {
+    const errors: { dateRange?: string; ageRange?: string } = {};
+    const dateFrom = localFilters.dateFrom as string | undefined;
+    const dateTo = localFilters.dateTo as string | undefined;
+    if (dateFrom && dateTo && new Date(dateFrom) > new Date(dateTo)) {
+      errors.dateRange = "A data de início não pode ser posterior à data de fim.";
+    }
+    const ageMin = localFilters.ageMin as number | undefined;
+    const ageMax = localFilters.ageMax as number | undefined;
+    if (ageMin !== undefined && ageMax !== undefined && ageMin > ageMax) {
+      errors.ageRange = "A idade mínima não pode ser superior à idade máxima.";
+    }
+    return errors;
+  }, [localFilters]);
+
+  const hasRangeErrors = Object.keys(rangeErrors).length > 0;
+
   // Count active filters
   const activeFilterCount = Object.values(config.filterValues).filter(
     (v) => v !== undefined && v !== "" && v !== null
@@ -478,6 +496,9 @@ export function ConsultationFilters({
                 />
               </div>
             </div>
+            {rangeErrors.dateRange && (
+              <p className="text-xs text-destructive">{rangeErrors.dateRange}</p>
+            )}
           </div>
         );
 
@@ -518,6 +539,9 @@ export function ConsultationFilters({
                 className="h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
             </div>
+            {rangeErrors.ageRange && (
+              <p className="text-xs text-destructive">{rangeErrors.ageRange}</p>
+            )}
           </div>
         );
 
@@ -1252,6 +1276,7 @@ export function ConsultationFilters({
                   size="sm"
                   onClick={handleApplyFilters}
                   className="flex-1"
+                  disabled={hasRangeErrors}
                 >
                   Aplicar
                 </Button>
@@ -1303,6 +1328,7 @@ export function ConsultationFilters({
                     size="sm"
                     onClick={handleApplyFilters}
                     className="flex-1"
+                    disabled={hasRangeErrors}
                   >
                     Aplicar
                   </Button>

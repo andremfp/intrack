@@ -7,9 +7,9 @@ import {
   getDefaultSpecialtyDetails,
   type SpecialtyDetails,
   PAGINATION_CONSTANTS,
+  EXPORT_MAX_ROWS,
   type ConsultationsSortingField,
 } from "@/constants";
-import { sortConsultationsWithFavorites } from "@/lib/api/helpers";
 import { checkRateLimit, clearRateLimitCache } from "@/lib/api/rate-limit";
 import type { RateLimitOperation } from "@/lib/api/rate-limit";
 import {
@@ -130,6 +130,28 @@ export async function deleteConsultation(
 
   if (error) return failure(error, "deleteConsultation");
   return success();
+}
+
+type BulkDeleteRpcResult = { deleted: number } | { error: string };
+
+export async function bulkDeleteConsultations(
+  ids: string[]
+): Promise<ApiResponse<{ deleted: number }>> {
+  const { data, error } = await supabase.rpc("bulk_delete_with_rate_limit", {
+    ids,
+  });
+
+  if (error) return failure(error, "bulkDeleteConsultations");
+
+  const result = data as BulkDeleteRpcResult;
+  if ("error" in result && result.error === "RATE_LIMIT_EXCEEDED") {
+    return failure(
+      new AppError(ErrorMessages.TOO_MANY_REQUESTS),
+      "bulkDeleteConsultations"
+    );
+  }
+
+  return success({ deleted: (result as { deleted: number }).deleted });
 }
 
 export async function createConsultationsBatch(
@@ -287,36 +309,14 @@ export async function getMGFConsultations(
   const sortField = sorting?.field || "date";
   const sortOrder = sorting?.order || "desc";
 
-  // Special handling for age sorting - need to convert all ages to years first
-  // Since Supabase doesn't support computed expressions in ORDER BY, we need to
-  // fetch all matching records, sort in JavaScript, then apply pagination
-  if (sortField === "age") {
-    // Fetch all matching records (without pagination limit)
-    const { data: allData, error, count } = await query;
+  // Map "age" to the computed "age_years" column so Postgres can sort and
+  // paginate natively without a full table fetch + JavaScript in-memory sort.
+  const dbSortField = sortField === "age" ? "age_years" : sortField;
 
-    if (error) return failure(error, "getMGFConsultations");
-    if (!allData) return success({ consultations: [], totalCount: 0 });
-
-    // Sort by favorites first, then by age using utility function
-    const sortedData = sortConsultationsWithFavorites(allData, {
-      field: "age",
-      order: sortOrder,
-    });
-
-    // Apply pagination manually
-    const paginatedData = sortedData.slice(from, to + 1);
-
-    return success({
-      consultations: paginatedData,
-      totalCount: count || 0,
-    });
-  }
-
-  // For non-age sorting, use database sorting
   // Sort by favorites first (favorites at top), then by the selected field
   query = query
     .order("favorite", { ascending: false, nullsFirst: false })
-    .order(sortField, { ascending: sortOrder === "asc" });
+    .order(dbSortField, { ascending: sortOrder === "asc" });
 
   // Apply pagination
   query = query.range(from, to);
@@ -337,7 +337,7 @@ export async function getMGFConsultationsForExport(
   specialtyYear?: number,
   filters?: ConsultationsFilters,
   sorting?: ConsultationsSorting,
-  maxRows: number = 10000
+  maxRows: number = EXPORT_MAX_ROWS
 ): Promise<ApiResponse<ConsultationMGF[]>> {
   if (!userId) {
     return success([]);
@@ -365,23 +365,12 @@ export async function getMGFConsultationsForExport(
   const sortField = sorting?.field || "date";
   const sortOrder = sorting?.order || "desc";
 
-  if (sortField === "age") {
-    const { data, error } = await query;
-
-    if (error) return failure(error, "getMGFConsultationsForExport");
-    if (!data) return successWithClear([], "export");
-
-    const sortedData = sortConsultationsWithFavorites(data, {
-      field: "age",
-      order: sortOrder,
-    });
-
-    return successWithClear(sortedData, "export");
-  }
+  // Map "age" to the computed "age_years" column so Postgres can sort natively.
+  const dbSortField = sortField === "age" ? "age_years" : sortField;
 
   query = query
     .order("favorite", { ascending: false, nullsFirst: false })
-    .order(sortField, { ascending: sortOrder === "asc" });
+    .order(dbSortField, { ascending: sortOrder === "asc" });
 
   const { data, error } = await query;
 
@@ -405,6 +394,11 @@ export async function getConsultationMetrics(
   excludeType?: string
 ): Promise<ApiResponse<ConsultationMetrics>> {
   try {
+    const rateLimitError = await ensureOperationAllowed("metrics");
+    if (rateLimitError) {
+      return failure(rateLimitError, "getConsultationMetrics");
+    }
+
     // Build query with database-level filtering
     const viewName = specialtyCode
       ? `consultations_${specialtyCode}`
@@ -420,11 +414,11 @@ export async function getConsultationMetrics(
     const { data, error } = await query;
 
     if (error) return failure(error, "getConsultationMetrics");
-    if (!data) return success(getEmptyMetrics());
+    if (!data) return successWithClear(getEmptyMetrics(), "metrics");
 
     // Calculate metrics (data is already filtered at database level)
     const metrics = calculateMetrics(data as unknown as ConsultationMGF[]);
-    return success(metrics);
+    return successWithClear(metrics, "metrics");
   } catch (error) {
     return failure(error as Error, "getConsultationMetrics");
   }
@@ -446,6 +440,11 @@ export async function getConsultationTimeSeries(
   excludeType?: string
 ): Promise<ApiResponse<TimeSeriesDataPoint[]>> {
   try {
+    const rateLimitError = await ensureOperationAllowed("metrics");
+    if (rateLimitError) {
+      return failure(rateLimitError, "getConsultationTimeSeries");
+    }
+
     // Build query with database-level filtering
     const viewName = specialtyCode
       ? `consultations_${specialtyCode}`
@@ -463,7 +462,7 @@ export async function getConsultationTimeSeries(
     const { data, error } = await query;
 
     if (error) return failure(error, "getConsultationTimeSeries");
-    if (!data) return success([]);
+    if (!data) return successWithClear([], "metrics");
 
     // Aggregate by day
     const dayCounts = new Map<string, number>();
@@ -482,7 +481,7 @@ export async function getConsultationTimeSeries(
       .map(([date, count]) => ({ date, count }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    return success(timeSeriesData);
+    return successWithClear(timeSeriesData, "metrics");
   } catch (error) {
     return failure(error as Error, "getConsultationTimeSeries");
   }

@@ -16,7 +16,9 @@ test.describe("export", () => {
 
     // The export button is disabled when the consultation list is empty,
     // so we need at least one consultation before we can test the export flow.
-    const processNumber = String(Date.now()).slice(-6);
+    // Prefix "2" to distinguish from consultation.spec.ts ("1" prefix) —
+    // both specs run in parallel and use Date.now(), which can collide.
+    const processNumber = "2" + String(Date.now()).slice(-5);
     await page.getByTestId("nova-consulta-btn").click();
     await page.locator("#date").fill("2024-01-15");
     await page.locator("#process_number").fill(processNumber);

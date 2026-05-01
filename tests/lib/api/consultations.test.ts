@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { success } from "@/errors";
+import { success, ErrorMessages } from "@/errors";
 import type { RateLimitStatus } from "@/lib/api/rate-limit";
 import { checkRateLimit, clearRateLimitCache } from "@/lib/api/rate-limit";
 import {
@@ -14,6 +14,7 @@ import {
   createConsultation,
   updateConsultation,
   deleteConsultation,
+  bulkDeleteConsultations,
   getUserConsultationsInDateRange,
   getConsultationByDateAndProcessNumber,
   createConsultationsBatch,
@@ -62,11 +63,12 @@ const hoisted = vi.hoisted(() => {
     });
 
   const from = vi.fn(() => query);
-  return { query, from };
+  const rpc = vi.fn();
+  return { query, from, rpc };
 });
 
 vi.mock("@/supabase", () => ({
-  supabase: { from: hoisted.from },
+  supabase: { from: hoisted.from, rpc: hoisted.rpc },
 }));
 
 vi.mock("@/lib/api/rate-limit", () => ({
@@ -167,6 +169,7 @@ beforeEach(() => {
   // Full reset on rate-limit mocks (each test provides its own setup)
   mockCheckRateLimit.mockReset();
   mockClearRateLimitCache.mockReset();
+  hoisted.rpc.mockReset();
 
   // Clear call records only; factory implementations (q => q, () => {}) are preserved
   mockApplyMGFFilters.mockClear();
@@ -244,6 +247,21 @@ describe("consultations API", () => {
       expect(result.success).toBe(false);
       if (!result.success)
         expect(result.error.userMessage).toBe("Erro ao criar consulta.");
+    });
+    it("returns the consultation limit error when the DB trigger fires (P0001)", async () => {
+      const LIMIT_ERROR = {
+        code: "P0001",
+        message: "consultation_limit_exceeded",
+        details: null,
+        hint: null,
+      };
+      resolveQuery(null, LIMIT_ERROR);
+      const result = await createConsultation(
+        { user_id: "u1" } as ConsultationInsert
+      );
+      expect(result.success).toBe(false);
+      if (!result.success)
+        expect(result.error.userMessage).toBe(ErrorMessages.CONSULTATION_LIMIT);
     });
   });
 
@@ -435,15 +453,10 @@ describe("consultations API", () => {
       expect(hoisted.query.range).toHaveBeenCalledWith(0, 0);
     });
 
-    it("sorts in memory and paginates manually for age sort — no DB order or range", async () => {
-      const unsorted = [
-        { id: "a", age: 30, age_unit: "years", favorite: false },
-        { id: "b", age: 20, age_unit: "years", favorite: false },
-        { id: "c", age: 40, age_unit: "years", favorite: false },
-      ] as ConsultationMGF[];
-      resolveQuery(unsorted, null, 3);
+    it("uses age_years column for DB-level age sorting and applies pagination", async () => {
+      const consultations = [mockConsultation] as unknown as ConsultationMGF[];
+      resolveQuery(consultations, null, 5);
 
-      // page=1, pageSize=2, sort by age descending
       const result = await getMGFConsultations(
         "u1",
         undefined,
@@ -454,15 +467,18 @@ describe("consultations API", () => {
       );
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.totalCount).toBe(3);
-        expect(result.data.consultations).toHaveLength(2);
-        // Age desc: c(40) → a(30) → b(20); first page = [c, a]
-        expect(result.data.consultations[0].id).toBe("c");
-        expect(result.data.consultations[1].id).toBe("a");
+        expect(result.data.totalCount).toBe(5);
       }
-      // No DB-level ordering or range for the age sort path
-      expect(hoisted.query.order).not.toHaveBeenCalled();
-      expect(hoisted.query.range).not.toHaveBeenCalled();
+      // Age sorting must go through DB using the computed age_years column
+      expect(hoisted.query.order).toHaveBeenCalledWith("favorite", {
+        ascending: false,
+        nullsFirst: false,
+      });
+      expect(hoisted.query.order).toHaveBeenCalledWith("age_years", {
+        ascending: false,
+      });
+      // Pagination must be applied via DB range (not sliced in JS)
+      expect(hoisted.query.range).toHaveBeenCalledWith(0, 1);
     });
   });
 
@@ -516,6 +532,7 @@ describe("consultations API", () => {
       mockCalculateMetrics.mockReturnValueOnce(
         mockMetrics as ReturnType<typeof calculateMetrics>
       );
+      mockCheckRateLimit.mockResolvedValueOnce(allowedStatus());
       resolveQuery(data);
 
       const filters = { year: 1 };
@@ -536,6 +553,7 @@ describe("consultations API", () => {
       mockGetEmptyMetrics.mockReturnValueOnce(
         emptyMetrics as ReturnType<typeof getEmptyMetrics>
       );
+      mockCheckRateLimit.mockResolvedValueOnce(allowedStatus());
       resolveQuery(null);
       const result = await getConsultationMetrics("u1");
       expect(result.success).toBe(true);
@@ -545,6 +563,7 @@ describe("consultations API", () => {
     });
 
     it("returns failure on DB error", async () => {
+      mockCheckRateLimit.mockResolvedValueOnce(allowedStatus());
       resolveQuery(null, DB_ERROR);
       const result = await getConsultationMetrics("u1");
       expect(result.success).toBe(false);
@@ -554,6 +573,7 @@ describe("consultations API", () => {
   // -------------------------------------------------------------------------
   describe("getConsultationTimeSeries", () => {
     it("aggregates consultations by day and sorts ascending", async () => {
+      mockCheckRateLimit.mockResolvedValueOnce(allowedStatus());
       resolveQuery([
         { date: "2024-01-10" },
         { date: "2024-01-15" },
@@ -570,6 +590,7 @@ describe("consultations API", () => {
     });
 
     it("normalizes ISO datetime strings to date-only keys before aggregating", async () => {
+      mockCheckRateLimit.mockResolvedValueOnce(allowedStatus());
       resolveQuery([
         { date: "2024-01-15T10:30:00Z" },
         { date: "2024-01-15T14:00:00Z" },
@@ -582,6 +603,7 @@ describe("consultations API", () => {
     });
 
     it("returns empty array when data is null", async () => {
+      mockCheckRateLimit.mockResolvedValueOnce(allowedStatus());
       resolveQuery(null);
       const result = await getConsultationTimeSeries("u1");
       expect(result.success).toBe(true);
@@ -589,8 +611,39 @@ describe("consultations API", () => {
     });
 
     it("returns failure on DB error", async () => {
+      mockCheckRateLimit.mockResolvedValueOnce(allowedStatus());
       resolveQuery(null, DB_ERROR);
       const result = await getConsultationTimeSeries("u1");
+      expect(result.success).toBe(false);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  describe("bulkDeleteConsultations", () => {
+    it("returns success with deleted count when RPC succeeds", async () => {
+      hoisted.rpc.mockResolvedValueOnce({ data: { deleted: 3 }, error: null });
+      const result = await bulkDeleteConsultations(["a", "b", "c"]);
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data.deleted).toBe(3);
+      expect(hoisted.rpc).toHaveBeenCalledWith("bulk_delete_with_rate_limit", {
+        ids: ["a", "b", "c"],
+      });
+    });
+
+    it("returns failure with TOO_MANY_REQUESTS when RPC reports rate limit exceeded", async () => {
+      hoisted.rpc.mockResolvedValueOnce({
+        data: { error: "RATE_LIMIT_EXCEEDED" },
+        error: null,
+      });
+      const result = await bulkDeleteConsultations(["a", "b"]);
+      expect(result.success).toBe(false);
+      if (!result.success)
+        expect(result.error.userMessage).toContain("Demasiados pedidos");
+    });
+
+    it("returns failure on DB/network error from RPC", async () => {
+      hoisted.rpc.mockResolvedValueOnce({ data: null, error: DB_ERROR });
+      const result = await bulkDeleteConsultations(["a"]);
       expect(result.success).toBe(false);
     });
   });

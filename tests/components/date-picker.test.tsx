@@ -13,7 +13,12 @@ describe("DatePicker", () => {
     // Open the calendar popover
     await user.click(screen.getByRole("button", { name: /selecionar data/i }));
 
-    // Click day 15 (always visible in the current month)
+    // Navigate to the previous month so day 15 is always in the past and not disabled
+    await user.click(
+      screen.getByRole("button", { name: /go to the previous month/i }),
+    );
+
+    // Click day 15
     const dayButton = screen.getByRole("button", { name: /15/i });
     await user.click(dayButton);
 

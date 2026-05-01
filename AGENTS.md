@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI coding agents when working with code in this repository.
 
 ## Project Overview
 
@@ -12,11 +12,12 @@ InTrack is a Portuguese medical residency consultation tracking app for Family M
 
 **Key directories:**
 
-- `src/app/` — Page components (landing, login, register, dashboard, etc.)
+- `src/app/` — Page components (landing, login, register, dashboard, forgot-password, reset-password)
 - `src/components/` — UI components; `components/ui/` contains shadcn/ui primitives
-- `src/hooks/` — Custom hooks organized by domain (consultations, filters, metrics, modals, reports, user)
-- `src/lib/api/` — Supabase API client functions: `consultations.ts` (CRUD), `consultation-filters.ts` (filter logic), `consultation-metrics.ts` (metrics/aggregations), `users.ts`, `specialties.ts`, `reports.ts`, `rate-limit.ts`, `bulk-delete-rate-limit.ts`
+- `src/hooks/` — Custom hooks organized by domain (consultations, filters, metrics, modals, reports, user, theme)
+- `src/lib/api/` — Supabase API client functions: `consultations.ts` (CRUD), `consultation-filters.ts` (filter logic), `consultation-metrics.ts` (metrics/aggregations), `users.ts`, `specialties.ts`, `reports.ts`, `rate-limit.ts`, `bulk-delete-rate-limit.ts`, `helpers.ts`
 - `src/lib/query/` — React Query configuration
+- `src/utils/` — Shared utilities (`utils.ts`, `toasts.ts`, `tab-parsing.ts`, `user-cache.ts`)
 - `src/imports/` and `src/exports/` — Excel/CSV import and PDF/Excel export logic
 - `src/reports/` — Report generation, with `reports/mgf/` for MGF-specific reports
 - `supabase/migrations/` — PostgreSQL migration files
@@ -28,7 +29,9 @@ InTrack is a Portuguese medical residency consultation tracking app for Family M
   - `tests/reports/` — report generation tests (including MGF-specific)
   - `tests/factories/` — test data factories
   - `tests/components/` — component smoke tests
+  - `tests/hooks/` — hook tests
   - `tests/setup.ts` — shared Vitest setup
+- `e2e/` — Playwright end-to-end tests
 
 **Database design:**
 
@@ -41,9 +44,17 @@ InTrack is a Portuguese medical residency consultation tracking app for Family M
 
 **Path alias:** `@/*` maps to `src/*`
 
-**Key data files:** `src/constants.ts` (app-wide constants and field definitions), `src/icpc2-codes.ts` (ICPC-2 medical classification codes), `src/professions.ts` (professions list), `src/schema.ts` (auto-generated Supabase types — do not edit manually)
+**Key data files:** `src/constants.ts` (app-wide constants and field definitions), `src/errors.ts` (app error types), `src/icpc2-codes.ts` (ICPC-2 medical classification codes), `src/professions.ts` (professions list), `src/schema.ts` (auto-generated Supabase types — do not edit manually)
 
 **Never read these files in full — they are large and auto-generated or static data:** `src/schema.ts`, `src/icpc2-codes.ts`, `src/professions.ts`, `package-lock.json`
+
+## Commands
+
+- `npm run build` — build for production
+- `npm run lint` — run ESLint
+- `npm run test:unit` — run Vitest unit tests
+- `npm run test:e2e` — run Playwright e2e tests
+- `npm run test` — run all tests
 
 ## Git Workflow
 

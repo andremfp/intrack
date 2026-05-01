@@ -23,6 +23,8 @@ export const ErrorMessages = {
   NO_FIELDS_TO_UPDATE: "Nenhum campo para atualizar.",
   DELETE_ACCOUNT_FAILED: "Não foi possível eliminar a conta.",
   TOO_MANY_REQUESTS: "Demasiados pedidos. Tente novamente mais tarde.",
+  CONSULTATION_LIMIT:
+    "Atingiu o limite de consultas para esta especialidade. Para mais informações contacta contact@intrack.pt.",
 } as const;
 
 // Convert any error to AppError with friendly message
@@ -59,6 +61,15 @@ export function handleError(error: unknown, context?: string): AppError {
       message?: string;
       details?: string;
     };
+
+    // Consultation count cap exceeded (trigger raises P0001 with sentinel message)
+    if (
+      supaError.code === "P0001" &&
+      typeof supaError.message === "string" &&
+      supaError.message.includes("consultation_limit_exceeded")
+    ) {
+      return new AppError(ErrorMessages.CONSULTATION_LIMIT, error);
+    }
 
     // Unique constraint violation on consultations (date + process_number)
     if (supaError.code === "23505") {

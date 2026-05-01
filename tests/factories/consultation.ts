@@ -16,6 +16,7 @@ export function makeConsultationMGF(
     process_number: 12345,
     age: 30,
     age_unit: "years",
+    age_years: 30,
     sex: "m",
     location: "unidade",
     autonomy: "total",

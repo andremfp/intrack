@@ -24,7 +24,8 @@ export type RateLimitOperation =
   | 'import'
   | 'export'
   | 'report'
-  | 'bulk_delete';
+  | 'bulk_delete'
+  | 'metrics';
 
 export interface DatabaseRateLimitRecord {
   id: string;

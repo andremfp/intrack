@@ -197,6 +197,7 @@ export type Database = {
         Row: {
           age: number | null
           age_unit: string | null
+          age_years: number | null
           alcohol: boolean | null
           autonomy: string | null
           created_at: string | null
@@ -223,6 +224,7 @@ export type Database = {
       }
     }
     Functions: {
+      bulk_delete_with_rate_limit: { Args: { ids: string[] }; Returns: Json }
       check_and_increment_rate_limit: {
         Args: {
           p_max_requests: number

@@ -19,8 +19,18 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'chromium',
+      name: 'tests',
+      testMatch: /\/(auth|consultation|export)\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // Runs after 'tests': seeds 5000 rows, tests the limit, then cleans up.
+      // Kept separate to avoid the seeded rows blocking parallel consultation
+      // creation in the other specs.
+      name: 'limit-tests',
+      testMatch: /consultation-limit\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+      dependencies: ['tests'],
     },
   ],
   // Serve the pre-built app via `vite preview` before running tests.
