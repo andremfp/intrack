@@ -3,6 +3,7 @@ import type { ConsultationMGF } from "@/lib/api/consultations";
 import type { MGFReportData, SpecialtyReportConfig } from "@/reports/report-types";
 import {
   getWeekInfo,
+  getInternship,
   selectBestWeeks,
   buildSummary,
   buildUrgencySelection,
@@ -228,7 +229,12 @@ function buildYears23Report(records: ConsultationMGF[]): MGFReportData {
     REPORT_UTILS_CONFIG,
     YEAR23_INTERNSHIPS_CONFIG
   );
-  const topProblems = computeTopProblems(sampleRecords);
+  const year23UrgencyInternships = new Set(YEAR23_URGENCY_CONFIG.flatMap((c) => c.internships));
+  const topProblemsRecords = urgencyRecords.filter((record) => {
+    const internship = getInternship(record);
+    return internship && year23UrgencyInternships.has(internship);
+  });
+  const topProblems = computeTopProblems(topProblemsRecords);
   return {
     summary,
     firstHalfWeeks,

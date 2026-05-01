@@ -270,6 +270,27 @@ describe("Years 2–3 report builder", () => {
     expect(Array.isArray(report.topProblems)).toBe(true);
   });
 
+  it("topProblems only counts problems from urgency records with year23 internships", () => {
+    const records = [
+      // Should be counted — urgency + valid internship
+      makeRecord({ location: "urgência", details: { internship: "pediatria", problems: ["R74"] }, specialty_year: 2 }),
+      makeRecord({ location: "urgência", details: { internship: "med interna", problems: ["R74"] }, specialty_year: 3 }),
+      makeRecord({ location: "urgência", details: { internship: "psiquiatria", problems: ["P76"] }, specialty_year: 2 }),
+      // Should NOT be counted — urgency but wrong internship (year1 specialty)
+      makeRecord({ location: "urgência", details: { internship: "cir geral", problems: ["R74"] }, specialty_year: 2 }),
+      // Should NOT be counted — correct internship but wrong location
+      makeRecord({ location: "unidade", details: { internship: "pediatria", problems: ["R74"] }, specialty_year: 2 }),
+    ];
+    const report = build(records);
+    const codes = report.topProblems!.map((p) => p.code);
+    const r74 = report.topProblems!.find((p) => p.code === "R74");
+    const p76 = report.topProblems!.find((p) => p.code === "P76");
+    expect(codes).toContain("R74");
+    expect(codes).toContain("P76");
+    expect(r74!.count).toBe(2); // pediatria + med interna, not cir geral or unidade
+    expect(p76!.count).toBe(1);
+  });
+
   it("returns the expected shape", () => {
     const report = build([]);
     expect(report).toHaveProperty("summary");
