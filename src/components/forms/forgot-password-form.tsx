@@ -104,7 +104,7 @@ export function ForgotPasswordForm({
               disabled={isLoading}
             />
           </Field>
-          <Field>
+          <div className="flex justify-center">
             <Turnstile
               ref={captchaRef}
               siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
@@ -113,7 +113,7 @@ export function ForgotPasswordForm({
               onExpire={() => setCaptchaToken(null)}
               options={{ theme: "auto" }}
             />
-          </Field>
+          </div>
           <Field>
             <Button type="submit" disabled={isLoading || !captchaToken}>
               {isLoading ? "A enviar..." : "Enviar link de recuperação"}
