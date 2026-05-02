@@ -1,5 +1,6 @@
 import { Eye, EyeOff, Check, X, Mail } from "lucide-react";
 import { useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 
 import { cn, validatePasswordCriteria, isPasswordValid } from "@/utils/utils";
@@ -368,6 +369,17 @@ export function SignupForm({
               {error}
             </FieldDescription>
           ) : null}
+          <FieldDescription className="text-center text-xs text-muted-foreground">
+            Ao criar uma conta, aceitas os nossos{" "}
+            <Link to="/terms" className="underline underline-offset-4 hover:text-foreground">
+              Termos e Condições
+            </Link>{" "}
+            e a nossa{" "}
+            <Link to="/privacy" className="underline underline-offset-4 hover:text-foreground">
+              Política de Privacidade
+            </Link>
+            .
+          </FieldDescription>
           <FieldDescription className="text-center">
             Já tem uma conta? <a href="/login">Login</a>
           </FieldDescription>
