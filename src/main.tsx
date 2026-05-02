@@ -16,6 +16,8 @@ const Register = lazy(() => import("@/app/register/page"));
 const Dashboard = lazy(() => import("@/app/dashboard/page"));
 const ForgotPassword = lazy(() => import("@/app/forgot-password/page"));
 const ResetPassword = lazy(() => import("@/app/reset-password/page"));
+const Privacy = lazy(() => import("@/app/privacy/page"));
+const Terms = lazy(() => import("@/app/terms/page"));
 
 function isNetworkError(error: unknown): boolean {
   return error instanceof TypeError && error.message.toLowerCase().includes("fetch");
@@ -69,6 +71,8 @@ createRoot(document.getElementById("root")!).render(
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
             </Routes>
           </Suspense>
         </ErrorBoundary>
