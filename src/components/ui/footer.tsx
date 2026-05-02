@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { IconBrandGithub } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 
@@ -47,6 +48,21 @@ export function Footer() {
             <p className="text-xs text-muted-foreground select-all">
               contact@intrack.pt
             </p>
+            <div className="flex items-center gap-3 mt-2">
+              <Link
+                to="/privacy"
+                className="text-xs text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)] transition-colors"
+              >
+                Política de Privacidade
+              </Link>
+              <span className="text-xs text-[color:var(--muted-foreground)]">·</span>
+              <Link
+                to="/terms"
+                className="text-xs text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)] transition-colors"
+              >
+                Termos e Condições
+              </Link>
+            </div>
           </div>
         </div>
 
