@@ -295,14 +295,16 @@ export function ReferrenceListField({
 
       <Button
         type="button"
-        variant="outline"
+        variant={pendingSpecialty ? "default" : "outline"}
         size="sm"
         disabled={!pendingSpecialty}
         onClick={handleConfirm}
         className="w-full"
       >
         <IconPlus className="h-4 w-4 mr-1" />
-        Adicionar
+        {pendingSpecialty
+          ? `Adicionar ${specialtyLabelMap[pendingSpecialty] ?? pendingSpecialty}`
+          : "Adicionar referenciação"}
       </Button>
 
       {isInvalid && (
