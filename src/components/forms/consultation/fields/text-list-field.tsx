@@ -62,7 +62,7 @@ export function TextListField({
         ))}
         <Button
           type="button"
-          variant="outline"
+          variant={listValue[listValue.length - 1] !== "" ? "default" : "outline"}
           size="sm"
           disabled={listValue[listValue.length - 1] === ""}
           onClick={() => onUpdate([...listValue, ""])}
