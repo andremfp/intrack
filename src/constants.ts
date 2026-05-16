@@ -587,7 +587,6 @@ const HTA_HISTORY_SECTION: ConstultationTypeSection = {
         { value: "beta_bloq", label: "Beta Bloqueantes" },
         { value: "ara", label: "ARA" },
         { value: "antag_aldo", label: "Antagonistas da Aldosterona" },
-
         { value: "outros", label: "Outros" },
       ],
     },
