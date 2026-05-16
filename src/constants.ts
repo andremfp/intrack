@@ -578,10 +578,15 @@ const HTA_HISTORY_SECTION: ConstultationTypeSection = {
           value: "diur_tiazid_like",
           label: "Diuréticos Tiazídicos-Like",
         },
+        {
+          value: "diur_ansa",
+          label: "Diuréticos de Ansa",
+        },
         { value: "bloq_calc", label: "Bloqueador dos Canais de Cálcio" },
         { value: "beta_bloq", label: "Beta Bloqueantes" },
         { value: "ara", label: "ARA" },
         { value: "antag_aldo", label: "Antagonistas da Aldosterona" },
+
         { value: "outros", label: "Outros" },
       ],
     },
