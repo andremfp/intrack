@@ -460,6 +460,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
       { value: "nutri", label: "Nutrição" },
       { value: "psico", label: "Psicologia" },
       { value: "med dentaria", label: "Medicina Dentária" },
+      { value: "cess_tabagica", label: "Cessação Tabágica" },
     ],
     icpcOptions: MGF_ICPC2_CODES, // ICPC-2 codes for the optional motive search per entry
   },
