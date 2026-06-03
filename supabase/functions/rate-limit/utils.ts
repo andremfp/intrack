@@ -5,16 +5,17 @@
 import type { RateLimitConfig, RateLimitOperation } from "./types.ts";
 import { RATE_LIMIT_CONFIGS } from "./config.ts";
 
-const PRODUCTION_ORIGIN = "https://intrack.pt";
-
 export function getCorsHeaders(
   requestOrigin: string | null,
   allowedOrigins: string[]
 ): Record<string, string> {
+  // Echo the request origin when it's allowed; otherwise fall back to the
+  // first configured origin (the canonical production domain). Keeping the
+  // fallback tied to CORS_ALLOWED_ORIGINS avoids a second source of truth.
   const origin =
     requestOrigin && allowedOrigins.includes(requestOrigin)
       ? requestOrigin
-      : PRODUCTION_ORIGIN;
+      : allowedOrigins[0] ?? "";
   return {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Headers":
