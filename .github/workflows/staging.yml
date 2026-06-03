@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  deploy-staging:
     runs-on: ubuntu-latest
     environment: staging
     steps:
