@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  deploy-staging:
     runs-on: ubuntu-latest
     environment: staging
     steps:
@@ -27,3 +27,20 @@ jobs:
           supabase secrets set SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
           supabase db push
           supabase functions deploy rate-limit
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: "2.7.7"
+
+      # Read-only check that the dashboard-managed CORS_ALLOWED_ORIGINS secret
+      # actually allows the staging origin. Catches an apex-vs-www style
+      # mismatch here, before the change is promoted to production.
+      - name: Verify CORS preflight
+        env:
+          RATE_LIMIT_FUNCTION_URL: https://${{ secrets.SUPABASE_STAGING_PROJECT_ID }}.supabase.co/functions/v1/rate-limit
+          EXPECTED_CORS_ORIGINS: https://staging.intrack.pt
+        run: npm run test:cors-smoke

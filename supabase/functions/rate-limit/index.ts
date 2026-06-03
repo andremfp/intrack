@@ -42,7 +42,7 @@ export function createRateLimitHandler(deps: HandlerDeps = {}) {
     async fetch(request: Request): Promise<Response> {
       const requestOrigin = request.headers.get("origin");
       const rawOrigins =
-        getEnv("CORS_ALLOWED_ORIGINS") ?? "https://intrack.pt";
+        getEnv("CORS_ALLOWED_ORIGINS") ?? "https://www.intrack.pt";
       const allowedOrigins = rawOrigins
         .split(",")
         .map((o) => o.trim())

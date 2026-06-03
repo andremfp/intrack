@@ -169,6 +169,24 @@ Deno.test("handler: OPTIONS with unlisted origin falls back to production origin
   );
 });
 
+Deno.test("handler: default config (no CORS secret) allows canonical prod origin", async () => {
+  // With CORS_ALLOWED_ORIGINS unset, the handler must fall back to the live
+  // canonical domain (www.intrack.pt). Guards against regressing the default
+  // back to the apex, which 301-redirects away and would break exports.
+  const handler = createRateLimitHandler({ getEnv: makeGetEnv() });
+  const request = new Request(
+    "https://test.supabase.co/functions/v1/rate-limit",
+    { method: "OPTIONS", headers: { Origin: "https://www.intrack.pt" } }
+  );
+  const response = await handler.fetch(request);
+
+  assertEquals(response.status, 204);
+  assertEquals(
+    response.headers.get("Access-Control-Allow-Origin"),
+    "https://www.intrack.pt"
+  );
+});
+
 Deno.test("handler: invalid method (DELETE) returns 405 METHOD_NOT_ALLOWED", async () => {
   // Method check fires before env reads — no valid env needed
   const handler = createRateLimitHandler({ getEnv: makeGetEnv() });

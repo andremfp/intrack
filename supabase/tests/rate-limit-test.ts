@@ -255,18 +255,27 @@ Deno.test("getCorsHeaders: echoes allowed origin back", () => {
   assertEquals(headers["Vary"], "Origin");
 });
 
-Deno.test("getCorsHeaders: falls back to production origin for unlisted origin", () => {
+Deno.test("getCorsHeaders: falls back to first allowed origin for unlisted origin", () => {
   const headers = getCorsHeaders(
     "https://evil.com",
-    ["https://intrack.pt", "https://staging.intrack.pt"]
+    ["https://www.intrack.pt", "https://intrack.pt"]
   );
-  assertEquals(headers["Access-Control-Allow-Origin"], "https://intrack.pt");
+  assertEquals(
+    headers["Access-Control-Allow-Origin"],
+    "https://www.intrack.pt"
+  );
   assertEquals(headers["Vary"], "Origin");
 });
 
-Deno.test("getCorsHeaders: falls back to production origin when origin is null", () => {
-  const headers = getCorsHeaders(null, ["https://intrack.pt"]);
-  assertEquals(headers["Access-Control-Allow-Origin"], "https://intrack.pt");
+Deno.test("getCorsHeaders: falls back to first allowed origin when origin is null", () => {
+  const headers = getCorsHeaders(null, [
+    "https://www.intrack.pt",
+    "https://intrack.pt",
+  ]);
+  assertEquals(
+    headers["Access-Control-Allow-Origin"],
+    "https://www.intrack.pt"
+  );
   assertEquals(headers["Vary"], "Origin");
 });
 
@@ -281,8 +290,10 @@ Deno.test("getCorsHeaders: echoes staging origin when it is in the allowlist", (
   );
 });
 
-Deno.test("getCorsHeaders: falls back when allowedOrigins list is empty", () => {
+Deno.test("getCorsHeaders: returns empty origin when allowedOrigins list is empty", () => {
+  // No configured origins means nothing is granted access — emit an empty
+  // Access-Control-Allow-Origin rather than leaking an arbitrary domain.
   const headers = getCorsHeaders("https://intrack.pt", []);
-  assertEquals(headers["Access-Control-Allow-Origin"], "https://intrack.pt");
+  assertEquals(headers["Access-Control-Allow-Origin"], "");
 });
 

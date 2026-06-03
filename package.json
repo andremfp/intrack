@@ -1,7 +1,7 @@
 {
   "name": "intrack",
   "private": true,
-  "version": "0.6.4",
+  "version": "0.6.5",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,6 +11,7 @@
     "test:rate-limit": "deno test --lock=deno.lock supabase/tests/rate-limit-test.ts supabase/tests/rate-limit-handler-test.ts",
     "test:unit": "vitest run --config vitest.config.ts",
     "test": "npm run test:rate-limit && npm run test:unit",
+    "test:cors-smoke": "deno test --allow-net --allow-env supabase/tests/cors-smoke-test.ts",
     "test:e2e": "playwright test",
     "sb:local:generate:schema": "npx supabase gen types typescript --local > src/schema.ts",
     "sb:local:start": "npx supabase start",
