@@ -1,0 +1,57 @@
+version: 2
+updates:
+  # ───────────────── npm ─────────────────
+  - package-ecosystem: 'npm'
+    directory: '/'
+    target-branch: 'staging'          # ride the staging → main → prod pipeline
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    open-pull-requests-limit: 5
+    labels:
+      - '⚙️ Dependencies'
+    commit-message:
+      prefix: 'chore(deps)'
+      prefix-development: 'chore(deps-dev)'
+    groups:
+      react:
+        patterns: ['react', 'react-dom', 'react-router-dom']
+      radix:
+        patterns: ['@radix-ui/*']
+      dnd-kit:
+        patterns: ['@dnd-kit/*']
+      tanstack:
+        patterns: ['@tanstack/*']
+      supabase:
+        patterns: ['@supabase/*', 'supabase']
+      tailwind:
+        patterns: ['tailwindcss', '@tailwindcss/*', 'tw-animate-css']
+      vite:
+        patterns: ['vite', '@vitejs/*']
+      eslint:
+        patterns: ['eslint', 'eslint-*', '@eslint/*', 'typescript-eslint']
+      testing:
+        patterns:
+          - 'vitest'
+          - '@testing-library/*'
+          - '@playwright/test'
+          - 'jsdom'
+      typescript:
+        patterns: ['typescript', '@types/*']
+      minor-and-patch:                 # catch-all for the long tail
+        update-types: ['minor', 'patch']
+
+  # ───────────── github-actions ─────────────
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    target-branch: 'staging'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    labels:
+      - '⚙️ Dependencies'
+    commit-message:
+      prefix: 'chore(ci)'
+    groups:
+      actions:
+        patterns: ['*']               # one PR for all action bumps
