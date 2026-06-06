@@ -19,7 +19,7 @@ type SupabaseAuthGetSessionResult = Promise<
   | { data: { session: null }; error: null }
 >;
 
-let mockGetSession: MockInstance<[], SupabaseAuthGetSessionResult>;
+let mockGetSession: MockInstance<() => SupabaseAuthGetSessionResult>;
 
 describe("rate-limit client", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
@@ -44,10 +44,10 @@ describe("rate-limit client", () => {
         updated_at: new Date().toISOString(),
       },
     };
-    mockGetSession = vi.spyOn(supabase.auth, "getSession") as MockInstance<
-      [],
-      SupabaseAuthGetSessionResult
-    >;
+    mockGetSession = vi.spyOn(
+      supabase.auth,
+      "getSession",
+    ) as MockInstance<() => SupabaseAuthGetSessionResult>;
     mockGetSession.mockResolvedValue({
       data: { session: fakeSession },
       error: null,
