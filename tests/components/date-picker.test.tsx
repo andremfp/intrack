@@ -53,7 +53,7 @@ describe("DatePicker", () => {
 
     // Find the call that emitted a valid date (not empty string)
     const dateCalls = onChange.mock.calls.filter(
-      ([val]: [string]) => val !== "" && val.match(/^\d{4}-\d{2}-\d{2}$/),
+      ([val]: string[]) => val !== "" && val.match(/^\d{4}-\d{2}-\d{2}$/),
     );
     expect(dateCalls.length).toBeGreaterThan(0);
     const lastDate = dateCalls[dateCalls.length - 1][0];
