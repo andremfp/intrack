@@ -143,6 +143,38 @@ Deno.test("Rate Limit Configuration Tests", () => {
   const bulkDeleteConfig = rateLimitUtils.getRateLimitConfig("bulk_delete");
   assertEquals(bulkDeleteConfig.maxRequests, 10);
   assertEquals(bulkDeleteConfig.windowMs, 5 * 60 * 1000);
+
+  const metricsConfig = rateLimitUtils.getRateLimitConfig("metrics");
+  assertEquals(metricsConfig.maxRequests, 30);
+  assertEquals(metricsConfig.windowMs, 60 * 1000); // 1 minute
+});
+
+Deno.test(
+  "isValidOperationType: accepts every configured operation (incl. metrics)",
+  () => {
+    // Regression: "metrics" was a real operation (types + config + client) but
+    // the validator's hardcoded list omitted it, so the edge function rejected
+    // metrics requests with 400 INVALID_OPERATION. Validator must stay in sync
+    // with RATE_LIMIT_CONFIGS, the single source of truth for operations.
+    const configuredOperations: RateLimitOperation[] = [
+      "import",
+      "export",
+      "report",
+      "bulk_delete",
+      "metrics",
+    ];
+    for (const op of configuredOperations) {
+      assert(
+        rateLimitUtils.isValidOperationType(op),
+        `expected "${op}" to be a valid operation`
+      );
+    }
+  }
+);
+
+Deno.test("isValidOperationType: rejects unknown operations", () => {
+  assertEquals(rateLimitUtils.isValidOperationType("unknown_op"), false);
+  assertEquals(rateLimitUtils.isValidOperationType(""), false);
 });
 
 Deno.test("Rate Limiting Logic Tests", async (t) => {

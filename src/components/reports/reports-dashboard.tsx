@@ -63,6 +63,11 @@ export function ReportsDashboard({
     const pdfModulePath = `./${specialtyCode}/pdf.tsx`;
     const pdfLoader = reportPdfLoaders[pdfModulePath];
 
+    // This effect performs an async dynamic import of the specialty's report
+    // modules and resets the related state before (re)loading. The synchronous
+    // resets below are a legitimate part of that side effect, not a cascading
+    // render, so the rule is disabled only for them.
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (!definition) {
       setSpecialtySections(null);
       setBuildPdfDocument(null);
@@ -79,6 +84,7 @@ export function ReportsDashboard({
     setModuleLoadError(false);
     setSpecialtySections(null);
     setBuildPdfDocument(null);
+    /* eslint-enable react-hooks/set-state-in-effect */
     loader()
       .then((mod) => {
         if (canceled) return;

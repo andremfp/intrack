@@ -77,17 +77,19 @@ createRoot(document.getElementById("root")!).render(
           </Suspense>
         </ErrorBoundary>
       </BrowserRouter>
-      {import.meta.env.DEV && (
-        <TanStackDevtools
-          plugins={[
-            {
-              name: "TanStack Query",
-              render: <ReactQueryDevtoolsPanel />,
-              defaultOpen: true,
-            },
-          ]}
-        />
-      )}
+      {/* Rendered in development only. The @tanstack/devtools-vite plugin
+          strips this element and its imports from production builds, so no
+          manual env guard is needed (and one would break the plugin's
+          AST removal, leaving an empty `&& ()` expression). */}
+      <TanStackDevtools
+        plugins={[
+          {
+            name: "TanStack Query",
+            render: <ReactQueryDevtoolsPanel />,
+            defaultOpen: true,
+          },
+        ]}
+      />
     </QueryClientProvider>
   </StrictMode>
 );

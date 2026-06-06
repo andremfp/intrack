@@ -147,7 +147,8 @@ export function createFilterSetters(
 
     // Create the base setter function with type coercion
     const baseSetter = (value: unknown) => {
-      let coercedValue: unknown = value;
+      // Assigned in every branch below before it is read, so no initializer.
+      let coercedValue: unknown;
 
       // Coerce value to appropriate type
       if (fieldType === "number") {

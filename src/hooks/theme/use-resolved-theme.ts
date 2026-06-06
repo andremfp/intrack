@@ -23,11 +23,17 @@ const resolveTheme = (theme: Theme): ResolvedTheme => {
 
 export function useResolvedTheme(): ResolvedTheme {
   const { theme } = useTheme();
-  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(
-    () => resolveTheme(theme)
+  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() =>
+    resolveTheme(theme)
   );
 
+  // Subscribing to the OS color-scheme media query and syncing the `theme`
+  // setting is a legitimate external sync, not a cascading render. A
+  // useSyncExternalStore rewrite would unconditionally call matchMedia even for
+  // explicit themes (changing behavior — see use-resolved-theme tests), so the
+  // rule is disabled for this effect instead.
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (theme === "system") {
       const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
       const handleChange = (event: MediaQueryListEvent) => {
@@ -43,9 +49,9 @@ export function useResolvedTheme(): ResolvedTheme {
     }
 
     setResolvedTheme(resolveTheme(theme));
+    /* eslint-enable react-hooks/set-state-in-effect */
     return undefined;
   }, [theme]);
 
   return resolvedTheme;
 }
-

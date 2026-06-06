@@ -16,6 +16,7 @@ import {
   getCorsHeaders,
   createErrorResponse,
   createSuccessResponse,
+  VALID_OPERATIONS,
 } from "./utils.ts";
 import type { RateLimitRequest } from "./types.ts";
 
@@ -174,7 +175,7 @@ export function createRateLimitHandler(deps: HandlerDeps = {}) {
               "Valid operation_type parameter required",
               400,
               cors,
-              { validOperations: ["import", "export", "report", "bulk_delete"] }
+              { validOperations: VALID_OPERATIONS }
             );
           }
 
@@ -220,7 +221,7 @@ export function createRateLimitHandler(deps: HandlerDeps = {}) {
               "Valid operation_type required in request body",
               400,
               cors,
-              { validOperations: ["import", "export", "report", "bulk_delete"] }
+              { validOperations: VALID_OPERATIONS }
             );
           }
 

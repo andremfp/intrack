@@ -5,6 +5,15 @@
 import type { RateLimitConfig, RateLimitOperation } from "./types.ts";
 import { RATE_LIMIT_CONFIGS } from "./config.ts";
 
+/**
+ * The complete set of valid operation types, derived from RATE_LIMIT_CONFIGS so
+ * the validator and error payloads stay in sync with the configured operations.
+ * Adding an operation to config.ts automatically makes it valid here.
+ */
+export const VALID_OPERATIONS = Object.keys(
+  RATE_LIMIT_CONFIGS
+) as RateLimitOperation[];
+
 export function getCorsHeaders(
   requestOrigin: string | null,
   allowedOrigins: string[]
@@ -64,13 +73,7 @@ export function getSecondsUntilReset(nextReset: Date): number {
 export function isValidOperationType(
   operationType: string
 ): operationType is RateLimitOperation {
-  const validOperations: RateLimitOperation[] = [
-    "import",
-    "export",
-    "report",
-    "bulk_delete",
-  ];
-  return validOperations.includes(operationType as RateLimitOperation);
+  return VALID_OPERATIONS.includes(operationType as RateLimitOperation);
 }
 
 /**

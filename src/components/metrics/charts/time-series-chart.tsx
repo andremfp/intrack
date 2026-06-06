@@ -31,7 +31,6 @@ export function TimeSeriesChart({
   // Measure card width to adapt chart based on available space
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
-  const [compactMode, setCompactMode] = useState(false);
 
   // Use date range from main filters - no independent date selection
   // If no date range is set, show all available data
@@ -65,18 +64,11 @@ export function TimeSeriesChart({
     };
   }, []);
 
-  // Hysteresis thresholds to prevent layout thrashing
-  const COMPACT_ENTER = 600;
-  const COMPACT_EXIT = 600;
-
-  useEffect(() => {
-    setCompactMode((prev) => {
-      if (prev) {
-        return containerWidth < COMPACT_EXIT;
-      }
-      return containerWidth < COMPACT_ENTER;
-    });
-  }, [containerWidth]);
+  // Switch to the compact layout below this width. The previous enter/exit
+  // hysteresis thresholds were equal, so the flag is a pure function of the
+  // measured width and is derived during render (no effect-driven setState).
+  const COMPACT_BREAKPOINT = 600;
+  const compactMode = containerWidth < COMPACT_BREAKPOINT;
 
   const chartConfig = {
     count: {

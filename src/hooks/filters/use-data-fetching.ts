@@ -72,9 +72,12 @@ export function useDataFetching<TData>({
     await loadData();
   }, [loadData]);
 
-  // Load data on initial mount or when dependencies change
+  // Load data on initial mount or when dependencies change. This is a data-
+  // fetching effect: loadData drives loading/data/error state, which is a
+  // legitimate effect use rather than a cascading render.
   useEffect(() => {
     hasLoadedRef.current = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, loadDependencies);
