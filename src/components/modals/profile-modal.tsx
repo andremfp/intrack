@@ -64,12 +64,18 @@ export function ProfileModal({
     };
   }, []);
 
-  // Update selectedYear when user changes
-  useEffect(() => {
+  // Sync the selected year when the user's saved specialty year changes.
+  // Adjusting state during render avoids a wasted render pass and satisfies
+  // react-hooks/set-state-in-effect.
+  const [prevSpecialtyYear, setPrevSpecialtyYear] = useState(
+    user?.data.specialty_year
+  );
+  if (user?.data.specialty_year !== prevSpecialtyYear) {
+    setPrevSpecialtyYear(user?.data.specialty_year);
     if (user?.data.specialty_year) {
       setSelectedYear(user.data.specialty_year.toString());
     }
-  }, [user?.data.specialty_year]);
+  }
 
   if (!user || !specialty) return null;
 

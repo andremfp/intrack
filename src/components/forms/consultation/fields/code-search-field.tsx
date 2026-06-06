@@ -116,11 +116,16 @@ export function CodeSearchField<T extends CodeSearchItem>({
       )
     : [];
 
-  const displayedItems = filteredItems.slice(0, visibleCount);
-
-  useEffect(() => {
+  // Reset the visible window whenever the search term changes. Adjusting state
+  // during render (instead of inside an effect) avoids a wasted render pass and
+  // satisfies react-hooks/set-state-in-effect.
+  const [prevSearchTerm, setPrevSearchTerm] = useState(searchTerm);
+  if (searchTerm !== prevSearchTerm) {
+    setPrevSearchTerm(searchTerm);
     setVisibleCount(10);
-  }, [searchTerm]);
+  }
+
+  const displayedItems = filteredItems.slice(0, visibleCount);
 
   // Handle selection
   const handleSelect = (item: T) => {

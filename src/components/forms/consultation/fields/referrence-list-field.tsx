@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,11 +74,17 @@ export function ReferrenceListField({
             .includes(motiveSearchTerm.toLowerCase()),
       )
     : [];
-  const displayedIcpcItems = filteredIcpcItems.slice(0, visibleCount);
-
-  useEffect(() => {
+  // Reset the visible window when the motive search term changes. Adjusting
+  // state during render avoids a wasted render pass and satisfies
+  // react-hooks/set-state-in-effect.
+  const [prevMotiveSearchTerm, setPrevMotiveSearchTerm] =
+    useState(motiveSearchTerm);
+  if (motiveSearchTerm !== prevMotiveSearchTerm) {
+    setPrevMotiveSearchTerm(motiveSearchTerm);
     setVisibleCount(10);
-  }, [motiveSearchTerm]);
+  }
+
+  const displayedIcpcItems = filteredIcpcItems.slice(0, visibleCount);
 
   // Remove an entire confirmed referrence entry
   const handleRemoveEntry = (key: string) => {

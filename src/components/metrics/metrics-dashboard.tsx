@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Specialty } from "@/lib/api/specialties";
 import { useMetricsData } from "@/hooks/metrics/use-metrics-data";
 import { useFilters } from "@/hooks/filters/use-filters";
@@ -38,21 +38,24 @@ export function MetricsDashboard({
   const [isExportingExcel, setIsExportingExcel] = useState(false);
 
   // For the consultations tab, automatically filter by the main location
-  // without showing it as an active filter
+  // without showing it as an active filter. Hoisting specialty.code keeps the
+  // value the memo reads identical to its declared dependency so the React
+  // Compiler can preserve the memoization
+  // (react-hooks/preserve-manual-memoization).
+  const specialtyCode = specialty?.code;
   const implicitFilters = useMemo(() => {
     if (
       activeSubTab === TAB_CONSTANTS.METRICS_SUB_TABS.CONSULTATIONS &&
-      specialty?.code
+      specialtyCode
     ) {
-      const { value: mainLocationValue } = getSpecialtyMainLocation(
-        specialty.code
-      );
+      const { value: mainLocationValue } =
+        getSpecialtyMainLocation(specialtyCode);
       if (mainLocationValue) {
         return { location: mainLocationValue };
       }
     }
     return {};
-  }, [activeSubTab, specialty?.code]);
+  }, [activeSubTab, specialtyCode]);
 
   // Use custom hook for metrics data fetching
   // For general tab, exclude consultations with type 'AM'
@@ -83,38 +86,38 @@ export function MetricsDashboard({
     [filters]
   );
 
-  // Store the latest loadMetrics function in a ref to avoid stale closures
+  // Store the latest loadMetrics function in a ref to avoid stale closures.
+  // Updating the ref in an effect (rather than during render) satisfies
+  // react-hooks/refs; consumers only read it later via the refresh callback.
   const loadMetricsRef = useRef(loadMetrics);
-  loadMetricsRef.current = loadMetrics;
+  useEffect(() => {
+    loadMetricsRef.current = loadMetrics;
+  });
 
   // Expose a refresh function to the parent so metrics can be reloaded
   // after side-effects like creating or editing consultations.
   // Use a ref to store the callback and track the last onRefreshReady function
   // to prevent calling it multiple times with the same parent callback
-  const refreshCallbackRef = useRef<(() => Promise<void>) | null>(null);
   const lastOnRefreshReadyRef = useRef<typeof onRefreshReady>(undefined);
 
-  // Create a stable refresh callback that uses the ref
-  if (!refreshCallbackRef.current) {
-    refreshCallbackRef.current = async () => {
-      return loadMetricsRef.current();
-    };
-  }
+  // Stable refresh callback exposed to the parent so metrics can be reloaded
+  // after side-effects like creating or editing consultations. useCallback keeps
+  // its identity stable across renders while reading the latest loadMetrics via
+  // the ref at call time, avoiding any ref access during render (react-hooks/refs).
+  const refreshCallback = useCallback(async () => {
+    return loadMetricsRef.current();
+  }, []);
 
   useEffect(() => {
-    // Only call onRefreshReady if:
-    // 1. It's provided
-    // 2. It's a different function reference than the last time we called it
-    // This prevents calling it multiple times when the component remounts with the same callback
+    // Only notify the parent when given a new callback reference, so we don't
+    // re-register on every render or when remounting with the same parent
+    // callback.
     if (!onRefreshReady || lastOnRefreshReadyRef.current === onRefreshReady) {
       return;
     }
-    if (!refreshCallbackRef.current) {
-      return;
-    }
     lastOnRefreshReadyRef.current = onRefreshReady;
-    onRefreshReady(refreshCallbackRef.current);
-  }, [onRefreshReady]);
+    onRefreshReady(refreshCallback);
+  }, [onRefreshReady, refreshCallback]);
 
   const handleExportExcel = async () => {
     if (!metrics) return;

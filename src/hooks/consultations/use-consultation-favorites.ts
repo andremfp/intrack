@@ -14,6 +14,12 @@ export function useFavorites({
   // Clear optimistic updates when database value matches optimistic value
   // Keep updates if consultation isn't found (might be on different page)
   useEffect(() => {
+    // Reconcile optimistic favorites against freshly fetched server data. State
+    // is only updated when the DB value matches the optimistic value, so this is
+    // a legitimate external-data sync rather than a cascading render. A render-
+    // time rewrite would risk an infinite loop because `consultations` can arrive
+    // as a new array identity on every render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setOptimisticFavorites((prev) => {
       const next = new Map(prev);
       let hasChanges = false;

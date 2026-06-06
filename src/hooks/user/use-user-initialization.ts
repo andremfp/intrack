@@ -31,9 +31,14 @@ export function useUserInitialization(
   useEffect(() => {
     // If we already have a user profile, skip initialization
     if (initialUserProfile) {
+      // One-time mount initialization reacting to the async-loaded profile.
+      // Setting loading/modal state here is a legitimate effect, not a cascading
+      // render.
+      /* eslint-disable react-hooks/set-state-in-effect */
       setIsLoading(false);
       const hasSpecialty = !!initialUserProfile.data.specialty_id;
       setShowSpecialtyModal(!hasSpecialty);
+      /* eslint-enable react-hooks/set-state-in-effect */
       hasInitialized.current = true;
       return;
     }

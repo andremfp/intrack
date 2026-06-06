@@ -15,6 +15,12 @@ export function useDeleteMode({
   // Clear optimistic deletions when consultations change (data refreshed)
   // Only clear if the consultation no longer exists in the new data
   useEffect(() => {
+    // Reconcile optimistic UI state against freshly fetched server data. State
+    // is only updated when an entry actually needs pruning, so this is a
+    // legitimate external-data sync rather than a cascading render. A render-time
+    // rewrite would risk an infinite loop because `consultations` can arrive as
+    // a new array identity on every render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setOptimisticDeletions((prev) => {
       const next = new Set(prev);
       let hasChanges = false;

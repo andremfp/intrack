@@ -1,7 +1,7 @@
 "use client";
 
 import type { HTMLAttributes, KeyboardEvent } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Tooltip,
@@ -26,6 +26,30 @@ const chartColors = [
   "var(--chart-5)",
 ];
 
+// Detect a coarse (touch) pointer via matchMedia, guarding for SSR and older
+// browsers that only expose the legacy add/removeListener API.
+const coarsePointerQuery = () =>
+  typeof window !== "undefined" && typeof window.matchMedia === "function"
+    ? window.matchMedia("(pointer: coarse)")
+    : null;
+
+const subscribeCoarsePointer = (callback: () => void) => {
+  const mediaQuery = coarsePointerQuery();
+  if (!mediaQuery) return () => {};
+
+  if (typeof mediaQuery.addEventListener === "function") {
+    mediaQuery.addEventListener("change", callback);
+    return () => mediaQuery.removeEventListener("change", callback);
+  }
+
+  mediaQuery.addListener(callback);
+  return () => mediaQuery.removeListener(callback);
+};
+
+const getCoarsePointerSnapshot = () => coarsePointerQuery()?.matches ?? false;
+
+const getCoarsePointerServerSnapshot = () => false;
+
 export function StackedBarCard<T extends { count: number }>({
   title,
   data,
@@ -37,42 +61,29 @@ export function StackedBarCard<T extends { count: number }>({
   const validData = data.filter((item) => item.count > 0);
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const [activeKey, setActiveKey] = useState<string | null>(null);
-  const [isCoarsePointer, setIsCoarsePointer] = useState(false);
   const barContainerRef = useRef<HTMLDivElement | null>(null);
   const legendRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    if (
-      typeof window === "undefined" ||
-      typeof window.matchMedia !== "function"
-    ) {
-      return;
-    }
+  // Coarse-pointer (touch) detection is an external store; subscribing keeps the
+  // value in sync without an effect-driven setState.
+  const isCoarsePointer = useSyncExternalStore(
+    subscribeCoarsePointer,
+    getCoarsePointerSnapshot,
+    getCoarsePointerServerSnapshot
+  );
 
-    const mediaQuery = window.matchMedia("(pointer: coarse)");
-
-    const handleChange = (event: MediaQueryListEvent) => {
-      setIsCoarsePointer(event.matches);
-    };
-
-    setIsCoarsePointer(mediaQuery.matches);
-
-    if (typeof mediaQuery.addEventListener === "function") {
-      mediaQuery.addEventListener("change", handleChange);
-      return () => mediaQuery.removeEventListener("change", handleChange);
-    }
-
-    mediaQuery.addListener(handleChange);
-    return () => mediaQuery.removeListener(handleChange);
-  }, []);
-
-  useEffect(() => {
+  // When the pointer type changes, clear whichever selection no longer applies
+  // (hover for touch, active/pinned for mouse). Adjusting state during render
+  // avoids an effect-driven setState.
+  const [prevCoarsePointer, setPrevCoarsePointer] = useState(isCoarsePointer);
+  if (isCoarsePointer !== prevCoarsePointer) {
+    setPrevCoarsePointer(isCoarsePointer);
     if (isCoarsePointer) {
       setHoveredKey(null);
     } else {
       setActiveKey(null);
     }
-  }, [isCoarsePointer]);
+  }
 
   useEffect(() => {
     if (!isCoarsePointer || activeKey === null) {
