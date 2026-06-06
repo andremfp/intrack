@@ -303,9 +303,14 @@ export function useConsultations({
     if (mainTab !== TAB_CONSTANTS.MAIN_TABS.CONSULTATIONS) return;
     if (specialtyYear === undefined) return;
 
-    // Reset to page 1 when dependencies change
+    // Reset to page 1 when the query inputs change. React Query refetches via
+    // its queryKey; this effect only resets local pagination/loading state plus
+    // a ref, so it is a legitimate effect — a render-time rewrite would move the
+    // ref mutation into render and violate react-hooks/refs.
+    /* eslint-disable react-hooks/set-state-in-effect */
     setCurrentPage(1);
     setIsInitialLoad(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
     hasLoadedConsultationsRef.current = false;
   }, [
     userId,

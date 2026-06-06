@@ -96,23 +96,20 @@ export function DonutCenterChart<T extends { count: number }>({
   const COMPACT_ENTER = 280; // switch to compact stacked bar
   const COMPACT_EXIT = 304; // switch back to donut
 
-  useEffect(() => {
-    if (containerWidth === 0) {
-      return;
-    }
-    setStackLegend((prev) => {
-      if (prev) {
-        return containerWidth < STACK_EXIT;
-      }
-      return containerWidth < STACK_ENTER;
-    });
-    setCompactMode((prev) => {
-      if (prev) {
-        return containerWidth < COMPACT_EXIT;
-      }
-      return containerWidth < COMPACT_ENTER;
-    });
-  }, [containerWidth]);
+  // Recompute the responsive layout flags whenever the measured width changes.
+  // Hysteresis (distinct enter/exit thresholds) needs the previous value, so we
+  // adjust state during render instead of in an effect
+  // (react-hooks/set-state-in-effect).
+  const [prevContainerWidth, setPrevContainerWidth] = useState(containerWidth);
+  if (containerWidth !== prevContainerWidth && containerWidth !== 0) {
+    setPrevContainerWidth(containerWidth);
+    setStackLegend((prev) =>
+      prev ? containerWidth < STACK_EXIT : containerWidth < STACK_ENTER
+    );
+    setCompactMode((prev) =>
+      prev ? containerWidth < COMPACT_EXIT : containerWidth < COMPACT_ENTER
+    );
+  }
 
   const validData = data.filter((d) => d.count > 0);
   const keys = validData.map(getKey);

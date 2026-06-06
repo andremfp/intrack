@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 
 interface TablePaginationProps {
@@ -18,10 +18,14 @@ export function TablePagination({
 }: TablePaginationProps) {
   const [pageInput, setPageInput] = useState(currentPage.toString());
 
-  // Update page input when current page changes
-  useEffect(() => {
+  // Sync the editable page input when the current page changes externally.
+  // Adjusting state during render avoids a wasted render pass and satisfies
+  // react-hooks/set-state-in-effect.
+  const [prevPage, setPrevPage] = useState(currentPage);
+  if (currentPage !== prevPage) {
+    setPrevPage(currentPage);
     setPageInput(currentPage.toString());
-  }, [currentPage]);
+  }
 
   // Pagination calculations
   const totalPages = Math.ceil(totalCount / pageSize);

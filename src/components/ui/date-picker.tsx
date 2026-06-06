@@ -74,8 +74,12 @@ export function DatePicker({
     date ? formatDate(date) : ""
   );
 
-  // Update internal state when external value changes
-  React.useEffect(() => {
+  // Sync internal state when the external value changes. Adjusting state during
+  // render avoids a wasted render pass and satisfies
+  // react-hooks/set-state-in-effect.
+  const [prevValue, setPrevValue] = React.useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
     if (value) {
       const newDate = new Date(value);
       if (isValidDate(newDate)) {
@@ -88,7 +92,7 @@ export function DatePicker({
       setMonth(undefined);
       setInputValue("");
     }
-  }, [value]);
+  }
 
   const handleDateSelect = (selectedDate: Date | undefined) => {
     setDate(selectedDate);

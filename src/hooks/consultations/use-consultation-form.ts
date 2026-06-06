@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import type { ConsultationMGF } from "@/lib/api/consultations";
 import { getSpecialtyFields, type SpecialtyField, type ReferrenceEntry } from "@/constants";
 import { resolveTypeSections } from "@/components/forms/consultation/helpers";
@@ -48,11 +48,16 @@ export function useConsultationForm(
   const [formValues, setFormValues] = useState<FormValues>(initialFormValues);
   const [fieldError, setFieldError] = useState<FieldError | null>(null);
 
-  // Update form values when initial values change (e.g., when specialtyYear changes)
-  useEffect(() => {
+  // Reset form values when the memoized initial values change (e.g., when
+  // specialtyYear changes). Adjusting state during render avoids a wasted
+  // render pass and satisfies react-hooks/set-state-in-effect.
+  const [prevInitialFormValues, setPrevInitialFormValues] =
+    useState(initialFormValues);
+  if (initialFormValues !== prevInitialFormValues) {
+    setPrevInitialFormValues(initialFormValues);
     setFormValues(initialFormValues);
     setFieldError(null); // Clear any validation errors when form resets
-  }, [initialFormValues]);
+  }
 
   /**
    * Initializes type-specific fields for a given consultation type.

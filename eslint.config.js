@@ -12,12 +12,20 @@ export default defineConfig([
     extends: [
       js.configs.recommended,
       tseslint.configs.recommended,
-      reactHooks.configs['recommended-latest'],
+      reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
     ],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
+    },
+  },
+  {
+    // The app entry point only renders the root and declares lazy routes; it has
+    // no component exports, so Fast Refresh does not apply to it.
+    files: ['src/main.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
     },
   },
 ])
