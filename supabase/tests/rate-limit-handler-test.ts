@@ -331,6 +331,26 @@ Deno.test(
 );
 
 Deno.test(
+  "handler: POST with operationType 'metrics' is accepted (200)",
+  async () => {
+    // Regression for the metrics 400: the client posts { operationType: "metrics" }
+    // when loading dashboards. The handler must accept it and apply the limit
+    // rather than rejecting it as INVALID_OPERATION.
+    const handler = createRateLimitHandler({
+      getEnv: makeGetEnv({ TEST_USER_ID: "test-user", ENVIRONMENT: "development" }),
+      createClient: makeMockCreateClient({}),
+    });
+    const response = await handler.fetch(
+      makeRequest("POST", "/", { body: { operationType: "metrics" } })
+    );
+
+    assertEquals(response.status, 200);
+    const body = (await response.json()) as { allowed: boolean };
+    assertEquals(body.allowed, true);
+  }
+);
+
+Deno.test(
   "handler: POST 429 — body includes remainingRequests, resetTime, retryAfter",
   async () => {
     // import limit is 10/hour. A record with request_count: 10 triggers the 429 path.
