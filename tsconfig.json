@@ -6,7 +6,6 @@
     { "path": "./tsconfig.tests.json" }
   ],
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     }
