@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 
 // Stub import.meta.env so src/* modules that read VITE_* vars at module-load
 // time don't throw when imported in the node test environment.
