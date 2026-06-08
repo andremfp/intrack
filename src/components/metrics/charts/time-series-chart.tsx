@@ -9,6 +9,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { getCompactTicks, getNiceMax } from "./axis-ticks";
+import { fillDailySeries, resolveSeriesEnd } from "./date-series";
 import { useTimeSeriesData } from "@/hooks/metrics/use-timeseries-data";
 import type { Specialty } from "@/lib/api/specialties";
 import type { ConsultationsFilters } from "@/lib/api/consultations";
@@ -87,42 +89,22 @@ export function TimeSeriesChart({
     }));
   }, [data]);
 
-  // Fill in missing dates with count: 0
+  // Fill in missing dates with count: 0 (UTC-consistent — see fillDailySeries).
+  // With no explicit end ("Tudo"), extend the series to today so its right edge
+  // matches the date-range presets, which always end at the current day.
   const completeData = useMemo(() => {
-    if (!formattedData || formattedData.length === 0) return [];
-
-    // Determine date range
-    const dates = formattedData.map((d) => new Date(d.date));
-    const minDate = new Date(Math.min(...dates.map((d) => d.getTime())));
-    const maxDate = new Date(Math.max(...dates.map((d) => d.getTime())));
-
-    // Use filter date range if available, otherwise use data range
-    const startDate = dateFrom
-      ? new Date(dateFrom)
-      : new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
-    const endDate = dateTo
-      ? new Date(dateTo)
-      : new Date(maxDate.getFullYear(), maxDate.getMonth(), maxDate.getDate());
-
-    // Create a map of existing data
-    const dataMap = new Map<string, number>();
-    formattedData.forEach((item) => {
-      dataMap.set(item.date, item.count);
-    });
-
-    // Generate all dates in range and fill missing ones with 0
-    const complete: Array<{ date: string; count: number }> = [];
-    const currentDate = new Date(startDate);
-    while (currentDate <= endDate) {
-      const dateStr = currentDate.toISOString().split("T")[0];
-      complete.push({
-        date: dateStr,
-        count: dataMap.get(dateStr) ?? 0,
-      });
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    return complete;
+    if (formattedData.length === 0) return [];
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${String(now.getDate()).padStart(2, "0")}`;
+    const lastDataDate = formattedData.reduce(
+      (max, d) => (d.date > max ? d.date : max),
+      formattedData[0].date
+    );
+    const seriesEnd = resolveSeriesEnd(today, lastDataDate, dateTo);
+    return fillDailySeries(formattedData, dateFrom, seriesEnd);
   }, [formattedData, dateFrom, dateTo]);
 
   // Calculate time range for smart label formatting
@@ -140,19 +122,8 @@ export function TimeSeriesChart({
 
   // Compute a "nice" Y-axis max
   const maxValue = completeData.reduce((m, d) => Math.max(m, d.count), 0);
-  const getNiceMax = (max: number) => {
-    if (max <= 0) return 0;
-    const magnitude = Math.pow(10, Math.floor(Math.log10(max)));
-    const normalized = max / magnitude;
-    let nice;
-    if (normalized <= 1.5) nice = 1 * magnitude;
-    else if (normalized <= 3) nice = 2 * magnitude;
-    else if (normalized <= 7) nice = 5 * magnitude;
-    else nice = 10 * magnitude;
-    return nice;
-  };
   const niceMax = getNiceMax(maxValue);
-  const mobileTicks = [0, Math.round(niceMax / 2), niceMax];
+  const mobileTicks = getCompactTicks(niceMax);
 
   // Smart x-axis label formatting based on time range and screen size
   const formatXAxisLabel = (value: string) => {
@@ -370,7 +341,6 @@ export function TimeSeriesChart({
                   interval={xAxisInterval}
                   tick={{
                     fontSize: compactMode ? 9 : 12,
-                    fill: "hsl(var(--muted-foreground))",
                   }}
                   tickFormatter={formatXAxisLabel}
                 />
@@ -382,7 +352,6 @@ export function TimeSeriesChart({
                   width={compactMode ? 32 : 55}
                   tick={{
                     fontSize: compactMode ? 10 : 12,
-                    fill: "hsl(var(--muted-foreground))",
                   }}
                   domain={[0, niceMax]}
                   ticks={compactMode ? mobileTicks : undefined}
@@ -400,8 +369,9 @@ export function TimeSeriesChart({
                     strokeDasharray: "4 4",
                     opacity: 0.3,
                   }}
-                  content={
+                  content={(props) => (
                     <ChartTooltipContent
+                      {...props}
                       className="rounded-lg border bg-background shadow-lg"
                       labelFormatter={(value) => {
                         const date = new Date(value);
@@ -413,7 +383,7 @@ export function TimeSeriesChart({
                       }}
                       indicator="dot"
                     />
-                  }
+                  )}
                 />
                 <Area
                   dataKey="count"
