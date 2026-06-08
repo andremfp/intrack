@@ -68,8 +68,9 @@ export function BreakdownChart({ title, data }: BreakdownChartProps) {
                 />
                 <ChartTooltip
                   cursor={false}
-                  content={
+                  content={(props) => (
                     <ChartTooltipContent
+                      {...props}
                       className="max-w-[20rem]"
                       hideLabel
                       formatter={(value, _name, item) => {
@@ -92,14 +93,14 @@ export function BreakdownChart({ title, data }: BreakdownChartProps) {
                         );
                       }}
                     />
-                  }
+                  )}
                 />
                 <Bar dataKey="value" fill="var(--color-value)" radius={8}>
                   <LabelList
                     dataKey="value"
                     position="top"
                     className="hidden sm:block fill-foreground text-xs font-light"
-                    formatter={(value: number) =>
+                    formatter={(value) =>
                       Number(value ?? 0).toLocaleString("pt-PT")
                     }
                   />
