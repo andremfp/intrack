@@ -390,7 +390,8 @@ export function DonutCenterChart<T extends { count: number }>({
             <PieChart>
               <ChartTooltip
                 wrapperStyle={{ zIndex: 1000 }}
-                content={({ active, payload }) => {
+                content={(props) => {
+                  const { active, payload } = props;
                   if (!active || !payload?.length) return null;
 
                   const item = payload[0];
@@ -414,8 +415,7 @@ export function DonutCenterChart<T extends { count: number }>({
 
                   return (
                     <ChartTooltipContent
-                      active={active}
-                      payload={payload}
+                      {...props}
                       label={label}
                       className="rounded-lg border bg-background shadow-lg"
                       indicator="dot"
@@ -429,7 +429,7 @@ export function DonutCenterChart<T extends { count: number }>({
                             }}
                           />
                           <span>
-                            {val.toLocaleString()} ({percentage}%)
+                            {val?.toLocaleString()} ({percentage}%)
                           </span>
                         </div>
                       )}

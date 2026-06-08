@@ -131,7 +131,6 @@ export function ReferralMetrics({ data }: ReferralMetricsProps) {
               axisLine={false}
               tick={{
                 fontSize,
-                fill: "hsl(var(--muted-foreground))",
               }}
               tickFormatter={(value) => value.toLocaleString("pt-PT")}
             />
@@ -143,7 +142,6 @@ export function ReferralMetrics({ data }: ReferralMetricsProps) {
               width={yAxisWidth}
               tick={{
                 fontSize,
-                fill: "hsl(var(--muted-foreground))",
               }}
               tickFormatter={(value) => {
                 const item = chartData.find((d) => d.referral === value);
@@ -152,8 +150,9 @@ export function ReferralMetrics({ data }: ReferralMetricsProps) {
             />
             <ChartTooltip
               cursor={{ fill: "rgba(0, 0, 0, 0.05)" }}
-              content={
+              content={(props) => (
                 <ChartTooltipContent
+                  {...props}
                   className="max-w-[20rem]"
                   hideLabel
                   formatter={(value, _name, item) => {
@@ -176,7 +175,7 @@ export function ReferralMetrics({ data }: ReferralMetricsProps) {
                     );
                   }}
                 />
-              }
+              )}
             />
             <Bar
               dataKey="value"
@@ -201,7 +200,7 @@ export function ReferralMetrics({ data }: ReferralMetricsProps) {
                 dataKey="value"
                 position="right"
                 className="fill-foreground text-xs font-light hidden sm:block"
-                formatter={(value: number) =>
+                formatter={(value) =>
                   Number(value ?? 0).toLocaleString("pt-PT")
                 }
               />
