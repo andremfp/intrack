@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.6.11",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -42,7 +45,7 @@
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@react-pdf/renderer": "^4.3.1",
-    "@supabase/supabase-js": "^2.58.0",
+    "@supabase/supabase-js": "^2.108.1",
     "@tabler/icons-react": "^3.36.0",
     "@tanstack/devtools-vite": "^0.7.0",
     "@tanstack/react-devtools": "^0.10.5",
