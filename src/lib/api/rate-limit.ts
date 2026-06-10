@@ -45,9 +45,14 @@ const VITE_ENV: Record<string, string | undefined> = {
 function readEnv(key: string): string | undefined {
   // NOTE: Vite only injects env vars when referenced as `import.meta.env.VITE_*`.
   // Dynamic access via `import.meta[key]` won't be replaced during build.
-  const processEnv =
-    typeof process !== "undefined" && process?.env ? process.env : undefined;
-  return VITE_ENV[key] ?? processEnv?.[key];
+  // Access `process` via `globalThis` so this stays browser-safe without
+  // pulling Node's ambient globals into the app's type environment.
+  const nodeProcess = (
+    globalThis as typeof globalThis & {
+      process?: { env?: Record<string, string | undefined> };
+    }
+  ).process;
+  return VITE_ENV[key] ?? nodeProcess?.env?.[key];
 }
 
 function removeTrailingSlash(value: string): string {
