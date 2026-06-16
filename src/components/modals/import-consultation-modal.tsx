@@ -112,14 +112,11 @@ export function ImportConsultationModal({
         }
 
         const isCsv = selectedFile.name.toLowerCase().endsWith(".csv");
-        const isXlsx =
-          selectedFile.name.toLowerCase().endsWith(".xlsx") ||
-          selectedFile.name.toLowerCase().endsWith(".xls") ||
-          selectedFile.name.toLowerCase().endsWith(".numbers");
+        const isXlsx = selectedFile.name.toLowerCase().endsWith(".xlsx");
 
         if (!isCsv && !isXlsx) {
           throw new Error(
-            "Formato de ficheiro não suportado. Por favor, use CSV, XLSX ou Numbers."
+            "Formato de ficheiro não suportado. Por favor, use CSV ou XLSX."
           );
         }
 
@@ -506,7 +503,7 @@ export function ImportConsultationModal({
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".csv,.xlsx,.xls,.numbers"
+                    accept=".csv,.xlsx"
                     onChange={handleFileInputChange}
                     className="hidden"
                   />
@@ -527,7 +524,7 @@ export function ImportConsultationModal({
                       <>
                         <IconUpload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                         <p className="text-sm font-medium mb-2">
-                          Arrasta um ficheiro CSV, XLSX ou Numbers aqui
+                          Arrasta um ficheiro CSV ou XLSX aqui
                         </p>
                         <p className="text-xs text-muted-foreground mb-4">
                           ou clique para selecionar
@@ -535,10 +532,14 @@ export function ImportConsultationModal({
 
                         <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                           <IconFileSpreadsheet className="h-4 w-4" />
-                          <span>CSV, XLSX, Numbers</span>
+                          <span>CSV, XLSX</span>
                         </div>
                         <p className="text-xs text-muted-foreground/70 mt-2">
                           Máx. 20 MB · 10 000 linhas
+                        </p>
+                        <p className="text-xs text-muted-foreground/70 mt-1">
+                          Tens um ficheiro .numbers ou .xls? Exporta-o para
+                          .xlsx ou .csv primeiro.
                         </p>
                       </>
                     )}

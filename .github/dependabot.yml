@@ -38,6 +38,8 @@ updates:
           - "jsdom"
       typescript:
         patterns: ["typescript", "@types/*"]
+      excel:
+        patterns: ["read-excel-file", "write-excel-file"]
 
   # ───────────── github-actions ─────────────
   - package-ecosystem: "github-actions"
