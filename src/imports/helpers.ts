@@ -633,7 +633,7 @@ function normalizeXlsxValue(value: unknown): string | number | null {
   if (value === null || value === undefined) return null;
   if (typeof value === "string") return value.trim();
   if (typeof value === "number") return value;
-  // Handle Date objects (common in .numbers files)
+  // read-excel-file returns a Date for cells whose number format is a date.
   if (value instanceof Date) {
     if (!Number.isNaN(value.getTime())) {
       return value.toISOString().split("T")[0];
@@ -644,81 +644,64 @@ function normalizeXlsxValue(value: unknown): string | number | null {
 }
 
 /**
- * Parses an XLSX file and returns rows with headers
+ * Parses the first sheet of an XLSX file into headers and rows.
+ *
+ * read-excel-file takes the File directly and resolves to an array of rows (each
+ * an array of cell values: string, number, boolean, Date, or null), so no
+ * FileReader plumbing is needed. The dynamic import keeps the parser out of the
+ * main bundle. Empty-header columns are dropped and fully-empty rows skipped, so
+ * the output matches the CSV import shape.
  */
 export async function parseXlsxFile(file: File): Promise<{
   headers: string[];
   rows: ImportRow[];
 }> {
-  const XLSX = await import("xlsx");
+  let sheet: unknown[][];
+  try {
+    const { readSheet } = await import("read-excel-file/browser");
+    // No sheet argument -> first sheet, returned as an array of arrays.
+    sheet = await readSheet(file);
+  } catch (error) {
+    throw new Error(
+      `Erro ao processar ficheiro: ${
+        error instanceof Error ? error.message : "Erro desconhecido"
+      }`,
+    );
+  }
 
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+  if (sheet.length === 0) {
+    throw new Error("Ficheiro não contém dados");
+  }
 
-    reader.onload = (e) => {
-      try {
-        const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: "binary" });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-          header: 1,
-          defval: null,
-        }) as unknown[][];
-
-        if (jsonData.length === 0) {
-          reject(new Error("Ficheiro não contém dados"));
-          return;
-        }
-
-        const rawHeaders = (jsonData[0] as unknown[]).map((h) =>
-          String(h || "").trim(),
-        ) as string[];
-        // Filter out empty headers and create a map of header to original index
-        const headerIndexMap = new Map<string, number>();
-        const headers: string[] = [];
-        rawHeaders.forEach((header, index) => {
-          if (header.trim() !== "") {
-            headers.push(header);
-            headerIndexMap.set(header, index);
-          }
-        });
-
-        const rows: ImportRow[] = [];
-
-        for (let i = 1; i < jsonData.length; i++) {
-          const values = jsonData[i] as unknown[];
-          const row: ImportRow = {};
-          headers.forEach((header) => {
-            const originalIndex = headerIndexMap.get(header);
-            if (originalIndex !== undefined) {
-              row[header] = normalizeXlsxValue(values[originalIndex]);
-            }
-          });
-          // Skip empty rows
-          if (!isRowEmpty(row)) {
-            rows.push(row);
-          }
-        }
-
-        resolve({ headers, rows });
-      } catch (error) {
-        reject(
-          new Error(
-            `Erro ao processar ficheiro: ${
-              error instanceof Error ? error.message : "Erro desconhecido"
-            }`,
-          ),
-        );
-      }
-    };
-
-    reader.onerror = () => {
-      reject(new Error("Erro ao ler ficheiro"));
-    };
-
-    reader.readAsArrayBuffer(file);
+  const rawHeaders = sheet[0].map((h) => String(h || "").trim());
+  // Keep only non-empty headers, remembering each one's original column index.
+  const headerIndexMap = new Map<string, number>();
+  const headers: string[] = [];
+  rawHeaders.forEach((header, index) => {
+    if (header !== "") {
+      headers.push(header);
+      headerIndexMap.set(header, index);
+    }
   });
+
+  const rows: ImportRow[] = [];
+
+  for (let i = 1; i < sheet.length; i++) {
+    const values = sheet[i];
+    const row: ImportRow = {};
+    headers.forEach((header) => {
+      const originalIndex = headerIndexMap.get(header);
+      if (originalIndex !== undefined) {
+        row[header] = normalizeXlsxValue(values[originalIndex]);
+      }
+    });
+    // Skip rows that are empty across every mapped column.
+    if (!isRowEmpty(row)) {
+      rows.push(row);
+    }
+  }
+
+  return { headers, rows };
 }
 
 /**
@@ -925,7 +908,7 @@ function validateSelectFields(
  *
  * Since parsing validates codes strictly (returns null if invalid), we check:
  * 1. If raw value was provided but parsing failed (returned null)
- * 2. If profession field received an array (should be single value only)
+ * 2. If profession field received more than one value (single selection only)
  */
 function validateCodeSearchFields(
   consultation: Partial<ConsultationInsert>,
@@ -966,8 +949,10 @@ function validateCodeSearchFields(
       }
     }
 
-    // Profession field only supports single selection (not array)
-    if (field.key === "profession" && Array.isArray(value)) {
+    // Profession is single-selection, but optional: an empty array is the
+    // field's default (no selection) and is valid. Only flag genuinely
+    // multiple values.
+    if (field.key === "profession" && Array.isArray(value) && value.length > 1) {
       errors.push({
         rowIndex,
         field: field.key,
