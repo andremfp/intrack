@@ -390,7 +390,7 @@ export const VALIDATION_RULES_GUIDE = {
 
 // File format specifications
 export const FILE_FORMAT_GUIDE = {
-  supportedFormats: ["CSV (.csv)", "Excel (.xlsx, .xls)", "Numbers (.numbers)"],
+  supportedFormats: ["CSV (.csv)", "Excel (.xlsx)"],
   encoding: "UTF-8 recomendado",
   delimiters: {
     csv: "Vírgula ou ponto e vírgula",

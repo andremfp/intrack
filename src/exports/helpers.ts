@@ -1,6 +1,7 @@
 import { MGF_CONSULTATION_TYPE_SECTIONS, TAB_CONSTANTS } from "@/constants";
 import type { ReactElement } from "react";
 import type { DocumentProps } from "@react-pdf/renderer";
+import type { Cell, SheetData } from "write-excel-file/browser";
 import type {
   ConsultationMGF,
   ConsultationMetrics,
@@ -105,6 +106,19 @@ export function downloadCsv(table: ExportTable, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
+/**
+ * Maps an export cell to a write-excel-file cell. Explicit per-cell types stop
+ * the writer from misinferring mixed-type columns (e.g. text metadata rows above
+ * numeric data). Export cells are never Date instances — dates are pre-formatted
+ * to strings upstream — so there is no Date branch and no date-format requirement.
+ */
+function toXlsxCell(value: ExportCell): Cell {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "number") return { value, type: Number };
+  if (typeof value === "boolean") return { value, type: Boolean };
+  return { value: String(value), type: String };
+}
+
 export async function downloadXlsx(
   sheets: ExportSheet[],
   filename: string
@@ -113,7 +127,7 @@ export async function downloadXlsx(
     return;
   }
 
-  // Guard against empty workbooks which cause xlsx to throw.
+  // Guard against empty workbooks (no sheets), which the writer rejects.
   if (!sheets || sheets.length === 0) {
     console.warn("[downloadXlsx] No sheets provided, skipping export", {
       filename,
@@ -121,57 +135,31 @@ export async function downloadXlsx(
     return;
   }
 
-  const XLSX = (await import("xlsx")) as unknown as {
-    utils: {
-      book_new: () => unknown;
-      aoa_to_sheet: (data: unknown[][]) => unknown;
-      book_append_sheet: (
-        workbook: unknown,
-        worksheet: unknown,
-        sheetName: string
-      ) => void;
-    };
-    write: (
-      workbook: unknown,
-      options: { bookType: string; type: "array" }
-    ) => ArrayBuffer;
-  };
+  const { default: writeXlsxFile } = await import("write-excel-file/browser");
 
-  const workbook = XLSX.utils.book_new();
-
-  for (const sheet of sheets) {
+  // One { data, sheet } config per sheet: metadata rows, a blank separator, the
+  // header row, then data rows — mirroring the CSV layout.
+  const workbook = sheets.map((sheet) => {
     const { headers, rows, metadataRows } = sheet;
-    const aoa: unknown[][] = [];
+    const data: SheetData = [];
 
     if (metadataRows && metadataRows.length > 0) {
       for (const row of metadataRows) {
-        aoa.push([...row]);
+        data.push(row.map(toXlsxCell));
       }
-      aoa.push([]);
+      data.push([]); // blank separator row
     }
 
-    aoa.push([...headers]);
+    data.push(headers.map(toXlsxCell));
 
     for (const row of rows) {
-      aoa.push([...row]);
+      data.push(row.map(toXlsxCell));
     }
 
-    const worksheet = XLSX.utils.aoa_to_sheet(aoa);
-    XLSX.utils.book_append_sheet(
-      workbook,
-      worksheet,
-      sheet.sheetName || "Sheet1"
-    );
-  }
-
-  const arrayBuffer = XLSX.write(workbook, {
-    bookType: "xlsx",
-    type: "array",
+    return { data, sheet: sheet.sheetName || "Sheet1" };
   });
 
-  const blob = new Blob([arrayBuffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
+  const blob = await writeXlsxFile(workbook).toBlob();
   const url = URL.createObjectURL(blob);
 
   const link = document.createElement("a");
