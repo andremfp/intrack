@@ -40,6 +40,33 @@ export function resolveSeriesEnd(
   return today;
 }
 
+/**
+ * Formats a chart tooltip label as a pt-PT long date (e.g. "1 de março de 2026").
+ *
+ * Recharts types the tooltip label as `ReactNode`, so the value is accepted as
+ * `unknown` and narrowed here — that keeps this module free of React types and
+ * survives future widenings of the recharts signature. Anything that is not a
+ * parseable date yields `null` so the tooltip drops the label instead of
+ * rendering "Invalid Date".
+ *
+ * The date is read in UTC to match the `YYYY-MM-DD` keys `fillDailySeries`
+ * builds; formatting in local time would shift the label back a day for users
+ * at a negative UTC offset.
+ */
+export function formatTooltipDate(value: unknown): string | null {
+  if (typeof value !== "string" && typeof value !== "number") return null;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  return date.toLocaleDateString("pt-PT", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 export function fillDailySeries(
   data: DailyPoint[],
   dateFrom?: string,
