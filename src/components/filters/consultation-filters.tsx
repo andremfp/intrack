@@ -462,7 +462,7 @@ export function ConsultationFilters({
               onChange={(e) =>
                 setFilterValue("processNumber", e.target.value || undefined)
               }
-              className="h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&input-placeholder]:text-muted-foreground"
+              className="h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
           </div>
         );

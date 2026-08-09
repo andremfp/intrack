@@ -10,7 +10,11 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { getCompactTicks, getNiceMax } from "./axis-ticks";
-import { fillDailySeries, resolveSeriesEnd } from "./date-series";
+import {
+  fillDailySeries,
+  formatTooltipDate,
+  resolveSeriesEnd,
+} from "./date-series";
 import { useTimeSeriesData } from "@/hooks/metrics/use-timeseries-data";
 import type { Specialty } from "@/lib/api/specialties";
 import type { ConsultationsFilters } from "@/lib/api/consultations";
@@ -373,14 +377,7 @@ export function TimeSeriesChart({
                     <ChartTooltipContent
                       {...props}
                       className="rounded-lg border bg-background shadow-lg"
-                      labelFormatter={(value) => {
-                        const date = new Date(value);
-                        return date.toLocaleDateString("pt-PT", {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                        });
-                      }}
+                      labelFormatter={formatTooltipDate}
                       indicator="dot"
                     />
                   )}

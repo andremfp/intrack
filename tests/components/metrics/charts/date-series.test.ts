@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   fillDailySeries,
+  formatTooltipDate,
   resolveSeriesEnd,
 } from "@/components/metrics/charts/date-series";
 
@@ -81,5 +82,15 @@ describe("resolveSeriesEnd", () => {
 
   it("falls back to today when there is no data", () => {
     expect(resolveSeriesEnd("2026-06-08", undefined)).toBe("2026-06-08");
+  });
+});
+
+describe("formatTooltipDate", () => {
+  it("renders a series day key as a pt-PT long date", () => {
+    expect(formatTooltipDate("2026-03-01")).toBe("1 de março de 2026");
+  });
+
+  it("renders the UTC day fillDailySeries produced, not a local-time shift", () => {
+    expect(formatTooltipDate("2026-01-01")).toBe("1 de janeiro de 2026");
   });
 });
