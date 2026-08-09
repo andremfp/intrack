@@ -8,6 +8,15 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 10
+    ignore:
+      # Added 2026-08-09. typescript-eslint 8.x peers typescript ">=4.8.4 <6.1.0",
+      # so TS 7 breaks `npm ci` (PR #169: lockfile desync + unresolved
+      # @typescript/typescript-* platform binaries).
+      # REMOVE WHEN: `npm view typescript-eslint peerDependencies.typescript`
+      # allows 7. Watch the grouped "eslint" dependabot PR — typescript-eslint
+      # ships inside it, it will not open its own PR.
+      - dependency-name: "typescript"
+        versions: [">=7"]
     labels:
       - "⚙️ Dependencies"
     commit-message:
