@@ -997,6 +997,87 @@ function validateTextFields(
 }
 
 /**
+ * Collects the type-specific section fields that apply to this row, paired with
+ * their value from the nested details[type][section][field] structure.
+ *
+ * Sections and fields hidden in the row's context are skipped, mirroring how
+ * the form only validates what the user can see.
+ */
+function getTypeSpecificFieldValues(
+  consultation: Partial<ConsultationInsert>,
+  ctx: FieldRuleContext,
+): { field: SpecialtyField; value: unknown }[] {
+  const details =
+    consultation.details && typeof consultation.details === "object"
+      ? (consultation.details as Record<string, unknown>)
+      : undefined;
+  if (!details || !ctx.type) return [];
+
+  const typeKey = ctx.type.toLowerCase();
+  const typeData = details[typeKey] as
+    | Record<string, Record<string, unknown> | undefined>
+    | undefined;
+
+  const entries: { field: SpecialtyField; value: unknown }[] = [];
+
+  (MGF_CONSULTATION_TYPE_SECTIONS[typeKey] ?? []).forEach((section) => {
+    if (!evaluateRule(section.visibleWhen, ctx, true)) return;
+
+    const sectionData = typeData?.[section.key];
+    section.fields
+      .filter((field) => isFieldVisible(field, ctx))
+      .forEach((field) => {
+        entries.push({ field, value: sectionData?.[field.key] });
+      });
+  });
+
+  return entries;
+}
+
+/**
+ * Validates fixed-format fields (fields declaring a `pattern`)
+ *
+ * Covers common, specialty and type-specific fields — e.g. "SM - Semanas",
+ * which must be "semanas+dias" (30+5). Empty values are left to the required
+ * check, so optional fields stay optional.
+ */
+function validatePatternFields(
+  consultation: Partial<ConsultationInsert>,
+  rowIndex: number,
+  specialtyFields: SpecialtyField[],
+): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const ctx = getRuleContext(consultation);
+
+  const candidates = [
+    ...[...COMMON_CONSULTATION_FIELDS, ...specialtyFields]
+      .filter((field) => isFieldVisible(field, ctx))
+      .map((field) => ({
+        field,
+        value: getConsultationValue(consultation, field.key),
+      })),
+    ...getTypeSpecificFieldValues(consultation, ctx),
+  ];
+
+  for (const { field, value } of candidates) {
+    if (!field.pattern) continue;
+    if (typeof value !== "string") continue;
+
+    const trimmed = value.trim();
+    if (!trimmed || field.pattern.test(trimmed)) continue;
+
+    errors.push({
+      rowIndex,
+      field: field.key,
+      message:
+        field.patternMessage ?? `${field.label} tem um formato inválido.`,
+    });
+  }
+
+  return errors;
+}
+
+/**
  * Validates text list field values
  *
  * Checks:
@@ -1146,6 +1227,7 @@ export function validateImportRow(
   errors.push(
     ...validateTextListFields(consultation, rowIndex, specialtyFields),
   );
+  errors.push(...validatePatternFields(consultation, rowIndex, specialtyFields));
 
   return errors;
 }

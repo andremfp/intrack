@@ -39,6 +39,11 @@ describe("mapHeaderToKey", () => {
     expect(mapHeaderToKey("Tipologia de Familia")).toBe("family_type");
   });
 
+  it("maps type-specific headers to their nested key", () => {
+    expect(mapHeaderToKey("SM - Trimestre")).toBe("sm_history_trimestre");
+    expect(mapHeaderToKey("SM - Semanas")).toBe("sm_history_semanas");
+  });
+
   it("returns null for an unknown header", () => {
     expect(mapHeaderToKey("Unknown Column")).toBeNull();
     expect(mapHeaderToKey("xyz")).toBeNull();

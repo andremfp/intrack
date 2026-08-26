@@ -318,3 +318,47 @@ describe("validateImportRow — boolean fields", () => {
     ).toBe(false);
   });
 });
+
+describe("validateImportRow — fixed-format fields (pattern)", () => {
+  // Type-specific values live nested under details[type][section][field].
+  function smRow(semanas: unknown) {
+    return {
+      location: "unidade",
+      sex: "f",
+      details: {
+        type: "SM",
+        sm: { history: { trimestre: "1t", semanas } },
+      },
+    };
+  }
+
+  it.each(["1+0", "30+5", "42+6"])("accepts a valid Semanas value (%s)", (value) => {
+    expect(has(validate(smRow(value)), "semanas")).toBe(false);
+  });
+
+  it.each(["0+0", "43+0", "30+7", "30x5", "30"])(
+    "flags an invalid Semanas value (%s)",
+    (value) => {
+      expect(has(validate(smRow(value)), "semanas", /formato/i)).toBe(true);
+    },
+  );
+
+  it("does not flag an empty Semanas value — the field is optional", () => {
+    expect(has(validate(smRow(null)), "semanas")).toBe(false);
+    expect(has(validate(smRow("")), "semanas")).toBe(false);
+  });
+
+  it("skips the check when the Saúde Materna section is hidden (sex = m)", () => {
+    const row = { ...smRow("30x5"), sex: "m" };
+    expect(has(validate(row), "semanas")).toBe(false);
+  });
+
+  it("skips the check when the row is of another consultation type", () => {
+    const row = {
+      location: "unidade",
+      sex: "f",
+      details: { type: "SA", sm: { history: { semanas: "30x5" } } },
+    };
+    expect(has(validate(row), "semanas")).toBe(false);
+  });
+});

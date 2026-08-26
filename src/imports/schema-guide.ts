@@ -292,9 +292,20 @@ function createTypeSpecificFieldGuide(
     baseDocs.examples = ["1.2", "150", "45.5"];
     baseDocs.validationRules = ["Deve ser um número válido"];
   } else if (field.type === "text") {
-    baseDocs.acceptedFormats = ["Texto livre"];
-    baseDocs.examples = ["Exemplo de texto"];
-    baseDocs.validationRules = ["Texto opcional"];
+    if (field.pattern) {
+      // Fixed-format text (e.g. Semanas): document the real rule and example
+      baseDocs.acceptedFormats = ["Texto com formato fixo"];
+      baseDocs.validationRules = [
+        field.patternMessage ?? "Deve respeitar o formato do campo",
+      ];
+      if (field.placeholder) {
+        baseDocs.examples = [field.placeholder];
+      }
+    } else {
+      baseDocs.acceptedFormats = ["Texto livre"];
+      baseDocs.examples = ["Exemplo de texto"];
+      baseDocs.validationRules = ["Texto opcional"];
+    }
   } else if (field.type === "multi-select") {
     baseDocs.acceptedFormats = ["Texto separado por ponto e vírgula"];
     baseDocs.examples = field.options

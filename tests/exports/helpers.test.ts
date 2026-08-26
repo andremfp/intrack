@@ -161,3 +161,40 @@ describe("mapConsultationsToExportTable — Excel formula injection sanitization
     expect(rows[0]).toContain(null);
   });
 });
+
+describe("mapConsultationsToExportTable — type-specific SM columns", () => {
+  function smTable(semanas: unknown) {
+    return mapConsultationsToExportTable([
+      makeConsultationMGF({
+        type: "SM",
+        details: { type: "SM", sm: { history: { trimestre: "1t", semanas } } },
+      }),
+    ]);
+  }
+
+  it("exports Semanas under its own header", () => {
+    const { headers, rows } = smTable("30+5");
+    const index = headers.indexOf("SM - Semanas");
+    expect(index).toBeGreaterThan(-1);
+    expect(rows[0][index]).toBe("30+5");
+  });
+
+  it("places Semanas immediately after Trimestre", () => {
+    const { headers } = smTable("30+5");
+    expect(headers.indexOf("SM - Semanas")).toBe(
+      headers.indexOf("SM - Trimestre") + 1
+    );
+  });
+
+  it("exports null when Semanas has no value", () => {
+    const { headers, rows } = smTable(null);
+    expect(rows[0][headers.indexOf("SM - Semanas")]).toBeNull();
+  });
+
+  it("exports null for a consultation of another type", () => {
+    const { headers, rows } = mapConsultationsToExportTable([
+      makeConsultationMGF({ type: "SA", details: { type: "SA" } }),
+    ]);
+    expect(rows[0][headers.indexOf("SM - Semanas")]).toBeNull();
+  });
+});

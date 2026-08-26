@@ -612,6 +612,15 @@ const EXPORT_COLUMNS: ExportColumnConfig[] = [
     },
   },
   {
+    key: "sm_history_semanas",
+    header: "SM - Semanas",
+    source: "type_specific",
+    typeKey: "sm",
+    sectionKey: "history",
+    fieldKey: "semanas",
+    formatter: (value) => (value ? String(value) : null),
+  },
+  {
     key: "sm_history_plano_vigilancia",
     header: "SM - Plano de Vigilância",
     source: "type_specific",
