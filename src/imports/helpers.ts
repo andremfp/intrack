@@ -666,6 +666,7 @@ export async function parseXlsxFile(file: File): Promise<{
       `Erro ao processar ficheiro: ${
         error instanceof Error ? error.message : "Erro desconhecido"
       }`,
+      { cause: error },
     );
   }
 

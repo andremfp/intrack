@@ -163,7 +163,7 @@ describe("mapConsultationsToExportTable — Excel formula injection sanitization
 });
 
 describe("mapConsultationsToExportTable — type-specific SM columns", () => {
-  function smTable(semanas: unknown) {
+  function smTable(semanas: string | null) {
     return mapConsultationsToExportTable([
       makeConsultationMGF({
         type: "SM",
