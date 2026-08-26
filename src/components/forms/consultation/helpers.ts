@@ -66,20 +66,23 @@ export function isFieldRequired(
   return evaluateFieldRule(field.requiredWhen, ctx, false);
 }
 
-function getAllRequiredFields(
+/**
+ * Collects every field the user can currently see: common fields, specialty
+ * fields, and the fields of the visible type-specific sections.
+ *
+ * Validation only ever applies to visible fields — a hidden field's leftover
+ * value is cleared on submit rather than reported as an error.
+ */
+function getAllVisibleFields(
   specialtyFields: SpecialtyField[],
   consultationType?: string,
   formValues?: FormValues,
 ): SpecialtyField[] {
   const ctx = formValues ? buildFieldRuleContext(formValues) : {};
 
-  const requiredFields = [
-    ...COMMON_CONSULTATION_FIELDS.filter(
-      (f) => isFieldRequired(f, ctx) && isFieldVisible(f, ctx),
-    ),
-    ...specialtyFields.filter(
-      (f) => isFieldRequired(f, ctx) && isFieldVisible(f, ctx),
-    ),
+  const visibleFields = [
+    ...COMMON_CONSULTATION_FIELDS.filter((f) => isFieldVisible(f, ctx)),
+    ...specialtyFields.filter((f) => isFieldVisible(f, ctx)),
   ];
 
   resolveTypeSections(consultationType).forEach((section) => {
@@ -87,13 +90,11 @@ function getAllRequiredFields(
     if (!sectionVisible) return;
 
     section.fields
-      .filter(
-        (field) => isFieldRequired(field, ctx) && isFieldVisible(field, ctx),
-      )
-      .forEach((field) => requiredFields.push(field));
+      .filter((field) => isFieldVisible(field, ctx))
+      .forEach((field) => visibleFields.push(field));
   });
 
-  return requiredFields;
+  return visibleFields;
 }
 
 function isEmpty(
@@ -129,19 +130,34 @@ export function validateForm(
 ): FieldError | null {
   const consultationType =
     typeof formValues.type === "string" ? formValues.type : undefined;
-  const requiredFields = getAllRequiredFields(
+  const ctx = buildFieldRuleContext(formValues);
+  const visibleFields = getAllVisibleFields(
     specialtyFields,
     consultationType,
     formValues,
   );
 
   // Check required fields
-  for (const field of requiredFields) {
+  for (const field of visibleFields.filter((f) => isFieldRequired(f, ctx))) {
     if (isEmpty(formValues[field.key])) {
       const message = `Por favor preenche o campo ${field.label}.`;
       toasts.error("Campos obrigatórios em falta", message);
       return { key: field.key, message };
     }
+  }
+
+  // Check fixed-format fields (e.g. Semanas "30+5"); empty values are left to
+  // the required check above, so optional fields stay optional.
+  for (const field of visibleFields) {
+    if (!field.pattern) continue;
+
+    const value = getStringValue(formValues, field.key);
+    if (!value || field.pattern.test(value)) continue;
+
+    const message =
+      field.patternMessage ?? `O campo ${field.label} tem um formato inválido.`;
+    toasts.error("Formato inválido", message);
+    return { key: field.key, message };
   }
 
   if (!specialtyId) {

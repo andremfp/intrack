@@ -87,6 +87,15 @@ export interface SpecialtyField {
   icpcOptions?: SpecialtyFieldOption[];
   placeholder?: string;
   units?: string;
+  /**
+   * Exact-format constraint for "text" fields, enforced on form submit and on
+   * import. Only checked when the value is non-empty — use `requiredWhen` to
+   * make the field mandatory. Must be flag-free (a `g` regex is stateful
+   * across `.test()` calls).
+   */
+  pattern?: RegExp;
+  /** User-facing message shown when `pattern` does not match. */
+  patternMessage?: string;
   section?: string; // Optional section grouping for UI organization
   mainLocation?: string; // Main location for specialty (used for general metrics tab)
   multiple?: boolean; // For code-search fields: true = multiple selection, false/undefined = single selection
@@ -485,6 +494,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
       { value: "laqueacao", label: "Laqueação" },
       { value: "natural", label: "Natural" },
       { value: "menopausa", label: "Menopausa" },
+      { value: "nenhum", label: "Nenhum" },
     ],
   },
   {
@@ -506,6 +516,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
       { value: "laqueacao", label: "Laqueação" },
       { value: "natural", label: "Natural" },
       { value: "menopausa", label: "Menopausa" },
+      { value: "nenhum", label: "Nenhum" },
     ],
   },
   // Procedimentos e Notas
@@ -687,6 +698,17 @@ export const MGF_CONSULTATION_TYPE_SECTIONS: Record<
             { value: "3t", label: "3º Trimestre" },
             { value: "pos", label: "Pós-parto" },
           ],
+        },
+        {
+          key: "semanas",
+          label: "Semanas",
+          type: "text",
+          placeholder: "30+5",
+          // Gestational age as "semanas+dias": 1-42 weeks, 0-6 days.
+          // Leading zeros are rejected so the stored value is unambiguous.
+          pattern: /^(?:[1-9]|[1-3]\d|4[0-2])\+[0-6]$/,
+          patternMessage:
+            "As semanas devem ter o formato semanas+dias, ex: 30+5 (1 a 42 semanas, 0 a 6 dias).",
         },
         {
           key: "plano-vigilancia",

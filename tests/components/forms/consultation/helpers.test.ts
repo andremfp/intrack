@@ -128,6 +128,78 @@ describe("validateForm — process_number", () => {
 });
 
 // ---------------------------------------------------------------------------
+// validateForm — semanas (fixed format "semanas+dias")
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds form values with the Saúde Materna section visible and its required
+ * Trimestre filled in, so only the Semanas format is under test.
+ */
+function makeSmFormValues(semanas: string): FormValues {
+  return makeFormValues({
+    location: "unidade",
+    sex: "f",
+    type: "SM",
+    trimestre: "1t",
+    semanas,
+  });
+}
+
+describe("validateForm — semanas", () => {
+  it.each(["1+0", "9+3", "30+5", "39+6", "40+0", "42+6"])(
+    "accepts %s",
+    (value) => {
+      expect(validateForm(makeSmFormValues(value), [], "some-id")).toBeNull();
+    },
+  );
+
+  it.each([
+    ["0+0", "week below the minimum"],
+    ["43+0", "week above the maximum"],
+    ["30+7", "day above the maximum"],
+    ["09+5", "leading zero in the week"],
+    ["30", "missing the day part"],
+    ["30+", "empty day part"],
+    ["+5", "empty week part"],
+    ["30x5", "wrong separator"],
+    ["30 + 5", "inner whitespace"],
+    ["30+5+2", "extra part"],
+  ])("rejects %s (%s)", (value) => {
+    expect(validateForm(makeSmFormValues(value), [], "some-id")).toEqual(
+      expect.objectContaining({ key: "semanas" }),
+    );
+  });
+
+  it("accepts an empty value — the field is optional", () => {
+    expect(validateForm(makeSmFormValues(""), [], "some-id")).toBeNull();
+  });
+
+  it("trims surrounding whitespace before matching", () => {
+    expect(validateForm(makeSmFormValues(" 30+5 "), [], "some-id")).toBeNull();
+  });
+
+  it("skips the check when the Saúde Materna section is hidden (sex = m)", () => {
+    const formValues = makeFormValues({
+      location: "unidade",
+      sex: "m",
+      type: "SM",
+      semanas: "30x5",
+    });
+    expect(validateForm(formValues, [], "some-id")).toBeNull();
+  });
+
+  it("skips the check when another consultation type is selected", () => {
+    const formValues = makeFormValues({
+      location: "unidade",
+      sex: "f",
+      type: "SA",
+      semanas: "30x5",
+    });
+    expect(validateForm(formValues, [], "some-id")).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // getFieldsThatWouldBeCleared
 // ---------------------------------------------------------------------------
 

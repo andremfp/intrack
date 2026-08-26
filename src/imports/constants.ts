@@ -105,6 +105,7 @@ export const HEADER_TO_KEY_MAP: Record<string, string> = {
   "HTA - Complicacoes": "hta_history_complicacoes",
   // Type-specific fields: SM (Saúde Materna)
   "SM - Trimestre": "sm_history_trimestre",
+  "SM - Semanas": "sm_history_semanas",
   "SM - Plano de Vigilância": "sm_history_plano_vigilancia",
   "SM - Plano de Vigilancia": "sm_history_plano_vigilancia",
   "SM - Complicações": "sm_history_complicacoes",
