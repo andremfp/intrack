@@ -485,6 +485,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
       { value: "laqueacao", label: "Laqueação" },
       { value: "natural", label: "Natural" },
       { value: "menopausa", label: "Menopausa" },
+      { value: "nenhum", label: "Nenhum" },
     ],
   },
   {
@@ -506,6 +507,7 @@ export const MGF_FIELDS: SpecialtyField[] = [
       { value: "laqueacao", label: "Laqueação" },
       { value: "natural", label: "Natural" },
       { value: "menopausa", label: "Menopausa" },
+      { value: "nenhum", label: "Nenhum" },
     ],
   },
   // Procedimentos e Notas
