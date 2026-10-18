@@ -55,6 +55,7 @@ InTrack is a Portuguese medical residency consultation tracking app for Family M
 - `npm run test:unit` — run Vitest unit tests
 - `npm run test:e2e` — run Playwright e2e tests
 - `npm run test` — run all tests
+- `npm run test:quiet` — same as `test`, printing failures only (agents)
 
 ## Git Workflow
 

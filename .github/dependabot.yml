@@ -13,8 +13,7 @@ updates:
       # so TS 7 breaks `npm ci` (PR #169: lockfile desync + unresolved
       # @typescript/typescript-* platform binaries).
       # REMOVE WHEN: `npm view typescript-eslint peerDependencies.typescript`
-      # allows 7. Watch the grouped "eslint" dependabot PR — typescript-eslint
-      # ships inside it, it will not open its own PR.
+      # allows 7. typescript-eslint ships inside the grouped "eslint" PR.
       - dependency-name: "typescript"
         versions: [">=7"]
     labels:
@@ -22,33 +21,23 @@ updates:
     commit-message:
       prefix: "chore(deps)"
       prefix-development: "chore(deps-dev)"
+    # Families that must move together get their own group (majors included).
+    # Order matters: a dependency joins the first group that matches it.
     groups:
       react:
-        patterns: ["react", "react-dom", "react-router-dom"]
-      radix:
-        patterns: ["@radix-ui/*"]
-      dnd-kit:
-        patterns: ["@dnd-kit/*"]
-      tanstack:
-        patterns: ["@tanstack/*"]
-      supabase:
-        patterns: ["@supabase/*", "supabase"]
-      tailwind:
-        patterns: ["tailwindcss", "@tailwindcss/*", "tw-animate-css"]
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
       vite:
         patterns: ["vite", "@vitejs/*"]
+      vitest:
+        patterns: ["vitest", "@vitest/*"]
+      tailwind:
+        patterns: ["tailwindcss", "@tailwindcss/*", "tw-animate-css"]
       eslint:
         patterns: ["eslint", "eslint-*", "@eslint/*", "typescript-eslint"]
-      testing:
-        patterns:
-          - "vitest"
-          - "@testing-library/*"
-          - "@playwright/test"
-          - "jsdom"
-      typescript:
-        patterns: ["typescript", "@types/*"]
-      excel:
-        patterns: ["read-excel-file", "write-excel-file"]
+      # Everything else: one PR for minor and patch; majors open one PR each.
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
 
   # ───────────── github-actions ─────────────
   - package-ecosystem: "github-actions"
