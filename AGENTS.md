@@ -61,6 +61,8 @@ InTrack is a Portuguese medical residency consultation tracking app for Family M
 
 **Branch flow:** `feature → staging → main` (production). Bump `package.json` version before PRing staging → main. CI runs build, lint, and tests on all PRs.
 
+**Supabase CLI:** pinned to the same version in `ci.yml`, `staging.yml` and `production.yml` (never `latest`); `supabase/config.toml` must stay valid for that version. Bump all three together with the `supabase` devDependency.
+
 ## Conventions
 
 shadcn/ui (New York) + Tailwind CSS, TanStack Query (server state) + Table, Tabler Icons, Zod validation, Sonner toasts, TypeScript strict mode (`noUnusedLocals`, `noUnusedParameters`).
