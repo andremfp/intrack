@@ -17,6 +17,9 @@ jobs:
       # We also map the standard VITE_ var to the local one so tests verify against local
       VITE_SUPABASE_URL: ${{ secrets.VITE_LOCAL_SUPABASE_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_LOCAL_SUPABASE_ANON_KEY }}
+      # Cloudflare's public always-pass Turnstile test key, so the login captcha
+      # solves itself in e2e (local Supabase has captcha disabled). Baked in at build.
+      VITE_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
     steps:
       - name: Enforce Staging -> Main Flow
         if: github.base_ref == 'main' && github.head_ref != 'staging'
