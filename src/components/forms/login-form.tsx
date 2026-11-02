@@ -1,5 +1,6 @@
 import { Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 
 import { cn } from "@/utils/utils";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,16 @@ export function LoginForm({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const captchaRef = useRef<TurnstileInstance>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  // Set when the widget cannot run (blocked script, unsupported browser, Cloudflare error)
+  // so users are not left with a silently disabled Login button.
+  const [captchaFailed, setCaptchaFailed] = useState(false);
+
+  function handleCaptchaFailure() {
+    setCaptchaToken(null);
+    setCaptchaFailed(true);
+  }
 
   async function handleGoogleLogin() {
     setError(null);
@@ -58,6 +69,7 @@ export function LoginForm({
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
+        options: { captchaToken: captchaToken ?? undefined },
       });
       if (error) throw error;
       if (data?.user) {
@@ -73,6 +85,9 @@ export function LoginForm({
           : "Não foi possível fazer login";
       setError(message);
     } finally {
+      // Captcha tokens are single-use: force a new challenge for the next attempt.
+      captchaRef.current?.reset();
+      setCaptchaToken(null);
       setIsLoading(false);
     }
   }
@@ -149,11 +164,32 @@ export function LoginForm({
               </button>
             </div>
           </Field>
+          <div className="flex justify-center">
+            <Turnstile
+              ref={captchaRef}
+              siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+              onSuccess={(token) => {
+                setCaptchaToken(token);
+                setCaptchaFailed(false);
+              }}
+              onError={handleCaptchaFailure}
+              onUnsupported={handleCaptchaFailure}
+              onExpire={() => setCaptchaToken(null)}
+              scriptOptions={{ onError: handleCaptchaFailure }}
+              options={{ theme: "auto" }}
+            />
+          </div>
           <Field>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading || !captchaToken}>
               Login
             </Button>
           </Field>
+          {captchaFailed ? (
+            <FieldDescription className="text-center text-destructive">
+              Não foi possível verificar o captcha. Desativa o bloqueador de
+              anúncios ou extensões de privacidade e recarrega a página.
+            </FieldDescription>
+          ) : null}
           {error ? (
             <FieldDescription className="text-center text-destructive">
               {error}

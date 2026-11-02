@@ -17,6 +17,9 @@ jobs:
       # We also map the standard VITE_ var to the local one so tests verify against local
       VITE_SUPABASE_URL: ${{ secrets.VITE_LOCAL_SUPABASE_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_LOCAL_SUPABASE_ANON_KEY }}
+      # Cloudflare's public always-pass Turnstile test key, so the login captcha
+      # solves itself in e2e (local Supabase has captcha disabled). Baked in at build.
+      VITE_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
     steps:
       - name: Enforce Staging -> Main Flow
         if: github.base_ref == 'main' && github.head_ref != 'staging'
@@ -58,7 +61,7 @@ jobs:
 
       - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
         with:
-          version: "2.83.0"
+          version: "2.113.0"
 
       - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
         with:

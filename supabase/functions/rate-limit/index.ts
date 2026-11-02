@@ -5,7 +5,9 @@
  * It uses a database-backed fixed-window counter approach for reliable distributed rate limiting.
  */
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// npm: specifier (integrity from the registry, locked in deno.lock) instead of
+// esm.sh, whose build output is mutable and broke the lockfile hash check in CI.
+import { createClient } from "npm:@supabase/supabase-js@2.112.2";
 import {
   checkRateLimit,
   getRateLimitStatus,

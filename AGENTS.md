@@ -55,10 +55,13 @@ InTrack is a Portuguese medical residency consultation tracking app for Family M
 - `npm run test:unit` — run Vitest unit tests
 - `npm run test:e2e` — run Playwright e2e tests
 - `npm run test` — run all tests
+- `npm run test:quiet` — same as `test`, printing failures only (agents)
 
 ## Git Workflow
 
 **Branch flow:** `feature → staging → main` (production). Bump `package.json` version before PRing staging → main. CI runs build, lint, and tests on all PRs.
+
+**Supabase CLI:** pinned to the same version in `ci.yml`, `staging.yml` and `production.yml` (never `latest`); `supabase/config.toml` must stay valid for that version. Bump all three together with the `supabase` devDependency.
 
 ## Conventions
 
