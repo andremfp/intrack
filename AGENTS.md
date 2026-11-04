@@ -61,7 +61,9 @@ InTrack is a Portuguese medical residency consultation tracking app for Family M
 
 **Branch flow:** `feature → staging → main` (production). Bump `package.json` version before PRing staging → main. CI runs build, lint, and tests on all PRs.
 
-**Node.js:** pinned to a single major (`24.x`) in `package.json` `engines` and `.nvmrc` (used by CI). Vercel prefers `engines` over the dashboard setting, so an open range like `>=22` resolves to the newest runtime. Bump both together (`tests/config/node-version.test.ts` enforces it).
+**Node.js:** pinned to a single major (`26.x`) in `package.json` `engines` and `.nvmrc` (used by CI). Vercel prefers `engines` over the dashboard setting, so an open range like `>=22` resolves to the newest runtime. The `@types/node` major must match too, and Dependabot ignores `@types/node` `>=27`. Bump all of them together (`tests/config/node-version.test.ts` enforces it).
+
+**Install scripts:** npm 11.20+ (bundled with Node 26) skips dependency install scripts unless listed in `package.json` `allowScripts`. `esbuild` and `fsevents` are denied (not needed). A new dependency with an install script fails `tests/config/install-scripts.test.ts` until you decide with `npm install-scripts approve|deny <pkg>`.
 
 **Supabase CLI:** pinned to the same version in `ci.yml`, `staging.yml` and `production.yml` (never `latest`); `supabase/config.toml` must stay valid for that version. Bump all three together with the `supabase` devDependency.
 

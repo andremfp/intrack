@@ -16,6 +16,12 @@ updates:
       # allows 7. typescript-eslint ships inside the grouped "eslint" PR.
       - dependency-name: "typescript"
         versions: [">=7"]
+      # Added 2026-11-04. @types/node's major must equal the runtime major in
+      # package.json `engines` / .nvmrc (tests/config/node-version.test.ts).
+      # REMOVE WHEN: bumping Node to 27; raise this floor together with
+      # engines, .nvmrc and @types/node.
+      - dependency-name: "@types/node"
+        versions: [">=27"]
     labels:
       - "⚙️ Dependencies"
     commit-message:
