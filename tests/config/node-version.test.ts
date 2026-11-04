@@ -17,4 +17,14 @@ describe("Node.js version pin", () => {
   it("matches the major in .nvmrc used by CI", () => {
     expect(read(".nvmrc").trim().split(".")[0]).toBe(engine.split(".")[0]);
   });
+
+  // Types newer than the runtime would let code use APIs that don't exist at runtime.
+  it("keeps the @types/node major equal to the runtime major", () => {
+    const types: string = JSON.parse(read("package.json")).devDependencies[
+      "@types/node"
+    ];
+    expect(types.replace(/^[^\d]*/, "").split(".")[0]).toBe(
+      engine.split(".")[0],
+    );
+  });
 });
