@@ -61,6 +61,8 @@ InTrack is a Portuguese medical residency consultation tracking app for Family M
 
 **Branch flow:** `feature → staging → main` (production). Bump `package.json` version before PRing staging → main. CI runs build, lint, and tests on all PRs.
 
+**Node.js:** pinned to a single major (`24.x`) in `package.json` `engines` and `.nvmrc` (used by CI). Vercel prefers `engines` over the dashboard setting, so an open range like `>=22` resolves to the newest runtime. Bump both together (`tests/config/node-version.test.ts` enforces it).
+
 **Supabase CLI:** pinned to the same version in `ci.yml`, `staging.yml` and `production.yml` (never `latest`); `supabase/config.toml` must stay valid for that version. Bump all three together with the `supabase` devDependency.
 
 ## Conventions
