@@ -84,3 +84,47 @@ describe("Production release", () => {
     expect(production).toMatch(/gh release view/);
   });
 });
+
+describe("Supabase CLI and generated types", () => {
+  const lock = JSON.parse(
+    readFileSync(path.resolve(__dirname, "../../package-lock.json"), "utf8"),
+  ) as { packages: Record<string, { version: string }> };
+  const pkg = JSON.parse(
+    readFileSync(path.resolve(__dirname, "../../package.json"), "utf8"),
+  ) as { scripts: Record<string, string> };
+
+  // `npx supabase` in CI resolves the lockfile version, while setup-cli
+  // installs the pinned one: they must be the same CLI.
+  it.each([
+    ["ci.yml", ci],
+    ["staging.yml", staging],
+    ["production.yml", production],
+  ])("pins setup-cli in %s to the locked supabase version", (_name, wf) => {
+    const pinned = wf.match(/setup-cli[\s\S]*?version:\s*"([^"]+)"/)?.[1];
+    expect(pinned).toBe(lock.packages["node_modules/supabase"].version);
+  });
+
+  // The CLI emits unformatted TypeScript; CI's `git diff --exit-code
+  // src/schema.ts` only passes if the script formats it deterministically.
+  it("formats the generated schema with oxfmt", () => {
+    expect(pkg.scripts["sb:local:generate:schema"]).toMatch(
+      /gen types typescript --local > src\/schema\.ts && oxfmt src\/schema\.ts/,
+    );
+  });
+});
+
+describe("rate-limit edge function", () => {
+  // Deno resolves `npm:` specifiers against node_modules when present, so an
+  // exact pin that drifts from the lockfile fails the Deno tests in CI.
+  it("imports the supabase-js version locked in package-lock.json", () => {
+    const lock = JSON.parse(
+      readFileSync(path.resolve(__dirname, "../../package-lock.json"), "utf8"),
+    ) as { packages: Record<string, { version: string }> };
+    const fn = readFileSync(
+      path.resolve(__dirname, "../../supabase/functions/rate-limit/index.ts"),
+      "utf8",
+    );
+    const pinned = fn.match(/npm:@supabase\/supabase-js@([\w.-]+)"/)?.[1];
+    expect(pinned).toBe(lock.packages["node_modules/@supabase/supabase-js"].version);
+  });
+});

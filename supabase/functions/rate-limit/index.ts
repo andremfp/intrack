@@ -7,7 +7,7 @@
 
 // npm: specifier (integrity from the registry, locked in deno.lock) instead of
 // esm.sh, whose build output is mutable and broke the lockfile hash check in CI.
-import { createClient } from "npm:@supabase/supabase-js@2.112.2";
+import { createClient } from "npm:@supabase/supabase-js@2.119.0";
 import {
   checkRateLimit,
   getRateLimitStatus,

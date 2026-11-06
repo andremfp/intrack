@@ -1,11 +1,19 @@
 import type { ConsultationMGF } from "@/lib/api/consultations";
 
 /**
+ * Overrides may be null for any column: the view types are inferred from the
+ * base table, but tests still exercise defensive handling of null rows.
+ */
+export type ConsultationMGFOverrides = {
+  [K in keyof ConsultationMGF]?: ConsultationMGF[K] | null;
+};
+
+/**
  * Builds a valid ConsultationMGF object with sensible defaults.
  * Pass an overrides object to pin only the fields relevant to each test.
  */
 export function makeConsultationMGF(
-  overrides: Partial<ConsultationMGF> = {}
+  overrides: ConsultationMGFOverrides = {}
 ): ConsultationMGF {
   return {
     id: "test-consultation-id",

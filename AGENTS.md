@@ -67,7 +67,7 @@ InTrack is a Portuguese medical residency consultation tracking app for Family M
 
 **Install scripts:** npm 11.20+ (bundled with Node 26) skips dependency install scripts unless listed in `package.json` `allowScripts`. `esbuild` and `fsevents` are denied (not needed). A new dependency with an install script fails `tests/config/install-scripts.test.ts` until you decide with `npm install-scripts approve|deny <pkg>`.
 
-**Supabase CLI:** pinned to the same version in `ci.yml`, `staging.yml` and `production.yml` (never `latest`); `supabase/config.toml` must stay valid for that version. Bump all three together with the `supabase` devDependency.
+**Supabase CLI:** pinned to the same version in `ci.yml`, `staging.yml` and `production.yml` (never `latest`); `supabase/config.toml` must stay valid for that version. Bump all three together with the `supabase` devDependency. `tests/config/ci-workflow.test.ts` enforces that the pins equal the locked version. The CLI emits unformatted types, so `sb:local:generate:schema` pipes `src/schema.ts` through `oxfmt` (config in `.oxfmtrc.json`); CI's Verify Types step diffs the result against the committed file, so regenerate it (with the local stack running) whenever the CLI or the schema changes.
 
 ## Conventions
 
