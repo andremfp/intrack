@@ -16,12 +16,16 @@ updates:
       # allows 7. typescript-eslint ships inside the grouped "eslint" PR.
       - dependency-name: "typescript"
         versions: [">=7"]
-      # Added 2026-11-04. @types/node's major must equal the runtime major in
-      # package.json `engines` / .nvmrc (tests/config/node-version.test.ts).
-      # REMOVE WHEN: bumping Node to 27; raise this floor together with
-      # engines, .nvmrc and @types/node.
+      # @types/node's major must equal the runtime major in package.json
+      # `engines` / .nvmrc (tests/config/node-version.test.ts), so it moves only
+      # with a deliberate Node upgrade, never on its own. Minor/patch still flow.
       - dependency-name: "@types/node"
-        versions: [">=27"]
+        update-types: ["version-update:semver-major"]
+    # Wait before adopting a fresh release so a compromised publish is yanked
+    # before it reaches a PR. Never delays security updates.
+    cooldown:
+      default-days: 3
+      semver-major-days: 7
     labels:
       - "⚙️ Dependencies"
     commit-message:
@@ -44,6 +48,11 @@ updates:
       minor-and-patch:
         patterns: ["*"]
         update-types: ["minor", "patch"]
+      # Security updates are not covered by the groups above: without this each
+      # advisory opens its own PR, each needing its own rebase and CI run.
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
 
   # ───────────── github-actions ─────────────
   - package-ecosystem: "github-actions"
