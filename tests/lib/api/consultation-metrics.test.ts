@@ -1,16 +1,18 @@
 import { describe, expect, it } from "vitest";
 
 import type { ConsultationMGF } from "@/lib/api/consultations";
+import type { ConsultationMGFOverrides } from "../../factories/consultation";
 import {
   calculateMetrics,
   getEmptyMetrics,
 } from "@/lib/api/consultation-metrics";
 
 // ---------------------------------------------------------------------------
-// Local factory — all ConsultationMGF columns are nullable (view, not table)
+// Local factory — null-filled rows; overrides may be null to exercise
+// defensive handling even where the generated view types are non-null
 // ---------------------------------------------------------------------------
 function makeMGFConsultation(
-  overrides: Partial<ConsultationMGF> = {}
+  overrides: ConsultationMGFOverrides = {}
 ): ConsultationMGF {
   return {
     id: crypto.randomUUID(),
@@ -38,7 +40,7 @@ function makeMGFConsultation(
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     ...overrides,
-  };
+  } as ConsultationMGF;
 }
 
 // ---------------------------------------------------------------------------

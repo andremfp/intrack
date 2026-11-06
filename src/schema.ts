@@ -41,7 +41,7 @@ export type Database = {
           autonomy: string
           created_at: string
           date: string
-          details: Json
+          details: NonNullable<Json>
           favorite: boolean
           id: string
           location: string
@@ -52,13 +52,14 @@ export type Database = {
           updated_at: string
           user_id: string
         }
+        ComputedFields: never
         Insert: {
           age: number
           age_unit: string
           autonomy: string
           created_at?: string
           date: string
-          details: Json
+          details: NonNullable<Json>
           favorite?: boolean
           id?: string
           location: string
@@ -75,7 +76,7 @@ export type Database = {
           autonomy?: string
           created_at?: string
           date?: string
-          details?: Json
+          details?: NonNullable<Json>
           favorite?: boolean
           id?: string
           location?: string
@@ -106,6 +107,7 @@ export type Database = {
           user_id: string
           window_start: string
         }
+        ComputedFields: never
         Insert: {
           created_at?: string
           id?: string
@@ -135,6 +137,7 @@ export type Database = {
           updated_at: string
           years: number
         }
+        ComputedFields: never
         Insert: {
           code: string
           created_at?: string
@@ -163,6 +166,7 @@ export type Database = {
           updated_at: string
           user_id: string
         }
+        ComputedFields: never
         Insert: {
           created_at?: string
           display_name: string
@@ -195,31 +199,32 @@ export type Database = {
     Views: {
       consultations_mgf: {
         Row: {
-          age: number | null
-          age_unit: string | null
+          age: number
+          age_unit: string
           age_years: number | null
           alcohol: boolean | null
-          autonomy: string | null
-          created_at: string | null
-          date: string | null
-          details: Json | null
+          autonomy: string
+          created_at: string
+          date: string
+          details: NonNullable<Json>
           drugs: boolean | null
           family_type: string | null
-          favorite: boolean | null
-          id: string | null
-          location: string | null
+          favorite: boolean
+          id: string
+          location: string
           presential: boolean | null
-          process_number: number | null
+          process_number: number
           professional_situation: string | null
           school_level: string | null
-          sex: string | null
+          sex: string
           smoker: string | null
-          specialty_year: number | null
+          specialty_year: number
           type: string | null
-          updated_at: string | null
-          user_id: string | null
+          updated_at: string
+          user_id: string
           vaccination_plan: boolean | null
         }
+        ComputedFields: never
         Relationships: []
       }
     }
@@ -237,7 +242,7 @@ export type Database = {
           request_count: number
         }[]
       }
-      delete_user: { Args: never; Returns: undefined }
+      delete_user: { Args: Record<PropertyKey, never>; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
@@ -256,12 +261,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -285,11 +290,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -310,11 +315,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -335,11 +340,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -352,11 +357,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -373,4 +378,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-
