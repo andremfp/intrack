@@ -112,3 +112,19 @@ describe("Supabase CLI and generated types", () => {
     );
   });
 });
+
+describe("rate-limit edge function", () => {
+  // Deno resolves `npm:` specifiers against node_modules when present, so an
+  // exact pin that drifts from the lockfile fails the Deno tests in CI.
+  it("imports the supabase-js version locked in package-lock.json", () => {
+    const lock = JSON.parse(
+      readFileSync(path.resolve(__dirname, "../../package-lock.json"), "utf8"),
+    ) as { packages: Record<string, { version: string }> };
+    const fn = readFileSync(
+      path.resolve(__dirname, "../../supabase/functions/rate-limit/index.ts"),
+      "utf8",
+    );
+    const pinned = fn.match(/npm:@supabase\/supabase-js@([\w.-]+)"/)?.[1];
+    expect(pinned).toBe(lock.packages["node_modules/@supabase/supabase-js"].version);
+  });
+});
