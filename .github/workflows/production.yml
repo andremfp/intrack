@@ -8,9 +8,15 @@ on:
 permissions:
   contents: read
 
+# One deploy at a time; never cancel a running migration midway.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 jobs:
   deploy-production:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment: production
     permissions:
       contents: write # Required to create Releases
@@ -27,7 +33,7 @@ jobs:
 
       - uses: supabase/setup-cli@d239d1052f6f024a8d746d7e5aeddead63b9cb53 # v3.1.0
         with:
-          version: "2.113.0"
+          version: "2.122.1"
 
       - name: Link & Deploy Production
         env:
@@ -54,11 +60,18 @@ jobs:
           EXPECTED_CORS_ORIGINS: https://www.intrack.pt
         run: npm run test:cors-smoke
 
+      # Tag the exact deployed commit. Skipped when the release exists so a
+      # re-run of this workflow stays safe.
       - name: Create Release
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
-        with:
-          tag_name: v${{ steps.package-version.outputs.version }}
-          name: Release v${{ steps.package-version.outputs.version }}
-          generate_release_notes: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: v${{ steps.package-version.outputs.version }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists, skipping."
+          else
+            gh release create "$TAG" \
+              --target "$GITHUB_SHA" \
+              --title "Release $TAG" \
+              --generate-notes
+          fi

@@ -59,13 +59,15 @@ InTrack is a Portuguese medical residency consultation tracking app for Family M
 
 ## Git Workflow
 
-**Branch flow:** `feature → staging → main` (production). Bump `package.json` version before PRing staging → main. CI runs build, lint, and tests on all PRs.
+**Branch flow:** `feature → staging → main` (production). Feature and Dependabot PRs into `staging` are squash-merged; `staging → main` is promoted with a **merge commit** (never squash), so `staging` stays an ancestor of `main` and needs no back-merge, and release notes list each PR. Bump `package.json` version on `staging` (`npm version patch|minor|major --no-git-tag-version`) after the last merge and before PRing `staging → main`; CI fails unless it is newer than `main`'s. CI runs build, lint, and tests on all PRs. Required checks: `test` (both branches) and `deploy-staging` (`main`); keep those job ids.
 
-**Node.js:** pinned to a single major (`26.x`) in `package.json` `engines` and `.nvmrc` (used by CI). Vercel prefers `engines` over the dashboard setting, so an open range like `>=22` resolves to the newest runtime. The `@types/node` major must match too, and Dependabot ignores `@types/node` `>=27`. Bump all of them together (`tests/config/node-version.test.ts` enforces it).
+**Dependabot:** PRs target `staging`. `.github/workflows/dependabot-ready.yml` adds a `ready-to-merge` label and pings once when all checks are green (it only takes effect from `main`, the default branch); it never checks out PR code.
+
+**Node.js:** pinned to a single major (`26.x`) in `package.json` `engines` and `.nvmrc` (used by CI). Vercel prefers `engines` over the dashboard setting, so an open range like `>=22` resolves to the newest runtime. The `@types/node` major must match too, and Dependabot ignores `@types/node` major bumps. Bump all of them together (`tests/config/node-version.test.ts` enforces it).
 
 **Install scripts:** npm 11.20+ (bundled with Node 26) skips dependency install scripts unless listed in `package.json` `allowScripts`. `esbuild` and `fsevents` are denied (not needed). A new dependency with an install script fails `tests/config/install-scripts.test.ts` until you decide with `npm install-scripts approve|deny <pkg>`.
 
-**Supabase CLI:** pinned to the same version in `ci.yml`, `staging.yml` and `production.yml` (never `latest`); `supabase/config.toml` must stay valid for that version. Bump all three together with the `supabase` devDependency.
+**Supabase CLI:** pinned to the same version in `ci.yml`, `staging.yml` and `production.yml` (never `latest`); `supabase/config.toml` must stay valid for that version. Bump all three together with the `supabase` devDependency. `tests/config/ci-workflow.test.ts` enforces that the pins equal the locked version. The CLI emits unformatted types, so `sb:local:generate:schema` pipes `src/schema.ts` through `oxfmt` (config in `.oxfmtrc.json`); CI's Verify Types step diffs the result against the committed file, so regenerate it (with the local stack running) whenever the CLI or the schema changes.
 
 ## Conventions
 
