@@ -43,7 +43,7 @@ jobs:
           SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           supabase link --project-ref $PROJECT_ID --password $DB_PASSWORD
-          supabase secrets set SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
+          supabase secrets set --yes SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
           supabase db push
           supabase functions deploy rate-limit
 
