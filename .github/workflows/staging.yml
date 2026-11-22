@@ -35,7 +35,7 @@ jobs:
           supabase link --project-ref $PROJECT_ID --password $DB_PASSWORD
           supabase secrets set --yes SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
           supabase db push --linked --yes
-          supabase functions deploy rate-limit
+          supabase functions deploy --yes rate-limit
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
